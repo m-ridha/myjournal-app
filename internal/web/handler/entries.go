@@ -14,9 +14,9 @@ import (
 
 func (s *Server) ListEntries(w http.ResponseWriter, r *http.Request, params api.ListEntriesParams) {
 	w.Header().Set("Content-Type", "application/json")
-	service, err := s.service(r.Context())
+	service, err := s.service(r)
 	if err != nil {
-		http.Error(w, s.message("errors.internal"), http.StatusInternalServerError)
+		s.writeServiceError(w, err)
 		return
 	}
 
@@ -46,9 +46,9 @@ func (s *Server) ListEntries(w http.ResponseWriter, r *http.Request, params api.
 
 func (s *Server) GetEntry(w http.ResponseWriter, r *http.Request, date openapi_types.Date) {
 	w.Header().Set("Content-Type", "application/json")
-	service, err := s.service(r.Context())
+	service, err := s.service(r)
 	if err != nil {
-		http.Error(w, s.message("errors.internal"), http.StatusInternalServerError)
+		s.writeServiceError(w, err)
 		return
 	}
 
@@ -72,9 +72,9 @@ func (s *Server) GetEntry(w http.ResponseWriter, r *http.Request, date openapi_t
 
 func (s *Server) SaveEntry(w http.ResponseWriter, r *http.Request, date openapi_types.Date) {
 	w.Header().Set("Content-Type", "application/json")
-	service, err := s.service(r.Context())
+	service, err := s.service(r)
 	if err != nil {
-		http.Error(w, s.message("errors.internal"), http.StatusInternalServerError)
+		s.writeServiceError(w, err)
 		return
 	}
 
@@ -112,9 +112,9 @@ func (s *Server) SaveEntry(w http.ResponseWriter, r *http.Request, date openapi_
 }
 
 func (s *Server) DeleteEntry(w http.ResponseWriter, r *http.Request, date openapi_types.Date) {
-	service, err := s.service(r.Context())
+	service, err := s.service(r)
 	if err != nil {
-		http.Error(w, s.message("errors.internal"), http.StatusInternalServerError)
+		s.writeServiceError(w, err)
 		return
 	}
 	if err := service.Delete(r.Context(), civil.DateOf(date.Time)); err != nil {
@@ -130,9 +130,9 @@ func (s *Server) DeleteEntry(w http.ResponseWriter, r *http.Request, date openap
 
 func (s *Server) GetCalendar(w http.ResponseWriter, r *http.Request, params api.GetCalendarParams) {
 	w.Header().Set("Content-Type", "application/json")
-	service, err := s.service(r.Context())
+	service, err := s.service(r)
 	if err != nil {
-		http.Error(w, s.message("errors.internal"), http.StatusInternalServerError)
+		s.writeServiceError(w, err)
 		return
 	}
 

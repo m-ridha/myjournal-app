@@ -8,10 +8,19 @@ import (
 )
 
 func (s *Server) GetSettings(w http.ResponseWriter, r *http.Request) {
-	// TODO
+	current, err := s.currentSession(r)
+	if err != nil {
+		s.writeServiceError(w, err)
+		return
+	}
+	p, ok := s.registry.Get(current.ProviderID)
+	if !ok {
+		s.writeServiceError(w, ErrUnauthenticated)
+		return
+	}
 	w.Header().Set("Content-Type", "application/json")
 	_ = json.NewEncoder(w).Encode(api.SettingsResponse{
-		AccountName: "dev@localhost",
-		Provider:    s.message("provider.local.name"),
+		AccountName: current.AccountEmail,
+		Provider:    p.Name(),
 	})
 }

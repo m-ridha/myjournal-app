@@ -36,6 +36,10 @@ Validation result: `make fmt lint test` passed successfully in the current works
 - [x] Save text uses the shorter status wording: `Saved`
 - [x] Draft persistence keeps unsaved text locally if a save fails or the page is left mid-edit
 - [x] Page, browser interaction, accessibility, and API error copy use the English locale catalog
+- [x] Private pages redirect without a valid session; entry APIs reject missing or invalid sessions
+- [x] Services are constructed from the decoded session provider/account rather than a fixed local connection
+- [x] Startup rejects invalid environment values, malformed session keys, unknown providers, and non-loopback local mode
+- [x] Google provider selection is rejected until its OAuth and Drive implementations are complete
 
 ## Restructuring addendum
 
@@ -58,6 +62,7 @@ Validation result: `make fmt lint test` passed successfully in the current works
 - Human module path confirmation is pending; the repo keeps the existing module declaration from `go.mod`.
 - Live Google sign-in still depends on Google Cloud Console setup and a real consent flow.
 - Full Google Drive provider behavior remains human-assisted until the real OAuth and Drive validation steps are run.
+- Session expiration, CSRF, browser-timezone handling, editor auto-save/page-hide, and Google OAuth state/PKCE persistence remain incomplete.
 
 ## Notes
 

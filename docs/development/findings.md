@@ -63,3 +63,13 @@
 - Missing keys fall back to the key itself to make incomplete translations visible during development.
 - Account email, journal dates, and user-written entry previews are runtime data rather than translatable interface copy; their surrounding labels are catalog messages.
 - New user-visible template, JavaScript, or handler copy should add a key to `assets/locales/en.json` and use the key at the point where it is rendered.
+
+## Authentication boundary and startup validation
+
+- Entry APIs require a decryptable session cookie with provider/account identity and an enabled provider; missing or invalid sessions receive HTTP 401.
+- Editor, entries, calendar, and settings pages redirect to the landing page without a valid session.
+- The request service factory now resolves the store from the session provider and connection, and scopes the cache key by provider/account.
+- Configuration parsing rejects invalid ports and `COOKIE_SECURE` values. Validation requires an absolute HTTP(S) base URL, a base64 session key decoding to 32 bytes, a supported log level, and known provider names.
+- The local provider can only be registered for exact `localhost` or loopback IP hostnames; `localhost.evil.com` is rejected.
+- Startup refuses the Google provider while OAuth and Drive storage remain stubs, instead of allowing placeholder credentials to appear successful.
+- Session expiration and key rotation remain open; `IssuedAt` is required but no maximum session age is enforced yet.

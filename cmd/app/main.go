@@ -13,7 +13,10 @@ import (
 )
 
 func main() {
-	cfg := config.Load()
+	cfg, err := config.Load()
+	if err != nil {
+		panic(err)
+	}
 	if err := cfg.Validate(); err != nil {
 		panic(err)
 	}

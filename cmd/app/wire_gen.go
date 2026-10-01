@@ -14,8 +14,8 @@ import (
 	"github/mridha/myjournal-app/internal/config"
 	"github/mridha/myjournal-app/internal/journal"
 	"github/mridha/myjournal-app/internal/provider"
-	"github/mridha/myjournal-app/internal/provider/google"
 	"github/mridha/myjournal-app/internal/provider/local"
+	"github/mridha/myjournal-app/internal/session"
 	"github/mridha/myjournal-app/internal/web"
 	"github/mridha/myjournal-app/internal/web/handler"
 	"log/slog"
@@ -29,7 +29,10 @@ import (
 
 func BuildApp(cfg config.Config) (*App, func(), error) {
 	logger := newLogger(cfg)
-	registry := newProviderRegistry(cfg)
+	registry, err := newProviderRegistry(cfg)
+	if err != nil {
+		return nil, nil, err
+	}
 	clock := newClock()
 	cache := newJournalCache()
 	serviceFactory := newServiceFactory(registry, cache, clock)
@@ -58,16 +61,16 @@ func newJournalCache() *cachestore.Cache {
 }
 
 func newServiceFactory(registry *provider.Registry, cache *cachestore.Cache, clk journal.Clock) handler.ServiceFactory {
-	return func(ctx context.Context) (*journal.Service, error) {
-		p, ok := registry.Get("local")
+	return func(ctx context.Context, current session.Session) (*journal.Service, error) {
+		p, ok := registry.Get(current.ProviderID)
 		if !ok {
-			return nil, fmt.Errorf("local provider is not configured")
+			return nil, fmt.Errorf("session provider is not configured")
 		}
-		store, err := p.Store(ctx, provider.Connection{ProviderID: "local", AccountID: "dev", AccountEmail: "dev@localhost", Credentials: "local-dev-user"})
+		store, err := p.Store(ctx, current.Connection)
 		if err != nil {
 			return nil, err
 		}
-		return journal.NewService(cache.Wrap("local:dev", store), clk), nil
+		return journal.NewService(cache.Wrap(current.ProviderID+":"+current.AccountID, store), clk), nil
 	}
 }
 
@@ -85,32 +88,36 @@ func newLogger(cfg config.Config) *slog.Logger {
 	return slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: level}))
 }
 
-func newProviderRegistry(cfg config.Config) *provider.Registry {
+func newProviderRegistry(cfg config.Config) (*provider.Registry, error) {
 	selected := strings.FieldsFunc(cfg.Providers, func(r rune) bool {
 		return r == ',' || r == ' ' || r == ';'
 	})
 	if len(selected) == 0 {
-		selected = []string{"local"}
+		return nil, fmt.Errorf("PROVIDERS must contain at least one provider")
 	}
 
 	providers := make([]provider.Provider, 0, len(selected))
+	seen := make(map[string]struct{}, len(selected))
 	for _, name := range selected {
-		switch strings.TrimSpace(name) {
-		case "google":
-			providers = append(providers, google.New(google.ConfigFromEnv()))
+		switch name = strings.TrimSpace(name); name {
 		case "local":
+			if _, ok := seen[name]; ok {
+				return nil, fmt.Errorf("PROVIDERS contains duplicate provider %q", name)
+			}
+			if err := local.ValidateBaseURL(cfg.BaseURL); err != nil {
+				return nil, err
+			}
 			providers = append(providers, local.New(cfg.BaseURL, cfg.LocalDataDir))
+			seen[name] = struct{}{}
+		case "google":
+			return nil, fmt.Errorf("Google provider is not implemented; do not enable it")
 		case "":
-			continue
+			return nil, fmt.Errorf("PROVIDERS contains an empty provider name")
 		default:
-			providers = append(providers, local.New(cfg.BaseURL, cfg.LocalDataDir))
+			return nil, fmt.Errorf("PROVIDERS contains an unsupported provider")
 		}
 	}
-	if len(providers) == 0 {
-		providers = append(providers, local.New(cfg.BaseURL, cfg.LocalDataDir))
-	}
-
-	return provider.NewRegistry(providers...)
+	return provider.NewRegistry(providers...), nil
 }
 
 func newHTTPServer(cfg config.Config, handler2 http.Handler) *http.Server {

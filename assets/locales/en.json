@@ -91,6 +91,7 @@
   "notFound.description": "The page you were looking for cannot be found.",
   "notFound.home": "Back home",
   "errors.internal": "Something went wrong. Please try again.",
+  "errors.unauthorized": "Please sign in to continue.",
   "errors.invalidRequest": "Invalid request.",
   "errors.conflict": "This entry changed elsewhere. Reload it and try again.",
   "errors.futureDate": "Future entries are not allowed.",

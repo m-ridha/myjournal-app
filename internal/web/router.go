@@ -1,6 +1,7 @@
 package web
 
 import (
+	"errors"
 	"io/fs"
 	"net/http"
 	"time"
@@ -40,16 +41,22 @@ func NewRouter(cfg config.Config, registry *provider.Registry, clk journal.Clock
 
 	// Web routes
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		if _, err := currentSession(r, cfg.SessionKey); err == nil {
+		if _, err := currentSession(r, cfg.SessionKey, registry); err == nil {
 			renderEntryPage(w, clk.Now(), clk)
 			return
 		}
 		renderPage(w, pageData{TitleKey: "landing.title", DescriptionKey: "landing.description", SignedIn: false, Page: "landing"})
 	})
 	r.Get("/entries/today", func(w http.ResponseWriter, r *http.Request) {
+		if !requireSession(w, r, cfg.SessionKey, registry) {
+			return
+		}
 		renderEntryPage(w, clk.Now(), clk)
 	})
 	r.Get("/entries/{date}", func(w http.ResponseWriter, r *http.Request) {
+		if !requireSession(w, r, cfg.SessionKey, registry) {
+			return
+		}
 		dateStr := chi.URLParam(r, "date")
 		date, err := time.Parse(time.DateOnly, dateStr)
 		if err != nil {
@@ -63,13 +70,24 @@ func NewRouter(cfg config.Config, registry *provider.Registry, clk journal.Clock
 		renderEntryPage(w, date, clk)
 	})
 	r.Get("/entries", func(w http.ResponseWriter, r *http.Request) {
+		if !requireSession(w, r, cfg.SessionKey, registry) {
+			return
+		}
 		renderPage(w, pageData{TitleKey: "entries.title", SignedIn: true, Page: "entries"})
 	})
 	r.Get("/calendar", func(w http.ResponseWriter, r *http.Request) {
+		if !requireSession(w, r, cfg.SessionKey, registry) {
+			return
+		}
 		renderPage(w, pageData{TitleKey: "calendar.title", SignedIn: true, Page: "calendar"})
 	})
 	r.Get("/settings", func(w http.ResponseWriter, r *http.Request) {
-		renderPage(w, pageData{TitleKey: "settings.title", SignedIn: true, Page: "settings", AccountName: "dev@localhost", FolderName: localeCatalog.Text("app.name")})
+		current, err := currentSession(r, cfg.SessionKey, registry)
+		if err != nil {
+			http.Redirect(w, r, "/", http.StatusSeeOther)
+			return
+		}
+		renderPage(w, pageData{TitleKey: "settings.title", SignedIn: true, Page: "settings", AccountName: current.AccountEmail, FolderName: localeCatalog.Text("app.name")})
 	})
 	r.Get("/privacy", func(w http.ResponseWriter, r *http.Request) {
 		renderPage(w, pageData{TitleKey: "privacy.title", DescriptionKey: "privacy.description", Page: "privacy"})
@@ -101,10 +119,25 @@ func renderEntryPage(w http.ResponseWriter, date time.Time, clk journal.Clock) {
 	})
 }
 
-func currentSession(r *http.Request, secret string) (session.Session, error) {
+func currentSession(r *http.Request, secret string, registry *provider.Registry) (session.Session, error) {
 	cookie, err := r.Cookie(session.CookieName)
 	if err != nil {
 		return session.Session{}, err
 	}
-	return session.Decode(secret, cookie.Value)
+	current, err := session.Decode(secret, cookie.Value)
+	if err != nil || current.ProviderID == "" || current.AccountID == "" || current.IssuedAt.IsZero() {
+		return session.Session{}, errors.New("invalid session")
+	}
+	if _, ok := registry.Get(current.ProviderID); !ok {
+		return session.Session{}, errors.New("session provider is unavailable")
+	}
+	return current, nil
+}
+
+func requireSession(w http.ResponseWriter, r *http.Request, secret string, registry *provider.Registry) bool {
+	if _, err := currentSession(r, secret, registry); err == nil {
+		return true
+	}
+	http.Redirect(w, r, "/", http.StatusSeeOther)
+	return false
 }

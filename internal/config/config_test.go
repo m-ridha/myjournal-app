@@ -1,18 +1,101 @@
 package config
 
 import (
+	"encoding/base64"
+	"os"
 	"testing"
 )
 
+func setConfigEnvironment(t *testing.T) {
+	t.Helper()
+	for _, key := range []string{"APP_BASE_URL", "PORT", "LOG_LEVEL", "SESSION_KEY", "COOKIE_SECURE", "PROVIDERS", "LOCAL_DATA_DIR"} {
+		previous, existed := os.LookupEnv(key)
+		if err := os.Unsetenv(key); err != nil {
+			t.Fatalf("Unsetenv(%s) error = %v", key, err)
+		}
+		t.Cleanup(func() {
+			if existed {
+				_ = os.Setenv(key, previous)
+			} else {
+				_ = os.Unsetenv(key)
+			}
+		})
+	}
+}
+
+func validConfig() Config {
+	return Config{
+		BaseURL:    "http://localhost:3030",
+		Port:       3030,
+		LogLevel:   "info",
+		SessionKey: base64.StdEncoding.EncodeToString(make([]byte, 32)),
+		Providers:  "local",
+	}
+}
+
 func TestLoadDefaults(t *testing.T) {
-	cfg := Load()
-	if cfg.Port == 0 {
-		t.Fatal("expected a default port")
+	setConfigEnvironment(t)
+	cfg, err := Load()
+	if err != nil {
+		t.Fatalf("Load() error = %v", err)
 	}
-	if cfg.BaseURL == "" {
-		t.Fatal("expected a base URL")
+	if cfg.Port != 3030 || cfg.BaseURL != "http://localhost:3030" || cfg.LogLevel != "info" || cfg.Providers != "local" {
+		t.Fatalf("Load() defaults = %#v", cfg)
 	}
-	if cfg.LogLevel == "" {
-		t.Fatal("expected a log level")
+	if err := cfg.Validate(); err == nil {
+		t.Fatal("Validate() accepted a missing SESSION_KEY")
+	}
+}
+
+func TestValidateAcceptsValidConfiguration(t *testing.T) {
+	if err := validConfig().Validate(); err != nil {
+		t.Fatalf("Validate() error = %v", err)
+	}
+}
+
+func TestValidateRejectsInvalidConfiguration(t *testing.T) {
+	cases := []struct {
+		name   string
+		change func(*Config)
+	}{
+		{name: "invalid session key", change: func(cfg *Config) { cfg.SessionKey = "known-default" }},
+		{name: "empty providers", change: func(cfg *Config) { cfg.Providers = " , ; " }},
+		{name: "unknown provider", change: func(cfg *Config) { cfg.Providers = "gogle" }},
+		{name: "invalid base URL", change: func(cfg *Config) { cfg.BaseURL = "localhost:3030" }},
+		{name: "invalid log level", change: func(cfg *Config) { cfg.LogLevel = "verbose" }},
+	}
+	for _, test := range cases {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := validConfig()
+			test.change(&cfg)
+			if err := cfg.Validate(); err == nil {
+				t.Fatal("Validate() error = nil, want error")
+			}
+		})
+	}
+}
+
+func TestLoadRejectsInvalidEnvironmentValues(t *testing.T) {
+	cases := []struct {
+		name  string
+		key   string
+		value string
+	}{
+		{name: "port", key: "PORT", value: "not-a-port"},
+		{name: "secure cookie", key: "COOKIE_SECURE", value: "ture"},
+		{name: "explicitly empty providers", key: "PROVIDERS", value: "  "},
+	}
+	for _, test := range cases {
+		t.Run(test.name, func(t *testing.T) {
+			setConfigEnvironment(t)
+			t.Setenv(test.key, test.value)
+			cfg, err := Load()
+			if err == nil {
+				err = cfg.Validate()
+			}
+			if err == nil {
+				t.Fatal("Load() error = nil, want error")
+			}
+		})
 	}
 }

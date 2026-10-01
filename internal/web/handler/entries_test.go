@@ -17,6 +17,7 @@ import (
 	"github/mridha/myjournal-app/internal/journal"
 	"github/mridha/myjournal-app/internal/provider"
 	"github/mridha/myjournal-app/internal/provider/local"
+	"github/mridha/myjournal-app/internal/session"
 	"github/mridha/myjournal-app/internal/web/api"
 
 	openapi_types "github.com/oapi-codegen/runtime/types"
@@ -29,6 +30,7 @@ func TestSaveAndGetEntryRoundTrip(t *testing.T) {
 
 	body := strings.NewReader(`{"text":"hello journal"}`)
 	req := httptest.NewRequest(http.MethodPut, "/api/v1/entries/2026-09-21", body)
+	addLocalSession(t, req)
 	res := httptest.NewRecorder()
 
 	h.SaveEntry(res, req, date)
@@ -48,6 +50,7 @@ func TestSaveAndGetEntryRoundTrip(t *testing.T) {
 	}
 
 	getReq := httptest.NewRequest(http.MethodGet, "/api/v1/entries/2026-09-21", nil)
+	addLocalSession(t, getReq)
 	getRes := httptest.NewRecorder()
 	h.GetEntry(getRes, getReq, date)
 	if getRes.Code != http.StatusOK {
@@ -63,11 +66,24 @@ func TestSaveAndGetEntryRoundTrip(t *testing.T) {
 	}
 }
 
+func TestGetEntryRequiresSession(t *testing.T) {
+	registry := provider.NewRegistry(local.New("http://localhost:3030", t.TempDir()))
+	h := New(config.Config{SessionKey: "test-key"}, registry, localServiceFactory(registry), testCatalog(t))
+	date := openapi_types.Date{Time: time.Date(2026, 9, 21, 0, 0, 0, 0, time.UTC)}
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/entries/2026-09-21", nil)
+	res := httptest.NewRecorder()
+	h.GetEntry(res, req, date)
+	if res.Code != http.StatusUnauthorized {
+		t.Fatalf("GetEntry() status = %d, want %d", res.Code, http.StatusUnauthorized)
+	}
+}
+
 func TestSaveInvalidJSONUsesLocaleMessage(t *testing.T) {
 	registry := provider.NewRegistry(local.New("http://localhost:3030", t.TempDir()))
 	h := New(config.Config{SessionKey: "test-key"}, registry, localServiceFactory(registry), testCatalog(t))
 	date := openapi_types.Date{Time: time.Date(2026, 9, 21, 0, 0, 0, 0, time.UTC)}
 	req := httptest.NewRequest(http.MethodPut, "/api/v1/entries/2026-09-21", strings.NewReader("{invalid"))
+	addLocalSession(t, req)
 	res := httptest.NewRecorder()
 	h.SaveEntry(res, req, date)
 	if res.Code != http.StatusBadRequest {
@@ -85,6 +101,7 @@ func TestPreviewTextUsesFirstMeaningfulLine(t *testing.T) {
 
 	body := strings.NewReader(`{"text":"\n\n   My first line\nSecond line"}`)
 	req := httptest.NewRequest(http.MethodPut, "/api/v1/entries/2026-09-22", body)
+	addLocalSession(t, req)
 	res := httptest.NewRecorder()
 	h.SaveEntry(res, req, date)
 	if res.Code != http.StatusOK {
@@ -111,17 +128,29 @@ func TestPreviewTextUsesFirstMeaningfulLine(t *testing.T) {
 }
 
 func localServiceFactory(registry *provider.Registry) ServiceFactory {
-	return func(ctx context.Context) (*journal.Service, error) {
-		p, ok := registry.Get("local")
+	return func(ctx context.Context, current session.Session) (*journal.Service, error) {
+		p, ok := registry.Get(current.ProviderID)
 		if !ok {
-			return nil, fmt.Errorf("local provider is not configured")
+			return nil, fmt.Errorf("session provider is not configured")
 		}
-		store, err := p.Store(ctx, provider.Connection{ProviderID: "local", AccountID: "dev", AccountEmail: "dev@localhost", Credentials: "local-dev-user"})
+		store, err := p.Store(ctx, current.Connection)
 		if err != nil {
 			return nil, err
 		}
 		return journal.NewService(store, clock.System{}), nil
 	}
+}
+
+func addLocalSession(t *testing.T, req *http.Request) {
+	t.Helper()
+	encoded, err := session.Encode("test-key", session.Session{
+		Connection: provider.Connection{ProviderID: "local", AccountID: "dev", AccountEmail: "dev@localhost", Credentials: "local-dev-user"},
+		IssuedAt:   time.Now().UTC(),
+	})
+	if err != nil {
+		t.Fatalf("session.Encode() error = %v", err)
+	}
+	req.AddCookie(&http.Cookie{Name: session.CookieName, Value: encoded})
 }
 
 func testCatalog(t *testing.T) i18n.Catalog {

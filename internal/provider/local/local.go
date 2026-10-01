@@ -3,6 +3,8 @@ package local
 import (
 	"context"
 	"fmt"
+	"net"
+	"net/url"
 	"os"
 	"strings"
 
@@ -48,10 +50,26 @@ func (p *Provider) ID() string { return "local" }
 func (p *Provider) Name() string { return "Local dev account" }
 
 func (p *Provider) Begin(_ context.Context, _ string) (string, error) {
-	if !strings.HasPrefix(p.baseURL, "http://localhost") && !strings.HasPrefix(p.baseURL, "http://127.0.0.1") {
-		return "", fmt.Errorf("local provider requires APP_BASE_URL to point at localhost")
+	if err := ValidateBaseURL(p.baseURL); err != nil {
+		return "", err
 	}
-	return p.baseURL + "/api/v1/auth/local/callback", nil
+	return strings.TrimRight(p.baseURL, "/") + "/api/v1/auth/local/callback", nil
+}
+
+func ValidateBaseURL(raw string) error {
+	parsed, err := url.Parse(raw)
+	if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Hostname() == "" || parsed.User != nil || parsed.RawQuery != "" || parsed.Fragment != "" || (parsed.Path != "" && parsed.Path != "/") {
+		return fmt.Errorf("local provider requires an absolute localhost APP_BASE_URL")
+	}
+	host := strings.TrimSuffix(strings.ToLower(parsed.Hostname()), ".")
+	if host == "localhost" {
+		return nil
+	}
+	ip := net.ParseIP(host)
+	if ip != nil && ip.IsLoopback() {
+		return nil
+	}
+	return fmt.Errorf("local provider requires an absolute localhost APP_BASE_URL")
 }
 
 func (p *Provider) Complete(_ context.Context, _ string) (provider.Connection, error) {

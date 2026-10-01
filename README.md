@@ -16,6 +16,8 @@ The local development flow is working end-to-end:
 
 ## Quick start
 
+Create `.env` from `.env.example` and set `SESSION_KEY` to the output of `openssl rand -base64 32`.
+
 ```bash
 make generate
 make run
