@@ -1,0 +1,21 @@
+{{define "calendar"}}
+<section class="mj-page-card" data-calendar>
+  <header class="mj-page-header">
+    <div>
+      <p class="mj-kicker">{{t "calendar.kicker"}}</p>
+      <h1>{{t "calendar.title"}}</h1>
+    </div>
+    <button class="mj-btn mj-btn-secondary mj-btn-small" type="button" data-calendar-today>{{t "calendar.today"}}</button>
+  </header>
+
+  <div class="mj-calendar">
+    <div class="mj-calendar-header">
+      <button class="mj-icon-btn" type="button" aria-label="{{t "calendar.previousMonth"}}" data-calendar-prev>←</button>
+      <strong data-calendar-month>{{t "calendar.loading"}}</strong>
+      <button class="mj-icon-btn" type="button" aria-label="{{t "calendar.nextMonth"}}" data-calendar-next>→</button>
+    </div>
+
+    <div class="mj-calendar-grid" aria-label="{{t "calendar.label"}}" data-calendar-grid></div>
+  </div>
+</section>
+{{end}}

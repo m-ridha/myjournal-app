@@ -1,0 +1,330 @@
+openapi: 3.2.1
+info:
+  title: myjournal API
+  version: 0.1.0
+  description: >-
+    API contract for the 'myjournal' journaling app.
+servers:
+  - url: http://localhost:3030
+    description: Local development server
+paths:
+  /healthz:
+    get:
+      summary: Health check
+      operationId: healthz
+      responses:
+        '200':
+          description: Server is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+
+  /api/v1/entries:
+    get:
+      summary: List entries
+      operationId: listEntries
+      parameters:
+        - $ref: '#/components/parameters/PaginationPageQueryParam'
+        - $ref: '#/components/parameters/PaginationSizeQueryParam'
+      responses:
+        '200':
+          description: Paginated list of entries
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListEntriesResponse'
+
+  /api/v1/entries/{date}:
+    parameters:
+      - $ref: '#/components/parameters/DatePathParam'
+    get:
+      summary: Fetch a single entry
+      operationId: getEntry
+      responses:
+        '200':
+          description: Entry payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Entry'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      summary: Save or create an entry
+      operationId: saveEntry
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SaveEntryRequest'
+      responses:
+        '200':
+          description: Updated entry
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Entry'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+    delete:
+      summary: Move an entry to trash
+      operationId: deleteEntry
+      responses:
+        '204':
+          description: Entry deleted
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v1/calendar:
+    get:
+      summary: Get a calendar view for a month
+      operationId: getCalendar
+      parameters:
+        - $ref: '#/components/parameters/MonthQueryParam'
+      responses:
+        '200':
+          description: Calendar month data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CalendarResponse'
+
+  /api/v1/auth/{provider}/login:
+    get:
+      summary: Start provider login flow
+      operationId: startProviderLogin
+      parameters:
+        - $ref: '#/components/parameters/ProviderPathParam'
+      responses:
+        '302':
+          description: Redirect to provider login
+
+  /api/v1/auth/{provider}/callback:
+    get:
+      summary: Complete provider login flow
+      operationId: completeProviderLogin
+      parameters:
+        - $ref: '#/components/parameters/ProviderPathParam'
+        - $ref: '#/components/parameters/AuthCodeQueryParam'
+        - $ref: '#/components/parameters/AuthStateQueryParam'
+      responses:
+        '302':
+          description: Redirect to authenticated app page
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/logout:
+    post:
+      summary: Log the current user out
+      operationId: logout
+      responses:
+        '302':
+          description: Redirect to landing page
+
+  /api/v1/settings:
+    get:
+      summary: Get connected account settings
+      operationId: getSettings
+      responses:
+        '200':
+          description: Settings payload
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SettingsResponse'
+
+components:
+  parameters:
+    ProviderPathParam:
+      name: provider
+      in: path
+      required: true
+      schema:
+        type: string
+        enum: [google, local]
+    DatePathParam:
+      name: date
+      in: path
+      required: true
+      schema:
+        type: string
+        format: date
+
+    PaginationPageQueryParam:
+      in: query
+      name: page
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    PaginationSizeQueryParam:
+      in: query
+      name: size
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    MonthQueryParam:
+      in: query
+      name: month
+      required: true
+      schema:
+        type: string
+        pattern: '^\d{4}-\d{2}$'
+    AuthCodeQueryParam:
+      in: query
+      name: code
+      required: false
+      schema:
+        type: string
+    AuthStateQueryParam:
+      in: query
+      name: state
+      required: false
+      schema:
+        type: string
+
+  schemas:
+    HealthResponse:
+      type: object
+      required: [status]
+      properties:
+        status:
+          type: string
+          example: ok
+
+    Entry:
+      type: object
+      required: [date, text, version, exists]
+      properties:
+        date:
+          type: string
+          format: date
+        text:
+          type: string
+        version:
+          type: string
+        exists:
+          type: boolean
+
+    SaveEntryRequest:
+      type: object
+      required: [text, baseVersion]
+      properties:
+        text:
+          type: string
+        baseVersion:
+          type: string
+          nullable: true
+
+    ListEntriesResponse:
+      type: object
+      required: [items, page, pageSize, hasNext]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ListItem'
+        page:
+          type: integer
+          minimum: 1
+        pageSize:
+          type: integer
+          minimum: 1
+        hasNext:
+          type: boolean
+
+    ListItem:
+      type: object
+      required: [date, preview]
+      properties:
+        date:
+          type: string
+          format: date
+        preview:
+          type: string
+
+    CalendarResponse:
+      type: object
+      required: [year, month, weeks]
+      properties:
+        year:
+          type: integer
+        month:
+          type: integer
+          minimum: 1
+          maximum: 12
+        weeks:
+          type: array
+          items:
+            type: array
+            items:
+              $ref: '#/components/schemas/CalendarDay'
+
+    CalendarDay:
+      type: object
+      required: [date, inMonth, hasEntry, isToday, isFuture]
+      properties:
+        date:
+          type: string
+          format: date
+        inMonth:
+          type: boolean
+        hasEntry:
+          type: boolean
+        isToday:
+          type: boolean
+        isFuture:
+          type: boolean
+
+    SettingsResponse:
+      type: object
+      required: [accountName, provider]
+      properties:
+        accountName:
+          type: string
+        provider:
+          type: string
+        folderUrl:
+          type: string
+          nullable: true
+
+    Error:
+      type: object
+      required: [message]
+      properties:
+        message:
+          type: string
+
+  responses:
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: The resource changed elsewhere and needs reconciliation
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    ValidationError:
+      description: Validation failed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Authentication is required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

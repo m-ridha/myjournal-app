@@ -1,0 +1,58 @@
+version: "2"
+
+run:
+  timeout: 5m
+
+formatters:
+  enable:
+    - gofmt
+
+linters:
+  enable:
+    - govet
+    - staticcheck
+    - errcheck
+    - ineffassign
+    - depguard
+  settings:
+    depguard:
+      rules:
+        core:
+          files:
+            - "internal/journal/**/*.go"
+          deny:
+            - pkg: net/http
+              desc: "The core domain must not import HTTP packages"
+            - pkg: github.com/go-chi/chi/v5
+              desc: "The core domain must not import the web router"
+            - pkg: html/template
+              desc: "The core domain must not know about rendering"
+            - pkg: os
+              desc: "The core domain must not touch the filesystem directly"
+            - pkg: database/sql
+              desc: "The core domain must not know about a database"
+            - pkg: golang.org/x/oauth2
+              desc: "The core domain must not know about OAuth"
+            - pkg: google.golang.org/api
+              desc: "The core domain must not know about Google APIs"
+
+        driving-side:
+          files:
+            - "internal/web/**/*.go"
+            - "internal/session/**/*.go"
+            - "internal/provider/provider.go"
+          deny:
+            - pkg: github/mridha/myjournal-app/internal/provider/google
+              desc: "Only cmd/app may import a concrete provider implementation"
+            - pkg: github/mridha/myjournal-app/internal/provider/local
+              desc: "Only cmd/app may import a concrete provider implementation"
+            - pkg: github/mridha/myjournal-app/internal/cachestore
+              desc: "Only cmd/app wires the cache; web talks to journal.Service"
+
+        driven-side:
+          files:
+            - "internal/provider/google/**/*.go"
+            - "internal/provider/local/**/*.go"
+          deny:
+            - pkg: github/mridha/myjournal-app/internal/web
+              desc: "A provider must never import the web layer"

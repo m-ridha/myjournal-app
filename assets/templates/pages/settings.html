@@ -1,0 +1,34 @@
+{{define "settings"}}
+<section class="mj-page-card">
+  <header class="mj-page-header">
+    <div>
+      <p class="mj-kicker">{{t "settings.kicker"}}</p>
+      <h1>{{t "settings.title"}}</h1>
+    </div>
+  </header>
+
+  <div class="mj-settings-list">
+    <div class="mj-setting-row">
+      <span>{{t "settings.account"}}</span>
+      <strong>{{.AccountName}}</strong>
+    </div>
+    <div class="mj-setting-row">
+      <span>{{t "settings.journalFolder"}}</span>
+      <strong>{{.FolderName}}</strong>
+    </div>
+    <div class="mj-setting-row">
+      <span>{{t "settings.appearance"}}</span>
+      <div class="mj-segmented" aria-label="{{t "settings.appearance"}}">
+        <button class="mj-segment is-active" type="button">{{t "settings.system"}}</button>
+        <button class="mj-segment" type="button">{{t "settings.light"}}</button>
+        <button class="mj-segment" type="button">{{t "settings.dark"}}</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="mj-settings-actions">
+    <button class="mj-btn mj-btn-secondary" type="button">{{t "settings.signOut"}}</button>
+    <button class="mj-btn mj-btn-secondary mj-danger" type="button">{{t "settings.disconnect"}}</button>
+  </div>
+</section>
+{{end}}

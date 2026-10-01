@@ -1,0 +1,32 @@
+{{define "landing"}}
+<section class="mj-hero">
+  <p class="mj-kicker">{{t "landing.kicker"}}</p>
+  <h1>{{t "landing.title"}}</h1>
+  <p class="mj-lead">{{t "landing.description"}}</p>
+
+  <div class="mj-actions">
+    {{if .SignedIn}}
+      <a class="mj-btn mj-btn-primary" href="/entries/today">{{t "landing.openToday"}}</a>
+      <a class="mj-btn mj-btn-secondary" href="/settings">{{t "landing.settings"}}</a>
+    {{else}}
+      <a class="mj-btn mj-btn-primary" href="/api/v1/auth/local/login">{{t "landing.connectLocal"}}</a>
+      <a class="mj-btn mj-btn-secondary" href="/help">{{t "landing.driveHelp"}}</a>
+    {{end}}
+  </div>
+</section>
+
+<section class="mj-feature-grid">
+  <article class="mj-card">
+    <h2>{{t "landing.feature.quiet.title"}}</h2>
+    <p>{{t "landing.feature.quiet.body"}}</p>
+  </article>
+  <article class="mj-card">
+    <h2>{{t "landing.feature.drive.title"}}</h2>
+    <p>{{t "landing.feature.drive.body"}}</p>
+  </article>
+  <article class="mj-card">
+    <h2>{{t "landing.feature.recovery.title"}}</h2>
+    <p>{{t "landing.feature.recovery.body"}}</p>
+  </article>
+</section>
+{{end}}

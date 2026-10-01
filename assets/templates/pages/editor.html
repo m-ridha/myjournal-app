@@ -1,0 +1,19 @@
+{{define "editor"}}
+<section class="mj-editor-shell" data-entry-editor data-entry-date="{{.Date}}">
+  <header class="mj-editor-header">
+    <button class="mj-icon-btn" type="button" aria-label="{{t "editor.previousDay"}}" data-entry-prev>←</button>
+    <div class="mj-editor-title-wrap">
+      <p class="mj-kicker">{{if .IsToday}}{{t "editor.today"}}{{else}}{{t "editor.entry"}}{{end}}</p>
+      <h1>{{.Title}}</h1>
+    </div>
+    <button class="mj-icon-btn" type="button" aria-label="{{t "editor.nextDay"}}" data-entry-next>→</button>
+  </header>
+
+  <div class="mj-status-row" role="status" aria-live="polite">
+    <span class="mj-status-pill" data-entry-status>{{t "editor.loading"}}</span>
+    <button class="mj-btn mj-btn-secondary mj-btn-small" type="button" data-entry-save>{{t "editor.save"}}</button>
+  </div>
+
+  <textarea class="mj-editor" aria-label="{{t "editor.label"}}" rows="14" data-entry-text></textarea>
+</section>
+{{end}}

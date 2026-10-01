@@ -1,0 +1,172 @@
+package handler
+
+import (
+	"encoding/json"
+	"net/http"
+	"time"
+
+	"cloud.google.com/go/civil"
+	openapi_types "github.com/oapi-codegen/runtime/types"
+
+	"github/mridha/myjournal-app/internal/journal"
+	"github/mridha/myjournal-app/internal/web/api"
+)
+
+func (s *Server) ListEntries(w http.ResponseWriter, r *http.Request, params api.ListEntriesParams) {
+	w.Header().Set("Content-Type", "application/json")
+	service, err := s.service(r.Context())
+	if err != nil {
+		http.Error(w, s.message("errors.internal"), http.StatusInternalServerError)
+		return
+	}
+
+	page := 1
+	if params.Page != nil && *params.Page > 0 {
+		page = *params.Page
+	}
+
+	size := 20
+	if params.Size != nil && *params.Size > 0 && *params.Size <= 100 {
+		size = *params.Size
+	}
+
+	result, err := service.Page(r.Context(), page, size)
+	if err != nil {
+		http.Error(w, s.message("errors.internal"), http.StatusInternalServerError)
+		return
+	}
+
+	items := make([]api.ListItem, 0, len(result.Items))
+	for _, item := range result.Items {
+		items = append(items, api.ListItem{Date: toOpenAPIDate(item.Date), Preview: item.Preview})
+	}
+	resp := api.ListEntriesResponse{Page: result.Page, PageSize: result.PageSize, HasNext: result.HasNext, Items: items}
+	_ = json.NewEncoder(w).Encode(resp)
+}
+
+func (s *Server) GetEntry(w http.ResponseWriter, r *http.Request, date openapi_types.Date) {
+	w.Header().Set("Content-Type", "application/json")
+	service, err := s.service(r.Context())
+	if err != nil {
+		http.Error(w, s.message("errors.internal"), http.StatusInternalServerError)
+		return
+	}
+
+	entry, err := service.Open(r.Context(), civil.DateOf(date.Time))
+	if err != nil {
+		if err == journal.ErrNotFound {
+			_ = json.NewEncoder(w).Encode(api.Entry{Date: date, Exists: false})
+			return
+		}
+		http.Error(w, s.message("errors.entryUnavailable"), http.StatusInternalServerError)
+		return
+	}
+
+	_ = json.NewEncoder(w).Encode(api.Entry{
+		Date:    toOpenAPIDate(entry.Date),
+		Text:    entry.Text,
+		Version: string(entry.Version),
+		Exists:  entry.Exists,
+	})
+}
+
+func (s *Server) SaveEntry(w http.ResponseWriter, r *http.Request, date openapi_types.Date) {
+	w.Header().Set("Content-Type", "application/json")
+	service, err := s.service(r.Context())
+	if err != nil {
+		http.Error(w, s.message("errors.internal"), http.StatusInternalServerError)
+		return
+	}
+
+	var req api.SaveEntryRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		http.Error(w, s.message("errors.invalidRequest"), http.StatusBadRequest)
+		return
+	}
+
+	base := journal.Version("")
+	if req.BaseVersion != nil {
+		base = journal.Version(*req.BaseVersion)
+	}
+
+	entry, err := service.Save(r.Context(), civil.DateOf(date.Time), req.Text, base)
+	if err != nil {
+		if err == journal.ErrConflict {
+			http.Error(w, s.message("errors.conflict"), http.StatusConflict)
+			return
+		}
+		if err == journal.ErrFutureDate {
+			http.Error(w, s.message("errors.futureDate"), http.StatusBadRequest)
+			return
+		}
+		http.Error(w, s.message("errors.entryUnavailable"), http.StatusInternalServerError)
+		return
+	}
+
+	_ = json.NewEncoder(w).Encode(api.Entry{
+		Date:    toOpenAPIDate(entry.Date),
+		Text:    entry.Text,
+		Version: string(entry.Version),
+		Exists:  entry.Exists,
+	})
+}
+
+func (s *Server) DeleteEntry(w http.ResponseWriter, r *http.Request, date openapi_types.Date) {
+	service, err := s.service(r.Context())
+	if err != nil {
+		http.Error(w, s.message("errors.internal"), http.StatusInternalServerError)
+		return
+	}
+	if err := service.Delete(r.Context(), civil.DateOf(date.Time)); err != nil {
+		if err == journal.ErrNotFound {
+			http.Error(w, s.message("errors.entryUnavailable"), http.StatusNotFound)
+			return
+		}
+		http.Error(w, s.message("errors.entryUnavailable"), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (s *Server) GetCalendar(w http.ResponseWriter, r *http.Request, params api.GetCalendarParams) {
+	w.Header().Set("Content-Type", "application/json")
+	service, err := s.service(r.Context())
+	if err != nil {
+		http.Error(w, s.message("errors.internal"), http.StatusInternalServerError)
+		return
+	}
+
+	today := service.Today(time.UTC)
+	monthKey := time.Date(today.Year, today.Month, today.Day, 0, 0, 0, 0, time.UTC)
+	if params.Month != "" {
+		parsed, err := time.Parse("2006-01", params.Month)
+		if err == nil {
+			monthKey = parsed
+		}
+	}
+
+	year, month := monthKey.Year(), monthKey.Month()
+	monthView, err := service.Month(r.Context(), year, month)
+	if err != nil {
+		http.Error(w, s.message("errors.entryUnavailable"), http.StatusInternalServerError)
+		return
+	}
+	weeks := make([][]api.CalendarDay, 0, len(monthView.Weeks))
+	for _, week := range monthView.Weeks {
+		row := make([]api.CalendarDay, 0, len(week))
+		for _, day := range week {
+			row = append(row, api.CalendarDay{Date: toOpenAPIDate(day.Date), HasEntry: day.HasEntry, InMonth: day.InMonth, IsFuture: day.IsFuture, IsToday: day.IsToday})
+		}
+		weeks = append(weeks, row)
+	}
+
+	_ = json.NewEncoder(w).Encode(api.CalendarResponse{
+		Year:  year,
+		Month: int(month),
+		Weeks: weeks,
+	})
+}
+
+func toOpenAPIDate(d civil.Date) openapi_types.Date {
+	return openapi_types.Date{Time: time.Date(d.Year, time.Month(d.Month), d.Day, 0, 0, 0, 0, time.UTC)}
+}
