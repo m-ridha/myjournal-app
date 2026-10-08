@@ -48,6 +48,11 @@ Validation result: `make fmt lint test` passed successfully in the current works
 
 ## Phase 3: UI and polish
 
+- [x] Consolidate the active PNG favicon under `assets/static/favicons/` and remove unused SVG/mask assets (2026-10-08).
+- [x] Add the user-provided, light/dark adaptive SVG favicon to embedded static assets and the shared page layout (2026-10-08).
+- [x] Add a 64×64 transparent PNG favicon fallback derived from the SVG after Safari 26.4 displayed a localhost letter fallback; browser confirmation remains pending (2026-10-08).
+- [x] Add Safari pinned-tab mask SVG and fresh icon URLs after the PNG fallback did not resolve Safari's missing normal-tab icon; Safari checks remain pending (2026-10-08).
+- [x] Confirm Safari displays the same PNG in an isolated PNG-only page; simplify the app to one PNG icon link at a fresh filename after the mixed icon setup failed. Safari app icon at `localhost:3030` confirmed after rebuilding its favicon cache; pinned-tab recheck remains pending (2026-10-08).
 - [x] Editor page and date nav are wired to the local API
 - [x] Branded 404 page is connected to the router and the app shell
 - [x] Save status styling is visible and resets to neutral when the user edits again
