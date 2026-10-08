@@ -9,16 +9,19 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/drive/v3"
+	"google.golang.org/api/idtoken"
 	"google.golang.org/api/option"
 )
 
 var (
+	stateMu         sync.Mutex
 	stateToVerifier = make(map[string]string)
 )
 
@@ -41,7 +44,9 @@ func main() {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+		stateMu.Lock()
 		stateToVerifier[state] = verifier
+		stateMu.Unlock()
 		cfg := oauth2.Config{
 			ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
 			ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
@@ -54,13 +59,15 @@ func main() {
 			},
 			Endpoint: google.Endpoint,
 		}
-		authURL := cfg.AuthCodeURL(state,
+		authOptions := []oauth2.AuthCodeOption{
 			oauth2.AccessTypeOffline,
-			oauth2.ApprovalForce,
 			oauth2.SetAuthURLParam("code_challenge", challengeFor(verifier)),
 			oauth2.SetAuthURLParam("code_challenge_method", "S256"),
-			oauth2.SetAuthURLParam("prompt", "consent"),
-		)
+		}
+		if r.URL.Query().Get("force_consent") == "1" {
+			authOptions = append(authOptions, oauth2.ApprovalForce, oauth2.SetAuthURLParam("prompt", "consent"))
+		}
+		authURL := cfg.AuthCodeURL(state, authOptions...)
 		http.Redirect(w, r, authURL, http.StatusFound)
 	})
 	r.Get("/auth/google/callback", func(w http.ResponseWriter, r *http.Request) {
@@ -69,12 +76,14 @@ func main() {
 
 		code := r.URL.Query().Get("code")
 		state := r.URL.Query().Get("state")
+		stateMu.Lock()
 		verifier, ok := stateToVerifier[state]
+		delete(stateToVerifier, state)
+		stateMu.Unlock()
 		if !ok {
-			http.Error(w, "missing OAuth PKCE verifier", http.StatusBadRequest)
+			http.Error(w, "OAuth state is invalid or expired", http.StatusBadRequest)
 			return
 		}
-		delete(stateToVerifier, state)
 
 		cfg := oauth2.Config{
 			ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
@@ -90,24 +99,65 @@ func main() {
 		}
 		token, err := cfg.Exchange(ctx, code, oauth2.SetAuthURLParam("code_verifier", verifier))
 		if err != nil {
-			http.Error(w, fmt.Sprintf("exchange failed: %v", err), http.StatusUnauthorized)
+			http.Error(w, "OAuth token exchange failed", http.StatusUnauthorized)
 			return
+		}
+		refreshTokenPresent := token.RefreshToken != ""
+		idToken, _ := token.Extra("id_token").(string)
+		idTokenPresent := idToken != ""
+		idTokenValid := false
+		subjectPresent := false
+		emailPresent := false
+		if idTokenPresent {
+			payload, err := idtoken.Validate(ctx, idToken, cfg.ClientID)
+			if err == nil {
+				idTokenValid = true
+				subjectPresent = payload.Subject != ""
+				email, ok := payload.Claims["email"].(string)
+				emailPresent = ok && email != ""
+			}
 		}
 
 		ds, err := drive.NewService(ctx, option.WithTokenSource(cfg.TokenSource(ctx, token)))
 		if err != nil {
-			http.Error(w, fmt.Sprintf("drive service failed: %v", err), http.StatusInternalServerError)
+			http.Error(w, "Drive service could not be created", http.StatusInternalServerError)
 			return
 		}
 		files, err := ds.Files.List().PageSize(5).Fields("files(id,name,parents)").Do()
 		if err != nil {
-			http.Error(w, fmt.Sprintf("drive list failed: %v", err), http.StatusInternalServerError)
+			http.Error(w, "Drive file listing failed", http.StatusInternalServerError)
 			return
 		}
-		_, _ = fmt.Fprintf(w, "token acquired, files: %d\n", len(files.Files))
-		for _, f := range files.Files {
-			_, _ = fmt.Fprintf(w, "- %s\n", f.Name)
+
+		refreshRenewalAttempted := false
+		refreshRenewalSucceeded := false
+		refreshDriveListSucceeded := false
+		if refreshTokenPresent {
+			refreshRenewalAttempted = true
+			expired := *token
+			expired.Expiry = time.Now().Add(-time.Minute)
+			refreshed, err := cfg.TokenSource(ctx, &expired).Token()
+			refreshRenewalSucceeded = err == nil && refreshed.AccessToken != ""
+			if refreshRenewalSucceeded {
+				refreshedDrive, serviceErr := drive.NewService(ctx, option.WithTokenSource(oauth2.StaticTokenSource(refreshed)))
+				if serviceErr == nil {
+					_, listErr := refreshedDrive.Files.List().PageSize(1).Fields("files(id)").Do()
+					refreshDriveListSucceeded = listErr == nil
+				}
+			}
 		}
+
+		_, _ = fmt.Fprintf(w, "OAuth callback succeeded\n")
+		_, _ = fmt.Fprintf(w, "drive_list_succeeded: true\n")
+		_, _ = fmt.Fprintf(w, "drive_files_visible: %d\n", len(files.Files))
+		_, _ = fmt.Fprintf(w, "refresh_token_present: %t\n", refreshTokenPresent)
+		_, _ = fmt.Fprintf(w, "refresh_renewal_attempted: %t\n", refreshRenewalAttempted)
+		_, _ = fmt.Fprintf(w, "refresh_renewal_succeeded: %t\n", refreshRenewalSucceeded)
+		_, _ = fmt.Fprintf(w, "refresh_drive_list_succeeded: %t\n", refreshDriveListSucceeded)
+		_, _ = fmt.Fprintf(w, "id_token_present: %t\n", idTokenPresent)
+		_, _ = fmt.Fprintf(w, "id_token_valid: %t\n", idTokenValid)
+		_, _ = fmt.Fprintf(w, "subject_claim_present: %t\n", subjectPresent)
+		_, _ = fmt.Fprintf(w, "email_claim_present: %t\n", emailPresent)
 	})
 
 	log.Printf("Google OAuth spike running at %s", baseURL)
