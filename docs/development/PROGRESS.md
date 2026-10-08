@@ -16,9 +16,26 @@ Validation result: `make fmt lint test` passed successfully in the current works
 - [x] Add Google OAuth config structure for the provider seam
 - [x] Add a local dev provider and registry boundary
 - [x] Create the PKCE Google OAuth spike in `spike/s01_google_oauth`
-- [ ] Complete the live Google Cloud Console consent and OAuth sign-in flow with a test account
-- [ ] Verify refresh-token behavior and first-drive read against the real account
-- [ ] Record final findings in `docs/findings.md`
+- [x] Complete live Google consent/sign-in and make a Drive API list call with a test account (human-reported 2026-10-01)
+- [x] S1: refresh token present, simulated-expiry renewal succeeded, renewed token listed Drive, and ID token validated with `sub` and `email` (human-reported 2026-10-01)
+- [x] Compare a subsequent sign-in without forced consent: no refresh token returned; ID-token validation succeeded (prior human report recorded in AGENTS.md)
+- [x] Add the S02 folder/appProperties experiment harness, including path recreation mode, and run guide
+- [x] S2: create app-tagged root/entries/year folders and verify metadata lookup survives root rename (human-reported 2026-10-01)
+- [x] S2: verify manual-item visibility, trash detection, move behavior, and safe path recreation (human-reported 2026-10-08)
+- [x] Add S04 conflict-field experiment and manual Drive rename run guide in `spike/s04_drive_conflicts`; mocked checks and `make fmt lint test` passed (2026-10-08)
+- [x] S4: live content-edit/stale-save and API/manual rename comparisons passed for the test account; selected `md5Checksum` in ADR 005 (human-reported 2026-10-08)
+- [x] S7: prepare `spike/s07_cookie_lifecycle` with mocked lifecycle checks and a live run guide; `make fmt lint test` passed (2026-10-08)
+- [x] S7: live sign-in, cookie-backed refresh/cache reuse, simulated expiry, cold-cache restart, tamper/key-rotation rejection, sign-out, refresh-token preservation, and revoked-access handling passed for the test account; cookie header measured 584 bytes (human-reported 2026-10-08)
+- [x] S7: Chrome cookie inspection confirmed HttpOnly, SameSite=Lax, Secure off, path `/`, and 30-day expiry; user adopted a fixed 30-day session lifetime in ADR 002 (2026-10-08)
+- [x] S7: record tested browser as Google Chrome 154.0.8037.98 (Official Build, arm64; human-reported 2026-10-08)
+- [x] S7: Chrome 154.0.8037.98 accepted Secure cookies on HTTP localhost; sign-in, refresh/Drive read, and browser Secure attribute inspection passed (human-reported 2026-10-08)
+- [x] S7: Safari 26.4 completed sign-in and cookie-backed refresh/Drive read with Secure disabled; recorded `COOKIE_SECURE=false` as the HTTP localhost workaround (human-reported 2026-10-08)
+- [x] S7: accept the tested cookie/token lifecycle and fixed 30-day lifetime, with the documented Safari localhost workaround; production HTTPS behavior remains unverified
+- [x] Record user go decision to continue implementation (2026-10-08); remaining acceptance gates stay explicit
+- [x] Prepare S03 concurrent-folder harness, deterministic race/oldest-selection tests, and live run guide in `spike/s03_folder_concurrency`
+- [x] S3: five naive workers created five folders per role and returned different paths; locked workers created one folder per role and shared one path (human-reported 2026-10-08)
+- [x] Record conservative S5/S6 fallback plans, provisional S11 official-doc research/release dependencies, and S12 supporting-library choices in `docs/development/phase-1-review.md`
+- [x] Record Phase 1 findings and user go decision, with S5/S6 fallback plans and provisional S11/S12 decisions in `docs/development/phase-1-review.md`; release checks remain explicit
 
 ## Phase 2: Core and local provider
 
@@ -59,9 +76,11 @@ Validation result: `make fmt lint test` passed successfully in the current works
 
 ## Blockers
 
-- Human module path confirmation is pending; the repo keeps the existing module declaration from `go.mod`.
-- Live Google sign-in still depends on Google Cloud Console setup and a real consent flow.
+- Preserve the user-selected module declaration from `go.mod`; module renaming is not authorized.
+- Live Google consent and the S1 first-consent/refresh/claim checks are complete for the test account.
 - Full Google Drive provider behavior remains human-assisted until the real OAuth and Drive validation steps are run.
+- S2 folder behavior checks passed for the test account (human-reported 2026-10-08); production Google storage remains unimplemented.
+- Phase 1 evidence/fallbacks and the user go decision are recorded, including S3 single-process concurrency. Phase 4 remains gated on Phase 2/3 acceptance and validated Google implementation; cross-instance folder convergence, revision/latency measurements, and production OAuth checks remain explicit follow-ups.
 - Session expiration, CSRF, browser-timezone handling, editor auto-save/page-hide, and Google OAuth state/PKCE persistence remain incomplete.
 
 ## Notes
