@@ -22,6 +22,7 @@ Validation result: `make fmt lint test` passed successfully in the current works
 - [x] Add the S02 folder/appProperties experiment harness, including path recreation mode, and run guide
 - [x] S2: create app-tagged root/entries/year folders and verify metadata lookup survives root rename (human-reported 2026-10-01)
 - [x] S2: verify manual-item visibility, trash detection, move behavior, and safe path recreation (human-reported 2026-10-08)
+- [x] S02 review fixes: retain visibility mismatch flags in callback failure logs and escape backslashes/apostrophes in Drive queries; mocked regression checks and `make fmt lint test` passed (2026-10-08)
 - [x] Add S04 conflict-field experiment and manual Drive rename run guide in `spike/s04_drive_conflicts`; mocked checks and `make fmt lint test` passed (2026-10-08)
 - [x] S4: live content-edit/stale-save and API/manual rename comparisons passed for the test account; selected `md5Checksum` in ADR 005 (human-reported 2026-10-08)
 - [x] S7: prepare `spike/s07_cookie_lifecycle` with mocked lifecycle checks and a live run guide; `make fmt lint test` passed (2026-10-08)

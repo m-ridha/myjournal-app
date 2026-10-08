@@ -35,6 +35,12 @@
 - Human-reported S2 move result (2026-10-08): `moved_year_folder_found_by_properties: true`. The moved year folder remained discoverable by its app properties; this does not establish that it still belongs to the intended hierarchy or that it was moved back afterward.
 - S2 folder lookup, rename, visibility, trash detection, guarded recreation, and moved-year checks have passed for the test account. These results validate the spike operations; the production Google Store must still implement and validate read-without-creation and recreate-on-write behavior.
 
+## S02 review fixes (2026-10-08)
+
+- Visibility mismatches now include both diagnostic booleans in the returned error, preserving them in the callback's existing local failure log even when buffered browser output is discarded. The additional diagnostics contain no filenames, resource IDs, or credentials.
+- Query values escape backslashes before apostrophes, following [Google's Drive query guidance](https://developers.google.com/workspace/drive/api/guides/search-files). Regression checks cover mixed escapes and mocked visibility success/root/file/both mismatch results.
+- `make fmt lint test` passed: lint reported 0 issues, editor interaction regressions passed, and `go test ./...` passed including the new S02 checks. No live Google experiment was rerun.
+
 ## S04 harness preparation (2026-10-08)
 
 - Added the separate `spike/s04_drive_conflicts` harness, preserving S02 as the completed folder experiment. S04 creates one tagged synthetic text file, compares `version`, `modifiedTime`, `md5Checksum`, and `headRevisionId` after a content edit and API rename, and records one metadata-read timing sample. A local metadata-only baseline supports a subsequent read-only check after a manual Drive rename.

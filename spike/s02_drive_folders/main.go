@@ -319,7 +319,7 @@ func (e *experiment) checkManualVisibility(ctx context.Context, service *drive.S
 	manualFileHidden := len(manualFiles) == 0
 	_, _ = fmt.Fprintf(w, "visible_root_matches_app_created_root_only: %t\nmanual_file_invisible_to_app: %t\n", appRootOnly, manualFileHidden)
 	if !appRootOnly || !manualFileHidden {
-		return fmt.Errorf("manual visibility differed from expected drive.file behavior")
+		return fmt.Errorf("manual visibility differed from expected drive.file behavior: visible_root_matches_app_created_root_only: %t; manual_file_invisible_to_app: %t", appRootOnly, manualFileHidden)
 	}
 	return nil
 }
@@ -390,6 +390,7 @@ func (e *experiment) oauthConfig() *oauth2.Config {
 }
 
 func escapeQueryValue(value string) string {
+	value = strings.ReplaceAll(value, "\\", "\\\\")
 	return strings.ReplaceAll(value, "'", "\\'")
 }
 
