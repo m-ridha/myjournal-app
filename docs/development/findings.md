@@ -248,3 +248,39 @@ Human-reported check 7 with draft writes blocked and cookies enabled: editing di
 
 
 Human-reported check 10 retest (2026-10-09): the initial-load lock works normally. After loading finishes, typing remains enabled during a slow save; after acknowledgement, newer text correctly shows Unsaved changes. This accepts the reported initial-load lock and in-flight save interaction. Browser/version was unspecified. The failure/retry branch is covered by automated tests but was not separately reported in this retest. The focused recovery checks are accepted for the reported scenarios; Appearance controls, full conflict actions, and same-date tab draft isolation remain separate work.
+
+
+## Conflict actions, tab drafts, and Settings navigation (2026-10-09)
+
+Implemented the guide's three conflict choices. Keep mine fetches the latest version and retries the ordinary conditional PUT; Load the other version confirms before replacing local text; Keep both appends latest saved text below local text and requires review/Save. Restored stale-version drafts expose the actions immediately. Failed resolution retains text and allows retry, and further concurrent changes can conflict again. Existing provider atomicity limitations are unchanged.
+
+The user chose reload recovery without requiring fresh-tab recovery after closure. New `mj-draft:v3` backups use sessionStorage so same-date tabs no longer overwrite or clear each other's drafts. Old account-scoped/local date-only backups require explicit recovery and retain their base versions where known. Successful saves clear only that tab's backup. Sign-out broadcasts cleanup to other open editors. ADR 011 records session lifetime and cleanup limits.
+
+Removed inert Appearance controls from Settings as requested; the shared theme toggle remains available. Signed-in pages expose Settings in the shared header. New copy uses the locale catalog. Physical-phone checks remain waived; device-toolbar layout checks for this added link are still needed.
+
+Added interaction regressions for all conflict choices, cancellation, failed resolution, a second conflict, deleted-entry restoration, typing during Keep mine save, tab isolation/reload, and old scoped-version migration. The JSC test runner now requires a suite success marker: inspection revealed that its asynchronous assertion failure could otherwise leave a successful shell status. New manual acceptance steps are in the recovery checklist. The user subsequently confirmed all eight manual checks passed, as recorded below.
+
+Verification for this change: `make fmt lint test` passed with 0 lint issues, both JavaScript suites, and all Go tests; `git diff --check` passed. Tests use distinct per-tab stores with shared local storage and check that saving one tab leaves the other backup intact. Settings rendering verifies shared navigation/theme controls and removal of Appearance. Header actions can wrap at narrow widths. The reported conflict actions, tab-backup reload behavior, sign-out cleanup, and navigation checks subsequently passed, as recorded below.
+
+Settings header link refinement (2026-10-09): replaced the visible Settings label with an inline outline gear. It shares the theme toggle’s circular styling, hover/focus treatment, and theme color variables. The SVG inherits currentColor, and the link retains a localized Settings accessible label and tooltip.
+
+Gear geometry refinement (2026-10-09): replaced the uneven outline with six identical radial tooth profiles repeated at 60-degree intervals around (12,12). Inner/outer radii and center ring are concentric; existing currentColor and header styling are retained.
+
+
+SVG asset extraction (2026-10-09): the HTML scan found three inline icons, all in base.html (sun, moon, gear). Moved their unchanged geometry to assets/static/svgs. Templates now use decorative spans, and CSS masks render the standalone SVGs using currentColor, preserving light/dark colors and theme icon visibility. Existing embedding includes the directory automatically. Button/link accessible labels remain on their controls.
+
+
+## Conflict/tab-backup browser acceptance (2026-10-09)
+
+The user reported all eight checks in the Conflict actions and independent tab backups checklist passed:
+
+- Same-date tabs retain independent drafts on reload; saving one does not clear the other backup.
+- Saving A then B produces a conflict in B; reloading B retains its text and the conflict controls.
+- Keep mine in B succeeds; reloading clean A shows B's saved text.
+- Load the other version cancel preserves text; confirm loads the saved version with GET only, without PUT.
+- Keep both combines the texts and shows Unsaved changes for review.
+- The delayed/failed-resolution scenarios in check 6 passed as reported, without further per-scenario details.
+- Sign-out cleanup and stopping draft recreation in other editors passed.
+- Settings navigation, shared theme control, and the checklist's layout checks passed.
+
+These are human-reported results; browser/version was not specified in this report. They accept the focused conflict/tab-isolation/Settings checks, not the remaining security/API/provider acceptance backlog. Actual physical-phone testing remains waived by user decision.

@@ -243,7 +243,8 @@ h3 {
   margin-bottom: 1rem;
 }
 
-.mj-theme-toggle {
+.mj-theme-toggle,
+.mj-header-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -259,7 +260,9 @@ h3 {
 }
 
 .mj-theme-toggle:hover,
-.mj-theme-toggle:focus-visible {
+.mj-theme-toggle:focus-visible,
+.mj-header-icon:hover,
+.mj-header-icon:focus-visible {
   transform: translateY(-1px);
   border-color: var(--mj-text);
 }
@@ -273,10 +276,25 @@ h3 {
 }
 
 .icon {
+  background-color: currentColor;
+  -webkit-mask: var(--mj-icon) center / contain no-repeat;
+  mask: var(--mj-icon) center / contain no-repeat;
   width: 1.1rem;
   height: 1.1rem;
   display: inline-block;
   transition: opacity 120ms ease, transform 120ms ease;
+}
+
+.icon-sun {
+  --mj-icon: url("/static/svgs/sun.svg");
+}
+
+.icon-moon {
+  --mj-icon: url("/static/svgs/moon.svg");
+}
+
+.icon-gear {
+  --mj-icon: url("/static/svgs/gear.svg");
 }
 
 html[data-theme="light"] .icon-sun {
@@ -669,7 +687,7 @@ html[data-theme="dark"] .icon-moon {
   }
 
   .mj-header-inner {
-    grid-template-columns: 1fr auto;
+    grid-template-columns: auto minmax(0, 1fr);
     grid-template-areas:
       "brand actions"
       "nav nav";
@@ -685,6 +703,8 @@ html[data-theme="dark"] .icon-moon {
 
   .mj-header-actions {
     grid-area: actions;
+    flex-wrap: wrap;
+    min-width: 0;
     margin-left: auto;
     padding-right: 0.25rem;
   }

@@ -73,10 +73,16 @@
       setStatus(t('editor.loadFailed'));
       return;
     }
-    const draftKey = `mj-draft:v2:${scope}:${date}`;
+    const draftKey = `mj-draft:v3:${scope}:${date}`;
     const legacyKey = `mj-draft:${date}`;
     const retryBtn = editor.querySelector('[data-entry-load-retry]');
     const legacyBtn = editor.querySelector('[data-entry-legacy-draft]');
+    const conflictPanel = editor.querySelector('[data-entry-conflict]');
+    const conflictMine = editor.querySelector('[data-conflict-mine]');
+    const conflictOther = editor.querySelector('[data-conflict-other]');
+    const conflictBoth = editor.querySelector('[data-conflict-both]');
+    let conflicted = false;
+    let resolving = false;
     let baseVersion = '';
     let lastSavedText = '';
     let loaded = false;
@@ -94,7 +100,7 @@
 
     function storage(action) {
       try {
-        const result = action(localStorage);
+        const result = action(sessionStorage);
         backupAvailable = true;
         return result;
       } catch (error) {
@@ -108,10 +114,12 @@
     }
 
     function refreshControls() {
-      textarea.readOnly = !loaded || signedOut;
-      textarea.setAttribute('aria-busy', loading ? 'true' : 'false');
-      saveBtn.disabled = !loaded || saving || signedOut;
+      textarea.readOnly = !loaded || signedOut || resolving;
+      textarea.setAttribute('aria-busy', loading || resolving ? 'true' : 'false');
+      saveBtn.disabled = !loaded || saving || signedOut || resolving;
       saveBtn.textContent = t(saving ? 'editor.saving' : 'editor.save');
+      if (conflictPanel) conflictPanel.hidden = !conflicted || signedOut;
+      [conflictMine, conflictOther, conflictBoth].forEach((button) => { if (button) button.disabled = saving || resolving || !loaded || signedOut; });
       if (legacyBtn) legacyBtn.disabled = !loaded || saving || isDirty();
     }
 
@@ -151,7 +159,25 @@
       baseVersion = draft.baseVersion;
       unverifiedDraft = true;
     }
-    legacyDraft = storage((store) => store.getItem(legacyKey));
+    // Old local backups remain available for explicit recovery. New drafts
+    // live in sessionStorage, isolated by browser tab and preserved on reload.
+    let legacySource = legacyKey;
+    let legacyVersion = '';
+    let legacyVersionKnown = false;
+    try {
+      const previousKey = `mj-draft:v2:${scope}:${date}`;
+      const previous = localStorage.getItem(previousKey);
+      if (previous !== null) {
+        const parsed = JSON.parse(previous);
+        if (typeof parsed.text === 'string' && typeof parsed.baseVersion === 'string') {
+          legacyDraft = parsed.text;
+          legacySource = previousKey;
+          legacyVersion = parsed.baseVersion;
+          legacyVersionKnown = parsed.versionKnown === true;
+        }
+      }
+      if (legacyDraft === null) legacyDraft = localStorage.getItem(legacyKey);
+    } catch (error) { /* Leave old backups intact if unavailable or malformed. */ }
     if (legacyBtn) legacyBtn.hidden = legacyDraft === null || draft !== null;
     refreshControls();
 
@@ -173,10 +199,11 @@
         if (!edited && !draft) textarea.value = entry.text;
         if (!draft || draft.versionKnown !== true || textarea.value === entry.text) baseVersion = entry.version;
         loaded = true;
+        conflicted = !!draft && draft.versionKnown === true && baseVersion !== entry.version && textarea.value !== entry.text;
         unverifiedDraft = false;
         persistDraft();
         setSaveState('');
-        notice(t(isDirty() ? (draft && !edited ? 'editor.draftRestored' : 'editor.unsaved') : (entry.exists ? 'editor.saved' : 'editor.blank')));
+        notice(t(conflicted ? 'editor.conflict' : isDirty() ? (draft && !edited ? 'editor.draftRestored' : 'editor.unsaved') : (entry.exists ? 'editor.saved' : 'editor.blank')));
       } catch (error) {
         if (retryBtn) retryBtn.hidden = false;
         notice(t(isDirty() ? 'editor.loadFailedDraft' : 'editor.loadFailed'));
@@ -187,7 +214,7 @@
     }
 
     async function saveEntry() {
-      if (!loaded || saving || signedOut) return;
+      if (!loaded || saving || signedOut || resolving) return;
       const sentText = textarea.value;
       const payload = { text: sentText, baseVersion };
       persistDraft();
@@ -202,6 +229,7 @@
         });
         if (!response.ok) {
           unverifiedDraft = true;
+          conflicted = response.status === 409;
           const key = response.status === 409 ? 'editor.conflict' : response.status === 401 ? 'editor.sessionExpired' : 'editor.saveFailed';
           const kept = persistDraft();
           setSaveState('');
@@ -212,6 +240,7 @@
         if (typeof entry.text !== 'string' || typeof entry.version !== 'string') throw new Error('invalid save response');
         if (signedOut) return;
         saving = false;
+        conflicted = false;
         unverifiedDraft = false;
         baseVersion = entry.version;
         lastSavedText = entry.text;
@@ -232,6 +261,47 @@
       }
     }
 
+    async function resolveConflict(choice) {
+      if (!conflicted || saving || resolving || signedOut) return;
+      if (choice === 'other' && !window.confirm(t('editor.loadOtherConfirm'))) return;
+      resolving = true;
+      refreshControls();
+      notice(t('editor.loading'));
+      let shouldSave = false;
+      try {
+        const response = await fetch(`/api/v1/entries/${date}`);
+        if (!response.ok) throw new Error('load failed');
+        const entry = await response.json();
+        if (typeof entry.text !== 'string' || typeof entry.version !== 'string') throw new Error('invalid entry');
+        if (signedOut) return;
+        const mine = textarea.value;
+        lastSavedText = entry.text;
+        baseVersion = entry.version;
+        // Rebase explicitly on the just-fetched version. A subsequent writer
+        // still causes a normal conflict; no unconditional overwrite is used.
+        if (choice === 'other') textarea.value = entry.text;
+        if (choice === 'both') textarea.value = mine + (mine && entry.text ? '\n\n' : '') + entry.text;
+        draft = null;
+        edited = choice !== 'other';
+        unverifiedDraft = false;
+        conflicted = false;
+        persistDraft();
+        setSaveState('');
+        notice(t(isDirty() ? 'editor.unsaved' : entry.exists ? 'editor.saved' : 'editor.blank'));
+        shouldSave = choice === 'mine';
+      } catch (error) {
+        const kept = persistDraft();
+        notice(t('editor.resolveFailed') + (kept ? t('editor.draftKept') : ''));
+      } finally {
+        resolving = false;
+        refreshControls();
+      }
+      if (shouldSave && !signedOut) await saveEntry();
+    }
+    conflictMine?.addEventListener('click', () => resolveConflict('mine'));
+    conflictOther?.addEventListener('click', () => resolveConflict('other'));
+    conflictBoth?.addEventListener('click', () => resolveConflict('both'));
+
     textarea.addEventListener('input', () => {
       if (signedOut) {
         setStatus(t('editor.sessionExpired'));
@@ -250,7 +320,10 @@
       if (!window.confirm(t('editor.legacyDraftConfirm'))) return;
       textarea.value = legacyDraft;
       edited = true;
-      if (persistDraft()) storage((store) => store.removeItem(legacyKey));
+      if (legacyVersionKnown) { baseVersion = legacyVersion; draft = { versionKnown: true }; }
+      if (persistDraft()) {
+        try { localStorage.removeItem(legacySource); } catch (error) { /* Safe to retain the old copy. */ }
+      }
       legacyBtn.hidden = true;
       setSaveState('');
       notice(t('editor.draftRestored'));
@@ -269,6 +342,12 @@
     window.addEventListener('storage', (event) => {
       if (event.key === `mj-signout:${scope}`) {
         signedOut = true;
+        try {
+          for (let i = sessionStorage.length - 1; i >= 0; i--) {
+            const key = sessionStorage.key(i);
+            if (key?.startsWith(`mj-draft:v3:${scope}:`)) sessionStorage.removeItem(key);
+          }
+        } catch (error) { /* Stop future writes even if cleanup is unavailable. */ }
         setSaveState('');
         setStatus(t('editor.sessionExpired'));
       }
@@ -286,6 +365,19 @@
     loadEntry();
   }
 
+  function initTabDraftCleanup() {
+    window.addEventListener('storage', (event) => {
+      if (!event.key?.startsWith('mj-signout:')) return;
+      const scope = event.key.slice('mj-signout:'.length);
+      try {
+        for (let i = sessionStorage.length - 1; i >= 0; i--) {
+          const key = sessionStorage.key(i);
+          if (key?.startsWith(`mj-draft:v3:${scope}:`)) sessionStorage.removeItem(key);
+        }
+      } catch (error) { /* Cookie sign-out still prevents writes to the server. */ }
+    });
+  }
+
   function initSignOut() {
     const button = document.querySelector('[data-sign-out]');
     const status = document.querySelector('[data-sign-out-status]');
@@ -296,6 +388,10 @@
       button.disabled = true;
       try {
         // Broadcast first so other editor tabs stop recreating cleared drafts.
+        for (let i = sessionStorage.length - 1; i >= 0; i--) {
+          const key = sessionStorage.key(i);
+          if (key?.startsWith(`mj-draft:v3:${scope}:`)) sessionStorage.removeItem(key);
+        }
         localStorage.setItem(`mj-signout:${scope}`, `${Date.now()}:${Math.random()}`);
         const keys = [];
         for (let i = 0; i < localStorage.length; i += 1) keys.push(localStorage.key(i));
@@ -496,6 +592,7 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     if (window.mjDateRedirecting) return;
+    initTabDraftCleanup();
     initEditor();
     initSignOut();
     initEntriesList();

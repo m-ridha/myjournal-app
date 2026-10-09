@@ -82,7 +82,12 @@ Validation result: `make fmt lint test` passed successfully in the current works
 - [x] User confirmed check 7: accurate unavailable-backup warnings, successful online save, and preserved visible text after offline failure (2026-10-09)
 - [x] User confirmed check 9: explicit older-draft review/cancel/restore and account-scoped recovery after reload (2026-10-09)
 - [x] User confirmed check 10 initial-load lock and continued typing during slow saves; newer text shows Unsaved changes after acknowledgement (2026-10-09)
-- [ ] Wire Settings Appearance controls to actual theme preference; remaining Phase 2/3 security/API/UI gates remain open
+- [x] Extract all three inline template SVGs into `assets/static/svgs`; CSS masks retain theme colors and accessible labels (2026-10-09)
+- [x] Remove Settings Appearance by user decision; retain shared header theme toggle and add signed-in Settings gear link using shared theme colors and localized accessible label (2026-10-09)
+- [x] Add conditional Keep mine, confirmed Load the other version, and review-before-save Keep both; stale recovered drafts offer conflict actions
+- [x] Isolate new drafts in account/date-scoped sessionStorage by user decision; preserve reload recovery and explicit migration of old local backups (ADR 011)
+- [x] User confirmed all eight conflict/tab-isolation/Settings browser checks passed (2026-10-09): independent reload backups, retained conflict actions, all resolution choices, delayed/failed resolution, sign-out cleanup, and header navigation/theme
+- [ ] Remaining Phase 2/3 security/API/UI acceptance gates remain open
 
 ## Restructuring addendum
 
