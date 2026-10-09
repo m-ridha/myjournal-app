@@ -27,17 +27,22 @@ func NewRouter(cfg config.Config, registry *provider.Registry, clk journal.Clock
 
 	r := chi.NewRouter()
 	r.Use(middleware.RequestID)
-	r.Use(middleware.Logger)
+	r.Use(webMiddleware.RequestLog)
 	r.Use(middleware.Recoverer)
 	r.Use(middleware.Timeout(30 * time.Second))
 	r.Use(webMiddleware.TimeZone)
+	protection := http.NewCrossOriginProtection()
+	protection.SetDenyHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, localeCatalog.Text("errors.crossOrigin"), http.StatusForbidden)
+	}))
+	r.Use(protection.Handler)
 
 	if staticFS, err := fs.Sub(assets.FS, "static"); err == nil {
 		r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.FS(staticFS))))
 	}
 
 	// API routes
-	apiHandler := handler.New(cfg, registry, serviceFactory, localeCatalog)
+	apiHandler := handler.New(cfg, registry, serviceFactory, localeCatalog, clk)
 	api.HandlerWithOptions(apiHandler, api.ChiServerOptions{
 		BaseRouter: r,
 		ErrorHandlerFunc: func(w http.ResponseWriter, _ *http.Request, _ error) {
@@ -47,14 +52,14 @@ func NewRouter(cfg config.Config, registry *provider.Registry, clk journal.Clock
 
 	// Web routes
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		if current, err := currentSession(r, cfg.SessionKey, registry); err == nil {
+		if current, err := currentSession(r, cfg.SessionKey, registry, clk.Now()); err == nil {
 			renderEntryPage(w, clk.Now().In(journal.TimeZone(r.Context())), clk, current, journal.TimeZone(r.Context()))
 			return
 		}
 		renderPage(w, pageData{TitleKey: "landing.title", DescriptionKey: "landing.description", SignedIn: false, Page: "landing"})
 	})
 	r.Get("/entries/today", func(w http.ResponseWriter, r *http.Request) {
-		current, err := currentSession(r, cfg.SessionKey, registry)
+		current, err := currentSession(r, cfg.SessionKey, registry, clk.Now())
 		if err != nil {
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
@@ -62,7 +67,7 @@ func NewRouter(cfg config.Config, registry *provider.Registry, clk journal.Clock
 		renderEntryPage(w, clk.Now().In(journal.TimeZone(r.Context())), clk, current, journal.TimeZone(r.Context()))
 	})
 	r.Get("/entries/{date}", func(w http.ResponseWriter, r *http.Request) {
-		current, err := currentSession(r, cfg.SessionKey, registry)
+		current, err := currentSession(r, cfg.SessionKey, registry, clk.Now())
 		if err != nil {
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
@@ -80,19 +85,19 @@ func NewRouter(cfg config.Config, registry *provider.Registry, clk journal.Clock
 		renderEntryPage(w, date, clk, current, journal.TimeZone(r.Context()))
 	})
 	r.Get("/entries", func(w http.ResponseWriter, r *http.Request) {
-		if !requireSession(w, r, cfg.SessionKey, registry) {
+		if !requireSession(w, r, cfg.SessionKey, registry, clk.Now()) {
 			return
 		}
 		renderPage(w, pageData{TitleKey: "entries.title", SignedIn: true, Page: "entries"})
 	})
 	r.Get("/calendar", func(w http.ResponseWriter, r *http.Request) {
-		if !requireSession(w, r, cfg.SessionKey, registry) {
+		if !requireSession(w, r, cfg.SessionKey, registry, clk.Now()) {
 			return
 		}
 		renderPage(w, pageData{TitleKey: "calendar.title", SignedIn: true, Page: "calendar", Today: civil.DateOf(clk.Now().In(journal.TimeZone(r.Context()))).String()})
 	})
 	r.Get("/settings", func(w http.ResponseWriter, r *http.Request) {
-		current, err := currentSession(r, cfg.SessionKey, registry)
+		current, err := currentSession(r, cfg.SessionKey, registry, clk.Now())
 		if err != nil {
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
@@ -131,13 +136,13 @@ func renderEntryPage(w http.ResponseWriter, date time.Time, clk journal.Clock, c
 	})
 }
 
-func currentSession(r *http.Request, secret string, registry *provider.Registry) (session.Session, error) {
+func currentSession(r *http.Request, secret string, registry *provider.Registry, now time.Time) (session.Session, error) {
 	cookie, err := r.Cookie(session.CookieName)
 	if err != nil {
 		return session.Session{}, err
 	}
 	current, err := session.Decode(secret, cookie.Value)
-	if err != nil || current.ProviderID == "" || current.AccountID == "" || current.IssuedAt.IsZero() {
+	if err != nil || !current.ValidAt(now) {
 		return session.Session{}, errors.New("invalid session")
 	}
 	if _, ok := registry.Get(current.ProviderID); !ok {
@@ -146,8 +151,8 @@ func currentSession(r *http.Request, secret string, registry *provider.Registry)
 	return current, nil
 }
 
-func requireSession(w http.ResponseWriter, r *http.Request, secret string, registry *provider.Registry) bool {
-	if _, err := currentSession(r, secret, registry); err == nil {
+func requireSession(w http.ResponseWriter, r *http.Request, secret string, registry *provider.Registry, now time.Time) bool {
+	if _, err := currentSession(r, secret, registry, now); err == nil {
 		return true
 	}
 	http.Redirect(w, r, "/", http.StatusSeeOther)

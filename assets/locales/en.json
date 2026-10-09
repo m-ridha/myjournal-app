@@ -118,5 +118,8 @@
   "errors.providerUnavailable": "The requested sign-in provider is unavailable.",
   "errors.signInUnavailable": "Sign-in could not be started. Please try again.",
   "errors.signInFailed": "Sign-in could not be completed. Please try again.",
-  "errors.session": "Your session could not be created. Please try again."
+  "errors.session": "Your session could not be created. Please try again.",
+  "errors.crossOrigin": "This request was blocked. Open the app directly and try again.",
+  "errors.requestTooLarge": "This save request is too large (maximum 1 MiB). Your text has not been saved.",
+  "errors.invalidText": "Entry text must be valid UTF-8."
 }

@@ -64,11 +64,7 @@ func (s *inMemStore) Previews(_ context.Context, dates []Date, maxBytes int) (ma
 		if !ok {
 			continue
 		}
-		text := entry.Text
-		if maxBytes > 0 && len(text) > maxBytes {
-			text = text[:maxBytes]
-		}
-		out[date] = text
+		out[date] = PreviewPrefix(entry.Text, maxBytes)
 	}
 	return out, nil
 }

@@ -60,10 +60,7 @@ func (s *fakeStore) Previews(ctx context.Context, dates []civil.Date, maxBytes i
 	out := make(map[civil.Date]string, len(dates))
 	for _, d := range dates {
 		if e, ok := s.contents[d]; ok {
-			preview := e.Text
-			if len(preview) > maxBytes {
-				preview = preview[:maxBytes]
-			}
+			preview := journal.PreviewPrefix(e.Text, maxBytes)
 			out[d] = preview
 		}
 	}

@@ -63,6 +63,7 @@ paths:
           $ref: '#/components/responses/NotFound'
     put:
       summary: Save or create an entry
+      description: Requires a valid session. JSON envelope is limited to 1048576 bytes. Invalid UTF-8 and unpaired Unicode surrogate escapes are rejected without saving. Unsafe cross-origin browser requests are rejected.
       operationId: saveEntry
       requestBody:
         required: true
@@ -72,7 +73,11 @@ paths:
               $ref: '#/components/schemas/SaveEntryRequest'
       responses:
         '400':
-          $ref: '#/components/responses/FutureDate'
+          description: Invalid JSON, invalid Unicode, or a future entry date.
+          content:
+            text/plain:
+              schema:
+                type: string
         '200':
           description: Updated entry
           content:
@@ -81,6 +86,20 @@ paths:
                 $ref: '#/components/schemas/Entry'
         '409':
           $ref: '#/components/responses/Conflict'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          description: Cross-origin browser request rejected.
+          content:
+            text/plain:
+              schema:
+                type: string
+        '413':
+          description: JSON envelope exceeds 1048576 bytes.
+          content:
+            text/plain:
+              schema:
+                type: string
         '422':
           $ref: '#/components/responses/ValidationError'
     delete:

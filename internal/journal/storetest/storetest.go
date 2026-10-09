@@ -97,6 +97,37 @@ func Run(t *testing.T, newStore Factory) {
 		}
 	})
 
+	t.Run("Unicode previews trim before truncation", func(t *testing.T) {
+		store := newStore(t)
+		if _, err := store.Put(ctx, date, "\n\u2003   中文🙂tail\nignored", ""); err != nil {
+			t.Fatal(err)
+		}
+		for _, budget := range []int{-1, 0, 1, 7, 10} {
+			previews, err := store.Previews(ctx, []civil.Date{date}, budget)
+			if err != nil {
+				t.Fatal(err)
+			}
+			want := journal.PreviewPrefix("中文🙂tail", budget)
+			if previews[date] != want {
+				t.Fatalf("budget=%d got=%q want=%q", budget, previews[date], want)
+			}
+		}
+	})
+	t.Run("invalid UTF-8 preserves entry", func(t *testing.T) {
+		store := newStore(t)
+		original, err := store.Put(ctx, date, "valid", "")
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := store.Put(ctx, date, string([]byte{0xff}), original.Version); !errors.Is(err, journal.ErrInvalidText) {
+			t.Fatalf("error=%v", err)
+		}
+		current, err := store.Get(ctx, date)
+		if err != nil || current.Text != "valid" || current.Version != original.Version {
+			t.Fatalf("current=%+v err=%v", current, err)
+		}
+	})
+
 	t.Run("trash removes the entry", func(t *testing.T) {
 		store := newStore(t)
 		if _, err := store.Put(ctx, date, "trash me", ""); err != nil {

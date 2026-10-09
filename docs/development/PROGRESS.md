@@ -89,6 +89,11 @@ Validation result: `make fmt lint test` passed successfully in the current works
 - [x] Add conditional Keep mine, confirmed Load the other version, and review-before-save Keep both; stale recovered drafts offer conflict actions
 - [x] Isolate new drafts in account/date-scoped sessionStorage by user decision; preserve reload recovery and explicit migration of old local backups (ADR 011)
 - [x] User confirmed all eight conflict/tab-isolation/Settings browser checks passed (2026-10-09): independent reload backups, retained conflict actions, all resolution choices, delayed/failed resolution, sign-out cleanup, and header navigation/theme
+- [x] Make local saves atomic, serialize version checks/mutations across store instances, and preserve all repeated-trash copies; automated failure/concurrency/cancellation checks and local race detector passed (2026-10-09)
+- [x] Validate UTF-8 in domain/local storage and raw JSON (including unpaired surrogate escapes); preserve invalid external files and propagate preview failures (2026-10-09)
+- [x] Make previews UTF-8-safe within byte caps, trim leading whitespace before truncation, and retain ellipsis through list lookahead; extend shared contracts to cached local storage (2026-10-09)
+- [x] Enforce fixed 30-day server-side session age and matching persistent-cookie expiry; reject future/missing issuance and old-key cookies (2026-10-09)
+- [x] Add standard-library cross-origin protection for unsafe requests, localized rejection, 1 MiB save-envelope bounds, and query-free request logging (2026-10-09)
 - [ ] Remaining Phase 2/3 security/API/UI acceptance gates remain open
 
 ## Restructuring addendum
@@ -113,7 +118,7 @@ Validation result: `make fmt lint test` passed successfully in the current works
 - Full Google Drive provider behavior remains human-assisted until the real OAuth and Drive validation steps are run.
 - S2 folder behavior checks passed for the test account (human-reported 2026-10-08); production Google storage remains unimplemented.
 - Phase 1 evidence/fallbacks and the user go decision are recorded, including S3 single-process concurrency. Phase 4 remains gated on Phase 2/3 acceptance and validated Google implementation; cross-instance folder convergence, revision/latency measurements, and production OAuth checks remain explicit follow-ups.
-- Session expiration, CSRF, editor auto-save/page-hide, and Google OAuth state/PKCE persistence remain incomplete. Reported browser time-zone checks passed; physical-phone testing is waived for this stage.
+- Session age, unsafe-request cross-origin protection, save-envelope bounds, and query-free request logging are implemented. HTTP timeout/draining and CSP work, editor auto-save/page-hide, and Google OAuth state/PKCE persistence remain incomplete. Reported browser time-zone checks passed; physical-phone testing is waived for this stage.
 
 ## Notes
 
