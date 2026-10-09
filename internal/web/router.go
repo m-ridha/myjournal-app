@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io/fs"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -34,7 +35,7 @@ func NewRouter(cfg config.Config, registry *provider.Registry, clk journal.Clock
 	r.Use(webMiddleware.TimeZone)
 	protection := http.NewCrossOriginProtection()
 	protection.SetDenyHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		http.Error(w, localeCatalog.Text("errors.crossOrigin"), http.StatusForbidden)
+		api.WriteError(w, http.StatusForbidden, localeCatalog.Text("errors.crossOrigin"))
 	}))
 	r.Use(protection.Handler)
 
@@ -47,7 +48,7 @@ func NewRouter(cfg config.Config, registry *provider.Registry, clk journal.Clock
 	api.HandlerWithOptions(apiHandler, api.ChiServerOptions{
 		BaseRouter: r,
 		ErrorHandlerFunc: func(w http.ResponseWriter, _ *http.Request, _ error) {
-			http.Error(w, localeCatalog.Text("errors.invalidRequest"), http.StatusBadRequest)
+			api.WriteError(w, http.StatusBadRequest, localeCatalog.Text("errors.invalidRequest"))
 		},
 	})
 
@@ -111,7 +112,18 @@ func NewRouter(cfg config.Config, registry *provider.Registry, clk journal.Clock
 	r.Get("/help", func(w http.ResponseWriter, r *http.Request) {
 		renderPage(w, pageData{TitleKey: "help.title", DescriptionKey: "help.description", Page: "help"})
 	})
+	r.MethodNotAllowed(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/api/v1/") {
+			api.WriteError(w, http.StatusMethodNotAllowed, localeCatalog.Text("errors.invalidRequest"))
+			return
+		}
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+	})
 	r.NotFound(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/api/v1/") {
+			api.WriteError(w, http.StatusNotFound, localeCatalog.Text("errors.invalidRequest"))
+			return
+		}
 		renderNotFoundPage(w)
 	})
 

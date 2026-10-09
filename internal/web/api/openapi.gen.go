@@ -116,10 +116,11 @@ type ListItem struct {
 	Preview string             `json:"preview"`
 }
 
-// SaveEntryRequest defines model for SaveEntryRequest.
+// SaveEntryRequest Both fields must be explicit strings. Empty text is valid; omitted or null fields are rejected.
 type SaveEntryRequest struct {
-	BaseVersion *string `json:"baseVersion"`
-	Text        string  `json:"text"`
+	// BaseVersion Empty string creates a missing entry; otherwise must match the current opaque version.
+	BaseVersion string `json:"baseVersion"`
+	Text        string `json:"text"`
 }
 
 // SettingsResponse defines model for SettingsResponse.
@@ -138,7 +139,7 @@ type AuthStateQueryParam = string
 // DatePathParam defines model for DatePathParam.
 type DatePathParam = openapi_types.Date
 
-// MonthQueryParam defines model for MonthQueryParam.
+// MonthQueryParam Required calendar month in YYYY-MM format, year 0001 through 9999.
 type MonthQueryParam = string
 
 // PaginationPageQueryParam defines model for PaginationPageQueryParam.
@@ -150,8 +151,20 @@ type PaginationSizeQueryParam = int
 // ProviderPathParam defines model for ProviderPathParam.
 type ProviderPathParam string
 
+// BadGateway defines model for BadGateway.
+type BadGateway = Error
+
+// BadRequest defines model for BadRequest.
+type BadRequest = Error
+
 // Conflict defines model for Conflict.
 type Conflict = Error
+
+// Forbidden defines model for Forbidden.
+type Forbidden = Error
+
+// InternalError defines model for InternalError.
+type InternalError = Error
 
 // NotFound defines model for NotFound.
 type NotFound = Error
@@ -159,8 +172,8 @@ type NotFound = Error
 // Unauthorized defines model for Unauthorized.
 type Unauthorized = Error
 
-// ValidationError defines model for ValidationError.
-type ValidationError = Error
+// Unavailable defines model for Unavailable.
+type Unavailable = Error
 
 // CompleteProviderLoginParams defines parameters for CompleteProviderLogin.
 type CompleteProviderLoginParams struct {

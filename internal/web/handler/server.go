@@ -57,11 +57,24 @@ func (s *Server) service(r *http.Request) (*journal.Service, error) {
 }
 
 func (s *Server) writeServiceError(w http.ResponseWriter, err error) {
-	if errors.Is(err, ErrUnauthenticated) {
-		http.Error(w, s.message("errors.unauthorized"), http.StatusUnauthorized)
-		return
+	status, key := http.StatusInternalServerError, "errors.internal"
+	switch {
+	case errors.Is(err, ErrUnauthenticated), errors.Is(err, journal.ErrAuthRequired):
+		status, key = http.StatusUnauthorized, "errors.unauthorized"
+	case errors.Is(err, journal.ErrUnavailable):
+		status, key = http.StatusServiceUnavailable, "errors.entryUnavailable"
+	case errors.Is(err, journal.ErrNotFound):
+		status, key = http.StatusNotFound, "errors.entryUnavailable"
+	case errors.Is(err, journal.ErrConflict):
+		status, key = http.StatusConflict, "errors.conflict"
+	case errors.Is(err, journal.ErrFutureDate):
+		status, key = http.StatusBadRequest, "errors.futureDate"
+	case errors.Is(err, journal.ErrInvalidText):
+		status, key = http.StatusBadRequest, "errors.invalidText"
+	case errors.Is(err, journal.ErrInvalidPagination):
+		status, key = http.StatusBadRequest, "errors.pagination"
 	}
-	http.Error(w, s.message("errors.internal"), http.StatusInternalServerError)
+	api.WriteError(w, status, s.message(key))
 }
 
 var _ api.ServerInterface = (*Server)(nil)

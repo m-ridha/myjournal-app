@@ -28,7 +28,7 @@ func TestSaveAndGetEntryRoundTrip(t *testing.T) {
 	h := New(config.Config{SessionKey: "test-key"}, registry, localServiceFactory(registry), testCatalog(t), clock.System{})
 	date := openapi_types.Date{Time: time.Date(2026, 9, 21, 0, 0, 0, 0, time.UTC)}
 
-	body := strings.NewReader(`{"text":"hello journal"}`)
+	body := strings.NewReader(`{"text":"hello journal","baseVersion":""}`)
 	req := httptest.NewRequest(http.MethodPut, "/api/v1/entries/2026-09-21", body)
 	addLocalSession(t, req)
 	res := httptest.NewRecorder()
@@ -89,9 +89,7 @@ func TestSaveInvalidJSONUsesLocaleMessage(t *testing.T) {
 	if res.Code != http.StatusBadRequest {
 		t.Fatalf("SaveEntry() status = %d, want %d", res.Code, http.StatusBadRequest)
 	}
-	if got := strings.TrimSpace(res.Body.String()); got != testCatalog(t).Text("errors.invalidRequest") {
-		t.Fatalf("SaveEntry() body = %q, want localized invalid request message", got)
-	}
+	assertJSONError(t, res, http.StatusBadRequest, testCatalog(t).Text("errors.invalidRequest"))
 }
 
 func TestPreviewTextUsesFirstMeaningfulLine(t *testing.T) {
@@ -99,7 +97,7 @@ func TestPreviewTextUsesFirstMeaningfulLine(t *testing.T) {
 	h := New(config.Config{SessionKey: "test-key"}, registry, localServiceFactory(registry), testCatalog(t), clock.System{})
 	date := openapi_types.Date{Time: time.Date(2026, 9, 22, 0, 0, 0, 0, time.UTC)}
 
-	body := strings.NewReader(`{"text":"\n\n   My first line\nSecond line"}`)
+	body := strings.NewReader(`{"text":"\n\n   My first line\nSecond line","baseVersion":""}`)
 	req := httptest.NewRequest(http.MethodPut, "/api/v1/entries/2026-09-22", body)
 	addLocalSession(t, req)
 	res := httptest.NewRecorder()
@@ -185,8 +183,8 @@ func TestSaveRejectsMalformedUnicodeAndOversizedEnvelope(t *testing.T) {
 		body   string
 		status int
 	}{
-		{"{\"text\":\"\xff\"}", 400},
-		{`{"text":"\ud800"}`, 400}, {`{"text":"\udc00"}`, 400}, {`{"text":"\ud800\u0041"}`, 400},
+		{"{\"text\":\"\xff\",\"baseVersion\":\"\"}", 400},
+		{`{"text":"\ud800","baseVersion":""}`, 400}, {`{"text":"\udc00","baseVersion":""}`, 400}, {`{"text":"\ud800\u0041","baseVersion":""}`, 400},
 		{`{"text":"a"} {"text":"b"}`, 400},
 		{`{"text":"` + strings.Repeat("a", MaxSaveRequestBytes) + `"}`, 413},
 	} {

@@ -98,6 +98,7 @@ Validation result: `make fmt lint test` passed successfully in the current works
 - [x] Add HTTP read/write/idle deadlines and wait for graceful request draining before cleanup; regenerate Wire and cover lifecycle behavior (2026-10-09)
 - [x] Extract theme bootstrap and enforce same-origin CSP, nosniff, framing/referrer protections, and no-store for dynamic responses; Chrome/native Safari browser flows verified with documented limits (ADR 012, 2026-10-09)
 - [x] Run CSP/browser QA against localhost: Chrome 155 and native Safari 26.4 pass the covered editor/theme/list/calendar/conflict/logout/header flows and inline-script enforcement probe; Safari full startup-console capture remains unverified (see csp-browser-qa.md, 2026-10-09)
+- [x] Align API JSON errors, wrapped reconnect/unavailable mapping, required save strings, missing-entry semantics, calendar validation, and cookie authentication documentation; regenerate OpenAPI (2026-10-09)
 - [ ] Remaining Phase 2/3 security/API/UI acceptance gates remain open
 
 ## Restructuring addendum
@@ -122,7 +123,7 @@ Validation result: `make fmt lint test` passed successfully in the current works
 - Full Google Drive provider behavior remains human-assisted until the real OAuth and Drive validation steps are run.
 - S2 folder behavior checks passed for the test account (human-reported 2026-10-08); production Google storage remains unimplemented.
 - Phase 1 evidence/fallbacks and the user go decision are recorded, including S3 single-process concurrency. Phase 4 remains gated on Phase 2/3 acceptance and validated Google implementation; cross-instance folder convergence, revision/latency measurements, and production OAuth checks remain explicit follow-ups.
-- Session age, unsafe-request cross-origin protection, save-envelope bounds, and query-free request logging are implemented. HTTP timeout/draining and CSP baseline are implemented; Covered CSP flows pass in Chrome/native Safari, with Safari full startup-console history unverified. Editor auto-save/page-hide, API alignment, and Google OAuth state/PKCE persistence remain incomplete. Reported browser time-zone checks passed; physical-phone testing is waived for this stage.
+- Session age, unsafe-request cross-origin protection, save-envelope bounds, and query-free request logging are implemented. HTTP timeout/draining and CSP baseline are implemented; Covered CSP flows pass in Chrome/native Safari, with Safari full startup-console history unverified. Editor auto-save/page-hide and Google OAuth state/PKCE persistence remain incomplete. Reported browser time-zone checks passed; physical-phone testing is waived for this stage.
 
 ## Notes
 
