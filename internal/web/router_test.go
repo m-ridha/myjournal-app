@@ -202,6 +202,9 @@ func TestSettingsPageRendersTemplate(t *testing.T) {
 	if !strings.Contains(res.Body.String(), "data-sign-out") || !strings.Contains(res.Body.String(), "data-draft-scope=") {
 		t.Fatal("settings must expose account-scoped draft cleanup and sign-out controls")
 	}
+	if strings.Contains(res.Body.String(), "mj-segmented") || !strings.Contains(res.Body.String(), `href="/settings"`) || !strings.Contains(res.Body.String(), "data-theme-toggle") {
+		t.Fatal("settings must use shared header navigation/theme controls without Appearance buttons")
+	}
 }
 
 func TestEditorDraftScopeIsAccountAndProviderSpecific(t *testing.T) {

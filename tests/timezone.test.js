@@ -25,4 +25,4 @@ f = run({ protocol: 'https:', path: '/settings' });
 assert(f.written.includes('; Secure') && f.redirects.length === 0, 'HTTPS timezone cookie must be secure');
 f = run({ cookie: 'mj_tz=Asia%2FJakarta', editor: false });
 assert(f.redirects.length === 0, 'signed-out landing must not navigate to editor');
-output('Timezone browser regressions passed');
+output('PASS timezone browser regressions');

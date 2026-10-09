@@ -18,6 +18,12 @@
     <button class="mj-btn mj-btn-secondary mj-btn-small" type="button" data-entry-load-retry hidden>{{t "editor.retryLoad"}}</button>
     <button class="mj-btn mj-btn-secondary mj-btn-small" type="button" data-entry-legacy-draft hidden>{{t "editor.reviewLegacyDraft"}}</button>
   </div>
+  <section data-entry-conflict hidden aria-label="{{t "editor.conflictTitle"}}">
+    <p>{{t "editor.conflictHelp"}}</p>
+    <button class="mj-btn mj-btn-secondary" type="button" data-conflict-mine>{{t "editor.keepMine"}}</button>
+    <button class="mj-btn mj-btn-secondary" type="button" data-conflict-other>{{t "editor.loadOther"}}</button>
+    <button class="mj-btn mj-btn-secondary" type="button" data-conflict-both>{{t "editor.keepBoth"}}</button>
+  </section>
   <textarea class="mj-editor" aria-label="{{t "editor.label"}}" rows="14" readonly aria-busy="true" data-entry-text></textarea>
 </section>
 {{end}}
