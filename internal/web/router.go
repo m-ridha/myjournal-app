@@ -112,8 +112,16 @@ func NewRouter(cfg config.Config, registry *provider.Registry, clk journal.Clock
 	r.Get("/help", func(w http.ResponseWriter, r *http.Request) {
 		renderPage(w, pageData{TitleKey: "help.title", DescriptionKey: "help.description", Page: "help"})
 	})
-	r.MethodNotAllowed(func(w http.ResponseWriter, r *http.Request) {
-		if strings.HasPrefix(r.URL.Path, "/api/v1/") {
+	r.MethodNotAllowed(func(w http.ResponseWriter, req *http.Request) {
+		// Match against the registered routes, using separate contexts so probing
+		// methods cannot modify the rejected request's routing parameters.
+		for _, method := range []string{http.MethodConnect, http.MethodDelete, http.MethodGet, http.MethodHead, http.MethodOptions, http.MethodPatch, http.MethodPost, http.MethodPut, http.MethodTrace} {
+			if r.Match(chi.NewRouteContext(), method, req.URL.Path) {
+				w.Header().Add("Allow", method)
+			}
+		}
+
+		if strings.HasPrefix(req.URL.Path, "/api/v1/") {
 			api.WriteError(w, http.StatusMethodNotAllowed, localeCatalog.Text("errors.invalidRequest"))
 			return
 		}

@@ -99,6 +99,7 @@ Validation result: `make fmt lint test` passed successfully in the current works
 - [x] Extract theme bootstrap and enforce same-origin CSP, nosniff, framing/referrer protections, and no-store for dynamic responses; Chrome/native Safari browser flows verified with documented limits (ADR 012, 2026-10-09)
 - [x] Run CSP/browser QA against localhost: Chrome 155 and native Safari 26.4 pass the covered editor/theme/list/calendar/conflict/logout/header flows and inline-script enforcement probe; Safari full startup-console capture remains unverified (see csp-browser-qa.md, 2026-10-09)
 - [x] Align API JSON errors, wrapped reconnect/unavailable mapping, required save strings, missing-entry semantics, calendar validation, and cookie authentication documentation; regenerate OpenAPI (2026-10-09)
+- [x] Address PR #7 review: retain Allow headers on custom API/page 405 responses using registered router matches; cover exact method sets (2026-10-09)
 - [ ] Remaining Phase 2/3 security/API/UI acceptance gates remain open
 
 ## Restructuring addendum
