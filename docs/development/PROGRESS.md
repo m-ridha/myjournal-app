@@ -154,3 +154,7 @@ OpenAPI base contract added: the API definition now lives in `docs/api/openapi.y
 - [x] Reconcile root `AGENTS.md` with current code, accepted Google/editor/date/conflict/logout observations, and user deferrals; distill product/UI/phase requirements so private planning files are not required (2026-10-09)
 
 - [x] Address PR #4 onboarding review: link README to the tracked guide, shorten always-loaded instructions, and preserve detailed requirements in `docs/development/phase-acceptance.md` (2026-10-09)
+
+## Pull request automation
+
+- [x] Add PR creation/update checks for formatting drift, lint, all JavaScript/Go tests, and sequential architecture probes; validate workflow locally (2026-10-09). Hosted execution remains unverified until pushed.
