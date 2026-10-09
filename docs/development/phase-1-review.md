@@ -18,7 +18,7 @@ Reviewed 2026-10-08. The user gave a go decision to continue after the S1/S2/S4/
 
 Do not assume how many Drive revisions autosave retains or expose revisions as a recovery guarantee. Preserve manual saving and browser draft recovery. When implementing autosave, skip unchanged content and use a five-second idle debounce with one save in flight; serialize any follow-up save against the returned version. Page-hide saves remain dependent on text-safety and browser acceptance. This reduces redundant writes without claiming a measured revision limit. No revision-pinning or cleanup calls are planned. Google documents that blob revisions can be purged; revision history must not substitute for accurate save state. [Drive revision guide](https://developers.google.com/workspace/drive/api/guides/manage-revisions).
 
-This fallback is a plan, not implemented autosave or a completed 50–100-update experiment. Before enabling autosave with real Google storage, measure changed/unchanged saves using synthetic files and record counts/size/behavior.
+Local autosave implements the five-second/unchanged/one-flight fallback (ADR 013, 2026-10-09). The Google revision fallback is not a completed 50–100-update experiment. Before enabling autosave with real Google storage, measure changed/unchanged saves using synthetic files and record counts/size/behavior.
 
 ## S6 bounded-work fallback
 

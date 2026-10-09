@@ -8,6 +8,8 @@
   --mj-border-strong: #767676;
   --mj-button-text: #ffffff;
   --mj-link: #1a1a1a;
+  --mj-success: #2d7d46;
+  --mj-danger: #b3261e;
   --mj-shadow: rgba(15, 15, 15, 0.08);
 }
 
@@ -21,6 +23,7 @@
   --mj-border-strong: #8a8a8a;
   --mj-button-text: #121212;
   --mj-link: #ebebeb;
+  --mj-danger: #ff9b94;
   --mj-shadow: rgba(0, 0, 0, 0.3);
 }
 
@@ -293,6 +296,10 @@ h3 {
   --mj-icon: url("/static/svgs/moon.svg");
 }
 
+.icon-trash {
+  --mj-icon: url("/static/svgs/trash.svg");
+}
+
 .icon-gear {
   --mj-icon: url("/static/svgs/gear.svg");
 }
@@ -435,7 +442,7 @@ html[data-theme="dark"] .icon-moon {
 }
 
 .mj-editor-shell.is-saved .mj-status-pill::before {
-  background: #2d7d46;
+  background: var(--mj-success);
 }
 
 .mj-editor-shell.is-saving .mj-status-row {
@@ -444,7 +451,7 @@ html[data-theme="dark"] .icon-moon {
 }
 
 .mj-editor-shell.is-saved .mj-status-row {
-  border-color: #2d7d46;
+  border-color: var(--mj-success);
   background: rgba(45, 125, 70, 0.08);
 }
 
@@ -459,6 +466,13 @@ html[data-theme="dark"] .icon-moon {
 .mj-btn[data-entry-save][disabled] {
   opacity: 0.6;
   cursor: not-allowed;
+}
+
+/* Hover/focus signals an available action; Saved remains a separate status. */
+.mj-btn[data-entry-save]:enabled:hover,
+.mj-btn[data-entry-save]:enabled:focus-visible {
+  border-color: var(--mj-success);
+  background: color-mix(in srgb, var(--mj-success) 12%, var(--mj-surface));
 }
 
 .mj-notfound-card {
@@ -479,25 +493,75 @@ html[data-theme="dark"] .icon-moon {
   max-width: 32rem;
 }
 
-.mj-editor {
-  width: 100%;
-  min-height: 28rem;
-  padding: 1.2rem;
+.mj-editor-field {
+  position: relative;
   border: 1px solid var(--mj-border-strong);
+  border-top-color: var(--mj-border);
   border-radius: 1rem;
   background: var(--mj-surface);
+  box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.02);
+}
+
+.mj-editor {
+  display: block;
+  width: 100%;
+  min-height: 28rem;
+  padding: 1.2rem 4.75rem 1.2rem 1.2rem;
+  border: 0;
+  border-radius: inherit;
+  background: transparent;
   color: var(--mj-text);
   resize: vertical;
   line-height: 1.7;
   font-size: 1.04rem;
-  box-shadow: inset 0 1px 0 rgba(0, 0, 0, 0.02);
-  border-top-color: var(--mj-border);
 }
 
 .mj-editor:focus {
   outline: none;
+}
+
+.mj-editor-field:focus-within {
   border-color: var(--mj-text);
-  box-shadow: 0 0 0 3px rgba(26, 26, 26, 0.08);
+  box-shadow: 0 0 0 3px var(--mj-shadow);
+}
+
+.mj-editor-trash {
+  position: absolute;
+  bottom: 0.75rem;
+  right: 1.2rem;
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  border: 1px solid currentColor;
+  border-radius: 0.65rem;
+  color: var(--mj-danger);
+  background: var(--mj-surface-strong);
+  cursor: pointer;
+}
+
+.mj-editor-trash[hidden] {
+  display: none;
+}
+
+.mj-editor-trash .icon {
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.mj-editor-trash:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--mj-danger) 12%, var(--mj-surface-strong));
+}
+
+.mj-editor-trash:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 3px;
+}
+
+.mj-editor-trash:disabled {
+  cursor: default;
+  color: var(--mj-text-muted);
 }
 
 .mj-editor::placeholder {

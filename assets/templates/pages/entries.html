@@ -10,5 +10,11 @@
   <div class="mj-entry-list" data-entry-list>
     <p class="mj-empty-state">{{t "entries.loading"}}</p>
   </div>
+  <nav class="mj-actions" aria-label="{{t "entries.pagination"}}">
+    <a class="mj-btn mj-btn-secondary" data-entries-newer hidden>{{t "entries.newer"}}</a>
+    <a class="mj-btn mj-btn-secondary" data-entries-older hidden>{{t "entries.older"}}</a>
+    <button class="mj-btn mj-btn-secondary" type="button" data-entries-retry hidden>{{t "entries.retry"}}</button>
+  </nav>
+  <p role="status" aria-live="polite" data-entries-status></p>
 </section>
 {{end}}
