@@ -1,18 +1,18 @@
 # myjournal-app
 
-A Go-based journal application scaffolded to follow the implementation guide in `agents/guide.md`.
+A Go-based plain-text journal app. Contributor instructions are in [AGENTS.md](AGENTS.md); see [progress](docs/development/PROGRESS.md) and the [phase acceptance checklist](docs/development/phase-acceptance.md) for implementation status and remaining requirements.
 
 ## Current status
 
-The local development flow is working end-to-end:
+The implemented local development flow includes:
 
 - app shell and router are in place
-- entry pages and API routes are versioned under `/api/v1`
+- date-specific entry pages use `/entries/YYYY-MM-DD`; API routes are versioned under `/api/v1`
 - future dates are rejected
 - the branded 404 page is connected to the app
 - save status transitions are visible and styled
 - previews use the first meaningful line after trimming leading blank space
-- the local provider is used for day-to-day development while the Google provider remains pending human-assisted setup
+- the local provider is used for day-to-day development; the Google adapter remains incomplete and disabled
 
 ## Quick start
 
