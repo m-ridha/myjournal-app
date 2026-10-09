@@ -25,6 +25,10 @@ import (
 	"time"
 )
 
+import (
+	_ "time/tzdata"
+)
+
 // Injectors from wire.go:
 
 func BuildApp(cfg config.Config) (*App, func(), error) {
@@ -125,6 +129,9 @@ func newHTTPServer(cfg config.Config, handler2 http.Handler) *http.Server {
 		Addr:              fmt.Sprintf(":%d", cfg.Port),
 		Handler:           handler2,
 		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       15 * time.Second,
+		WriteTimeout:      35 * time.Second,
+		IdleTimeout:       60 * time.Second,
 	}
 }
 

@@ -26,6 +26,7 @@ import (
 func NewRouter(cfg config.Config, registry *provider.Registry, clk journal.Clock, serviceFactory handler.ServiceFactory) http.Handler {
 
 	r := chi.NewRouter()
+	r.Use(webMiddleware.SecurityHeaders)
 	r.Use(middleware.RequestID)
 	r.Use(webMiddleware.RequestLog)
 	r.Use(middleware.Recoverer)

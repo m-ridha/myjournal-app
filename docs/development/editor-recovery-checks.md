@@ -96,3 +96,13 @@ oversizedEditor.dispatchEvent(new Event('input', { bubbles: true }));
 3. After copying anything you need to preserve, replace the synthetic text with a short test sentence and Save. It should succeed and clear the saved draft.
 
 The cap applies to the entire serialized JSON request, so exactly 1 MiB of ASCII text exceeds it once the request fields are added. Automated regressions cover the 413 response, newer edits during the pending request, recovery/retry, and unavailable backup. This browser follow-up is not yet human-reported.
+
+
+## CSP and security-header browser check
+
+1. Restart the app. In Chrome and Safari, open the landing page and sign in locally. Network response headers should include Content-Security-Policy and Cache-Control: no-store for pages/API responses. The console should show no app-caused CSP violations.
+2. Toggle light/dark, reload, and confirm the selected theme and gear icons still render. The external theme-init.js should load before CSS. If browser storage is blocked, the app must still load; stored theme recovery is not promised.
+3. Open a disposable past entry, type synthetic text, Save, then verify list preview and calendar navigation. Existing draft/conflict behavior must remain intact.
+4. Open Settings and sign out. Confirm the normal sign-out/draft cleanup behavior. Check a styled missing page and signed-out API rejection for security headers as well.
+
+Automated browser verification on 2026-10-09 passed the covered flows in Chrome 155.0.8059.40 (headless) and native Safari 26.4, including deliberate inline-script blocking, conflict/Keep mine, draft recovery, and logout cleanup. Safari full startup-console history and Safari blocked-storage behavior remain unverified. See [browser QA evidence](csp-browser-qa.md) for scope, expected negative probes, and limitations.

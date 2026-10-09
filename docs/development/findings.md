@@ -353,3 +353,25 @@ Checked the review and sole unresolved inline comment, [discussion_r4227283422](
 The shared save path now maps 413 to a dedicated locale message stating the 1 MiB request limit and advising copying the full text somewhere safe before shortening and saving again. This also covers saves initiated by Keep mine. Existing draft persistence, base-version handling, unsaved status, and control re-enabling are retained; the UI does not render arbitrary server error bodies.
 
 Editor regressions cover 413 during pending-save edits, retained latest text/base version/backup, leave warning, reload recovery, successful save after shortening, and truthful warning when browser backup is unavailable. `make fmt lint test` passed with 0 lint issues, both JavaScript suites, and all Go tests. `git diff --check` passed. No new human browser result is claimed; the optional browser check is in editor-recovery-checks.md. The fix remains local: no commit, push, review reply, or thread resolution performed.
+
+
+## HTTP lifecycle and CSP baseline (2026-10-09)
+
+The prior shutdown goroutine called Shutdown, but ListenAndServe returned as soon as listeners closed, allowing main/deferred cleanup to exit while requests were still draining. Startup now opens its listener explicitly and serves with a signal context. Main waits for Shutdown before cleanup; draining has a ten-second bound and closes remaining connections on failure. Startup/listener/shutdown failures propagate to a nonzero exit after deferred cleanup. Added an actual loopback request held open through cancellation to verify that the response completes before serve returns, plus listener-error coverage. Tests use ephemeral owned ports, not the running development server.
+
+Wire's HTTP server now has 5s header, 15s read, 35s write, and 60s idle limits. The existing 30s handler timeout remains; handlers/adapters must still honor cancellation. Wire output was regenerated through `make generate-wire`, not hand-edited.
+
+Moved the existing pre-CSS theme initializer unchanged in behavior to embedded theme-init.js, removing the sole inline template script. Middleware now sets a same-origin CSP without unsafe-inline/unsafe-eval, blocks framing/objects/base overrides, restricts forms, and applies nosniff/no-referrer. Dynamic pages/API/auth/error responses are no-store; static assets retain ordinary caching. No HTTPS-only directive was imposed on HTTP localhost. ADR 012 records the policy/limits. Integration tests cover headers across landing, private-page redirect, 404, API 401, static bootstrap, and cross-origin 403; they verify the bootstrap remains before CSS.
+
+Browser enforcement/theme/editor/calendar acceptance remains pending; existing JavaScript suites do not simulate CSP enforcement. No live Google behavior or full Phase 2/3 completion is claimed. API contract alignment is the next implementation priority. No commit, push, or PR update was performed.
+
+Verification: `make generate-wire` succeeded; inspected the generated diff (timeouts plus the generator-preserved tzdata import). `make fmt lint test` passed with 0 lint issues, both JavaScript suites, and all Go tests. `go test -race ./cmd/app ./internal/web/...` passed. `git diff --check` passed; template scan found no remaining inline scripts, inline styles, or inline click/load/change handlers.
+
+
+## Live CSP/browser QA (2026-10-09)
+
+Used the explicitly requested Web App QA & Release Copilot workflow against the user's already-running localhost:3030 app. Isolated installed Chrome 155.0.8059.40 headless automation and native Safari 26.4 WebDriver passed local login, theme reload, external bootstrap/gear rendering, synthetic Unicode save/list preview, calendar navigation, reload recovery, conflict/Keep mine, pending-draft sign-out cleanup, security headers, and 401/404 behavior. Both browsers actually blocked an intentionally injected inline script; CSP was not bypassed. Chrome separately passed simulated storage-access failures with truthful backup warnings and both persisted theme choices.
+
+Final evidence: Chrome flow 21/21, Chrome theme/storage 6/6, native Safari flow 25/25 passing assertions. Chrome's 409/404 and inline-probe console messages were expected; no unexpected app CSP errors/page exceptions were captured. Safari action-time events were clean, but full startup-console collection was unavailable. Initial Safari session timeouts cleared after restarting only the QA-owned driver following the user's remote-automation confirmation. Chrome harness locator/string-evaluation issues were corrected without app changes.
+
+Details, exact browser scope, and limitations are recorded in [csp-browser-qa.md](csp-browser-qa.md). Synthetic entries were created only on missing past dates and moved to trash; existing entries were untouched. Temporary browser profiles/sessions and QA-owned Safari driver were closed; the development server remains running. No application changes, commit, push, or full new unit/lint/race run was performed for this QA task. Safari startup-console/blocked-storage verification and broader Phase 2/3/release acceptance remain separate.
