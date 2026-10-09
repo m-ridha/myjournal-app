@@ -103,6 +103,7 @@ Validation result: `make fmt lint test` passed successfully in the current works
 - [x] Add safe five-second idle autosave, unchanged suppression, one-flight acknowledged follow-ups, failure pauses, recovery/conflict review gates, and best-effort blur/page-hide flushing (ADR 013, 2026-10-09)
 - [x] Add confirmed entry trash with pending-mutation locks, failure recovery, acknowledged draft cleanup, and Newer/Older list links with bounded page queries/retry (2026-10-09)
 - [x] Move trash action to a theme-aware accessible SVG button inside the editor, with a solid floating background, right-side text clearance, keyboard focus and touch visibility; Chrome desktop/touch emulation checked (2026-10-09)
+- [x] Address PR #8 review: reset saved styling on confirmed deletion; cover HTTP failures/lost acknowledgements with retained recovery and neutral status (2026-10-09)
 - [ ] Remaining Phase 2/3 security/API/UI acceptance gates remain open
 
 ## Restructuring addendum

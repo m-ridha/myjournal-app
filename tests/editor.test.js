@@ -310,6 +310,20 @@ async function run() {
   f = setup({storageThrows:true});await tick();f.queue.push({ok:true,status:204});f.trash.fire('click');await tick();
   assert(f.status.textContent==='editor.deletedBackupRetained' && f.text.value==='', 'successful trash reports unavailable browser backup cleanup truthfully');
 
+  for (const failure of [() => ({ok:false,status:503}), () => ({ok:false,status:401}), () => Promise.reject(new Error('delete acknowledgement lost'))]) {
+    f=setup();await tick();f.input('acknowledged text');f.queue.push(response('acknowledged text','v2'));f.save.fire('click');await tick();
+    assert(f.editor.classList.contains('is-saved'), 'successful save establishes green saved presentation');
+    window.confirm=()=>false;f.trash.fire('click');await tick();
+    assert(f.editor.classList.contains('is-saved') && f.calls.length===2, 'cancelled deletion preserves acknowledged presentation');
+    window.confirm=()=>true;f.queue.push(failure());f.trash.fire('click');
+    assert(!f.editor.classList.contains('is-saved') && !f.editor.classList.contains('is-saving'), 'confirmed deletion clears prior saved presentation immediately');
+    await tick();let warned=false;f.winEvents.beforeunload({preventDefault(){warned=true;}});
+    assert(!f.editor.classList.contains('is-saved') && f.values.has(key) && warned && !f.save.disabled, 'uncertain delete stays neutral with recovery and manual retry');
+    await f.advance(10000);assert(f.calls.length===3,'uncertain deletion must not autosave');
+    f.queue.push(response('acknowledged text','v3'));f.save.fire('click');await tick();
+    assert(f.editor.classList.contains('is-saved') && !f.values.has(key), 'acknowledged manual recovery can restore saved presentation');
+  }
+
   output('PASS editor interaction regressions');
 }
 

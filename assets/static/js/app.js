@@ -301,7 +301,7 @@
       if (!window.confirm(t('editor.deleteConfirm'))) return;
       cancelAutosave();
       deleting = true;
-      refreshControls();
+      setSaveState('');
       notice(t('editor.deleting'));
       try {
         const response = await fetch(`/api/v1/entries/${date}`, { method: 'DELETE' });

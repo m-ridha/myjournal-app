@@ -429,3 +429,9 @@ User rejected the reserved footer strip. Removed that strip and restored the edi
 ## Save hover highlight (2026-10-09)
 
 Added a subtle green tint/border on enabled Save hover and keyboard focus, sharing the existing success green through --mj-success. Label contrast remains theme-native; hovering does not set Saved or change save state, and disabled/Saving buttons cannot get the highlight. `make fmt lint test` and `git diff --check` passed. Rebuilt the isolated QA binary; `/tmp/myjournal-csp-qa-venv/bin/python /tmp/myjournal-save-hover-qa.py` passed twelve grouped Chrome checks, including enabled-versus-disabled hover in both themes and unchanged status plus adjacent trash/browsing flows. Temporary server/browser/data were cleaned up; changes remain uncommitted.
+
+## PR #8 review: uncertain deletion presentation (2026-10-09)
+
+Verified the sole inline finding: a successful PUT adds is-saved, but failed/ambiguous DELETE previously marked recovery unverified without removing the saved class. Confirmed deletion now calls setSaveState with a neutral state before dispatch, covering pending deletion and both failure branches. Cancellation leaves the prior acknowledged presentation intact. Regression coverage starts with a real successful save in the editor harness, then exercises 503, 401, and lost acknowledgements; it checks neutral styling, retained backup/leave warning, manual retry, paused autosave, and restored saved styling after acknowledged recovery.
+
+The new regression failed before the one-line fix and passed afterward. `make fmt lint test` passed with 0 lint issues, all three JavaScript suites, and all Go tests; `git diff --check` passed. No new browser result is claimed. Changes remain local/uncommitted; no review reply, thread resolution, push, or merge was performed.
