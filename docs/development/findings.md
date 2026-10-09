@@ -307,3 +307,12 @@ Rewrote root AGENTS.md to distill product requirements, architecture/generation 
 The guide documents failed-logout ordering, tab-scoped backup/migration behavior, external SVG assets, current test tooling, and the next storage-correctness priority. Production Google remains disabled. Also corrected PROGRESS.md's stale browser-timezone blocker to match the recorded passed checks. This is a documentation change; no runtime behavior or private planning files were modified.
 
 Verification: checked the guide’s referenced repository paths, confirmed no private-file references remain, and checked both tracked edits and the untracked AGENTS.md for whitespace errors. Documentation-only; no runtime tests were rerun.
+
+
+## PR #4 onboarding review follow-up (2026-10-09)
+
+Both nonblocking review comments were valid improvements. README still directed contributors to an unavailable private guide; it now links root AGENTS.md and tracked progress/phase requirements. Its route and Google-status summaries were also aligned with the existing code.
+
+Shortened the always-loaded guide by removing repeated experiment history and detailed phase lists, putting stack/setup/check commands near the top, and retaining critical architecture/product/privacy constraints, user deferrals, text-safety/date/logout invariants, and the current storage priority. The detailed acceptance requirements are preserved in docs/development/phase-acceptance.md; experiment evidence remains in the existing findings/Phase 1 review/ADRs. Repository onboarding still requires no private planning files. No arbitrary line-count validity rule was adopted, and no runtime behavior was changed.
+
+Verification: AGENTS.md reduced from 3,497 words/170 lines to 1,790 words/109 lines. Checked relative links in the guide, README, and phase checklist; all resolve locally and contain no private-file paths. Checked retained critical decisions and whitespace, including the new checklist. Documentation-only; no runtime tests rerun and no commit/push/review-thread resolution performed.
