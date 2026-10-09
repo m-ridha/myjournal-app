@@ -24,6 +24,11 @@
     <button class="mj-btn mj-btn-secondary" type="button" data-conflict-other>{{t "editor.loadOther"}}</button>
     <button class="mj-btn mj-btn-secondary" type="button" data-conflict-both>{{t "editor.keepBoth"}}</button>
   </section>
-  <textarea class="mj-editor" aria-label="{{t "editor.label"}}" rows="14" readonly aria-busy="true" data-entry-text></textarea>
+  <div class="mj-editor-field">
+    <textarea class="mj-editor" aria-label="{{t "editor.label"}}" rows="14" readonly aria-busy="true" data-entry-text></textarea>
+    <button class="mj-editor-trash" type="button" aria-label="{{t "editor.delete"}}" title="{{t "editor.delete"}}" data-entry-delete hidden disabled>
+      <span class="icon icon-trash" aria-hidden="true"></span>
+    </button>
+  </div>
 </section>
 {{end}}

@@ -20,9 +20,9 @@ function element() {
 }
 
 function setup({ draft = null, initial = response('server'), storageThrows = false, signOut = false, legacy = null, sessionValues = new Map(), localValues = new Map() } = {}) {
-  const panel = element(); const mine = element(); const other = element(); const both = element();
+  const trash = element(); const panel = element(); const mine = element(); const other = element(); const both = element();
   const text = element(); const status = element(); const save = element(); const retry = element(); const old = element(); const button = element();
-  const fields = { '[data-entry-conflict]': panel, '[data-conflict-mine]': mine, '[data-conflict-other]': other, '[data-conflict-both]': both, '[data-entry-text]': text, '[data-entry-status]': status, '[data-entry-save]': save,
+  const fields = { '[data-entry-delete]': trash, '[data-entry-conflict]': panel, '[data-conflict-mine]': mine, '[data-conflict-other]': other, '[data-conflict-both]': both, '[data-entry-text]': text, '[data-entry-status]': status, '[data-entry-save]': save,
     '[data-entry-load-retry]': retry, '[data-entry-legacy-draft]': old };
   const editor = element(); editor.dataset = { entryDate: date }; editor.querySelector = (selector) => fields[selector] || null;
   const values = sessionValues; if (draft !== null) values.set(key, JSON.stringify(draft));
@@ -33,6 +33,9 @@ function setup({ draft = null, initial = response('server'), storageThrows = fal
     key: (i) => { guard(); return [...map.keys()][i] ?? null; }, get length() { guard(); return map.size; } });
   globalThis.localStorage = store(localValues);
   globalThis.sessionStorage = store(values);
+  let now = 0; let nextTimer = 0; const timers = new Map();
+  globalThis.setTimeout = (fn, delay) => { const id = ++nextTimer; timers.set(id, { fn, at: now + delay }); return id; };
+  globalThis.clearTimeout = (id) => timers.delete(id);
   const docEvents = {}; const winEvents = {};
   globalThis.document = { body: { dataset: { messages: '{}', draftScope: 'account-a', today: '2026-10-08' } },
     querySelector: (s) => s === '[data-entry-editor]' ? (signOut ? null : editor) : s === '[data-sign-out]' ? (signOut ? button : null) : s === '[data-sign-out-status]' ? status : null,
@@ -43,7 +46,15 @@ function setup({ draft = null, initial = response('server'), storageThrows = fal
   if (typeof require === 'function') (0, eval)(require('node:fs').readFileSync('assets/static/js/app.js', 'utf8'));
   else load('assets/static/js/app.js');
   docEvents.DOMContentLoaded();
-  return { localValues, panel, mine, other, both, text, status, save, retry, old, button, editor, values, calls, queue, winEvents,
+  return { docEvents, async advance(ms) {
+    const end = now + ms;
+    while (true) {
+      const due = [...timers].filter(([, timer]) => timer.at <= end).sort((a,b) => a[1].at - b[1].at)[0];
+      if (!due) break;
+      now = due[1].at; timers.delete(due[0]); due[1].fn(); await tick();
+    }
+    now = end; await tick();
+  }, localValues, trash, panel, mine, other, both, text, status, save, retry, old, button, editor, values, calls, queue, winEvents,
     input(value) { text.value = value; text.fire('input'); } };
 }
 
@@ -193,6 +204,111 @@ async function run() {
   assert(JSON.parse(f.values.get(key)).baseVersion === 'old' && !oldScoped.has(`mj-draft:v2:account-a:${date}`), 'migration must retain the old scoped version');
   f.queue.push(response('', '', 409)); f.save.fire('click'); await tick();
   assert(!f.panel.hidden, 'migrated stale backup must still conflict');
+
+  // Autosave uses the same acknowledged snapshot/version and recovery rules.
+  f = setup(); await tick(); await f.advance(10000);
+  assert(f.calls.length === 1, 'loading an unchanged entry must not write');
+  f.input('first'); await f.advance(4999); assert(f.calls.length === 1, 'wait five seconds after input');
+  f.input('second'); await f.advance(4999); assert(f.calls.length === 1, 'typing resets idle debounce');
+  f.queue.push(response('second', 'v2')); await f.advance(1);
+  assert(f.calls.length === 2 && JSON.parse(f.calls[1].options.body).text === 'second' && !f.values.has(key), 'idle autosave acknowledges current snapshot');
+  f.text.fire('blur'); await f.advance(10000); assert(f.calls.length === 2, 'unchanged blur/timer must not save again');
+  f.input('transient'); f.input('second'); await f.advance(5000); assert(f.calls.length === 2, 'reverting to acknowledged text suppresses saves');
+
+  f = setup(); await tick(); f.input('snapshot'); const autoPending = deferred(); f.queue.push(autoPending.promise); await f.advance(5000);
+  f.input('newer'); await f.advance(10000); assert(f.calls.length === 2, 'long saves never overlap');
+  autoPending.resolve(response('snapshot','v2')); await tick();
+  assert(f.status.textContent === 'editor.unsaved' && JSON.parse(f.values.get(key)).text === 'newer', 'later edits remain dirty after autosave');
+  f.queue.push(response('newer','v3')); await f.advance(5000);
+  assert(f.calls.length === 3 && JSON.parse(f.calls[2].options.body).baseVersion === 'v2' && !f.values.has(key), 'follow-up autosave uses returned version');
+
+  for (const failure of [response('', '', 401), response('', '', 409), response('', '', 413), response('', '', 503), Promise.reject(new Error('offline'))]) {
+    f = setup(); await tick(); f.input('preserve'); f.queue.push(failure); await f.advance(5000);
+    assert(f.text.value === 'preserve' && f.values.has(key) && !f.save.disabled, 'autosave failure preserves editable backup');
+    f.input('preserve later'); f.text.fire('blur'); f.winEvents.pagehide?.(); await f.advance(20000);
+    assert(f.calls.length === 2, 'failed autosave must not silently retry through typing/blur/pagehide');
+    f.queue.push(response('preserve later','v2')); f.save.fire('click'); await tick();
+    f.input('resume'); f.queue.push(response('resume','v3')); await f.advance(5000);
+    assert(f.calls.length === 4 && !f.values.has(key), 'successful manual retry resumes autosave');
+  }
+
+  f = setup({ draft: { text: 'review me', baseVersion: 'v1', versionKnown: true } }); await tick();
+  f.text.fire('blur'); f.winEvents.pagehide?.(); await f.advance(10000);
+  assert(f.calls.length === 1 && f.values.has(key), 'restored draft waits for review before autosave');
+  f.input('reviewed'); f.queue.push(response('reviewed','v2')); await f.advance(5000); assert(f.calls.length === 2, 'editing a restored draft opts into autosave');
+
+  f = setup({ draft: { text: 'mine', baseVersion: 'old', versionKnown: true } }); await tick();
+  f.input('edited conflict'); await f.advance(5000); assert(f.calls.length === 1, 'typing must not bypass conflict controls');
+  f.queue.push(response('other','v2')); f.both.fire('click'); await tick();
+  f.text.fire('blur'); f.winEvents.pagehide?.(); await f.advance(10000);
+  assert(f.calls.length === 2 && f.text.value === 'edited conflict\n\nother', 'keep both requires review before saving');
+
+  f = setup(); await tick(); f.input('blur save'); f.queue.push(response('blur save','v2')); f.text.fire('blur'); await tick();
+  assert(f.calls.length === 2 && !f.values.has(key), 'blur flushes a pending edit');
+  f.input('leave snapshot'); const leaving = deferred(); f.queue.push(leaving.promise); f.winEvents.pagehide(); await tick();
+  assert(f.calls.length === 3 && f.calls[2].options.keepalive === true && f.values.has(key), 'pagehide attempts keepalive but retains backup without acknowledgement');
+  leaving.resolve(response('leave snapshot','v3')); await tick(); assert(!f.values.has(key), 'only acknowledgement clears pagehide backup');
+
+  for (const choice of ['other', 'both']) {
+    f = setup(); await tick(); f.input('mine'); f.queue.push(response('', '', 409)); await f.advance(5000);
+    f.queue.push(response('theirs','v2')); f[choice].fire('click'); await tick(); await f.advance(10000);
+    assert(f.calls.length === 3, 'conflict resolution must not autosave review output by itself');
+    f.input('reviewed resolution'); f.queue.push(response('reviewed resolution','v3')); await f.advance(5000);
+    assert(f.calls.length === 4 && JSON.parse(f.calls[3].options.body).baseVersion === 'v2', 'reviewed edits after resolution must resume autosave against latest version');
+  }
+
+  f = setup(); await tick(); f.input('manual first'); f.queue.push(response('manual first','v2')); f.save.fire('click'); await tick(); await f.advance(10000);
+  assert(f.calls.length === 2, 'manual save cancels its queued autosave');
+  f.input(''); f.queue.push(response('','v3')); await f.advance(5000);
+  assert(JSON.parse(f.calls[2].options.body).text === '' && !f.values.has(key), 'intentional empty text autosaves safely');
+
+  f = setup({ storageThrows: true }); await tick(); f.input('no backup'); f.queue.push(Promise.reject(new Error('offline'))); await f.advance(5000);
+  assert(f.status.textContent.includes('editor.backupUnavailable') && f.status.textContent.includes('editor.autosavePaused') && !f.status.textContent.includes('editor.draftKept'), 'autosave failure truthfully reports unavailable backup and paused state');
+
+  f = setup(); await tick(); f.input('hidden'); f.queue.push(response('hidden','v2')); document.visibilityState='hidden'; f.docEvents.visibilitychange(); await tick();
+  assert(f.calls[1].options.keepalive && !f.values.has(key), 'hidden-page flush uses normal acknowledged keepalive path');
+
+  f = setup(); await tick(); f.input('leaving while saving'); const active = deferred(); f.queue.push(active.promise); await f.advance(5000);
+  f.input('newer leaving'); f.winEvents.pagehide(); assert(f.calls.length===2 && JSON.parse(f.values.get(key)).text==='newer leaving', 'pagehide during a save preserves newest draft without overlapping requests');
+  active.resolve(response('leaving while saving','v2')); await tick();
+  assert(JSON.parse(f.values.get(key)).baseVersion==='v2', 'unflushed pagehide text retains acknowledged follow-up version');
+
+  f = setup(); await tick(); f.input('signed out'); f.winEvents.storage({key:'mj-signout:account-a'}); await f.advance(10000);
+  assert(f.calls.length === 1 && !f.values.has(key), 'sign-out cancels autosave without recreating drafts');
+
+  f = setup(); await tick(); f.input('unsaved deletion'); f.text.fire('blur', {relatedTarget:f.trash}); await tick();
+  assert(f.calls.length === 1, 'focusing delete must not autosave unsaved text before confirmation');
+  f.trash.fire('pointerdown'); f.text.fire('blur', {relatedTarget:null}); await tick();
+  assert(f.calls.length===1, 'pointer activation must suppress blur saving even when browser does not focus buttons');
+  f.winEvents.pointerup();
+  window.confirm = () => false; f.trash.fire('click'); await tick();
+  assert(f.calls.length === 1 && f.values.has(key) && f.text.value === 'unsaved deletion', 'cancelled delete preserves text and backup');
+  f.values.set('mj-draft:v3:account-a:2019-01-01','other date');
+  window.confirm = () => true; const deletePending = deferred(); f.queue.push(deletePending.promise); f.trash.fire('click'); await tick();
+  assert(f.calls.length === 2 && f.calls[1].options.method === 'DELETE' && f.text.readOnly && f.save.disabled && f.trash.disabled, 'confirmed delete locks editor mutations');
+  await f.advance(10000); assert(f.calls.length === 2 && f.values.has(key), 'delete cancels autosave while retaining backup until acknowledgement');
+  deletePending.resolve({ok:true,status:204}); await tick();
+  assert(f.values.has('mj-draft:v3:account-a:2019-01-01') && f.text.value === '' && !f.values.has(key) && f.status.textContent === 'editor.deleted' && f.trash.hidden && !f.text.readOnly, 'confirmed trash clears only acknowledged text/backup and permits a fresh entry');
+  f.input('recreated'); f.queue.push(response('recreated','new')); await f.advance(5000);
+  assert(JSON.parse(f.calls[2].options.body).baseVersion === '' && !f.trash.hidden, 'writing after delete creates against empty version');
+
+  for (const failure of [{ok:false,status:401},{ok:false,status:503},{ok:false,status:404},Promise.reject(new Error('offline'))]) {
+    f = setup(); await tick(); f.input('retain after failed delete'); f.queue.push(failure); f.trash.fire('click'); await tick();
+    assert(f.text.value === 'retain after failed delete' && f.values.has(key) && !f.save.disabled && !f.text.readOnly, 'failed delete keeps draft and unlocks editor');
+    await f.advance(10000);assert(f.calls.length===2,'failed delete must not silently autosave instead');
+    f.queue.push(response('retain after failed delete','v2'));f.save.fire('click');await tick();assert(!f.values.has(key),'manual save can recover after failed delete');
+  }
+  f = setup(); await tick(); f.input('saving first'); const beforeDelete=deferred();f.queue.push(beforeDelete.promise);f.save.fire('click');f.trash.fire('click');await tick();
+  assert(f.calls.length===2 && f.trash.disabled,'delete cannot race with an active save');beforeDelete.resolve(response('saving first','v2'));await tick();
+  f = setup({initial:{ok:true,status:200,json:async()=>({text:'',version:'',exists:false})}});await tick();
+  assert(f.trash.hidden,'missing entries do not offer a saved-entry delete action');
+
+  f = setup();await tick();f.queue.push(Promise.reject(new Error('delete acknowledgement lost')));f.trash.fire('click');await tick();
+  assert(f.values.has(key) && f.text.value==='server', 'ambiguous delete must back up even previously clean text');
+  f.queue.push(response('server','v2'));f.save.fire('click');await tick();assert(f.calls.length===3 && !f.values.has(key), 'manual Save can recover previously clean text after an ambiguous delete');
+
+  f = setup({storageThrows:true});await tick();f.queue.push({ok:true,status:204});f.trash.fire('click');await tick();
+  assert(f.status.textContent==='editor.deletedBackupRetained' && f.text.value==='', 'successful trash reports unavailable browser backup cleanup truthfully');
 
   output('PASS editor interaction regressions');
 }

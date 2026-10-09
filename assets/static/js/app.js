@@ -26,15 +26,6 @@
     return formatDate(date);
   }
 
-  function escapeHTML(value) {
-    return String(value ?? '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-  }
-
   function initEditor() {
     const editor = document.querySelector('[data-entry-editor]');
     if (!editor) return;
@@ -43,6 +34,7 @@
     const textarea = editor.querySelector('[data-entry-text]');
     const status = editor.querySelector('[data-entry-status]');
     const saveBtn = editor.querySelector('[data-entry-save]');
+    const deleteBtn = editor.querySelector('[data-entry-delete]');
     const prevBtn = editor.querySelector('[data-entry-prev]');
     const nextBtn = editor.querySelector('[data-entry-next]');
 
@@ -88,11 +80,17 @@
     let loaded = false;
     let loading = false;
     let saving = false;
+    let deleting = false;
+    let exists = false;
+    let explicitAction = false;
     let edited = false;
     let signedOut = false;
     let unverifiedDraft = false;
     let backupAvailable = true;
     let legacyDraft = null;
+    let autosaveTimer = null;
+    let autosaveReady = false;
+    let autosavePaused = false;
 
     function setStatus(text) {
       status.textContent = text;
@@ -114,13 +112,20 @@
     }
 
     function refreshControls() {
-      textarea.readOnly = !loaded || signedOut || resolving;
-      textarea.setAttribute('aria-busy', loading || resolving ? 'true' : 'false');
-      saveBtn.disabled = !loaded || saving || signedOut || resolving;
+      textarea.readOnly = !loaded || signedOut || resolving || deleting;
+      textarea.setAttribute('aria-busy', loading || resolving || deleting ? 'true' : 'false');
+      saveBtn.disabled = !loaded || saving || signedOut || resolving || deleting;
       saveBtn.textContent = t(saving ? 'editor.saving' : 'editor.save');
+      if (deleteBtn) {
+        deleteBtn.hidden = !exists;
+        deleteBtn.disabled = !loaded || saving || deleting || signedOut || resolving;
+        const label = t(deleting ? 'editor.deleting' : 'editor.delete');
+        deleteBtn.setAttribute('aria-label', label);
+        deleteBtn.setAttribute('title', label);
+      }
       if (conflictPanel) conflictPanel.hidden = !conflicted || signedOut;
-      [conflictMine, conflictOther, conflictBoth].forEach((button) => { if (button) button.disabled = saving || resolving || !loaded || signedOut; });
-      if (legacyBtn) legacyBtn.disabled = !loaded || saving || isDirty();
+      [conflictMine, conflictOther, conflictBoth].forEach((button) => { if (button) button.disabled = saving || resolving || deleting || !loaded || signedOut; });
+      if (legacyBtn) legacyBtn.disabled = !loaded || saving || deleting || isDirty();
     }
 
     function setSaveState(state) {
@@ -144,6 +149,22 @@
 
     function isDirty() {
       return saving || unverifiedDraft || textarea.value !== lastSavedText;
+    }
+
+    function cancelAutosave() {
+      clearTimeout(autosaveTimer);
+      autosaveTimer = null;
+    }
+
+    function canAutosave() {
+      return loaded && autosaveReady && !autosavePaused && !conflicted && !resolving && !deleting && !signedOut;
+    }
+
+    function scheduleAutosave() {
+      cancelAutosave();
+      if (canAutosave() && !saving && isDirty()) {
+        autosaveTimer = setTimeout(() => saveEntry({ automatic: true }), 5000);
+      }
     }
 
     const rawDraft = storage((store) => store.getItem(draftKey));
@@ -193,6 +214,7 @@
         const entry = await response.json();
         if (typeof entry.text !== 'string' || typeof entry.version !== 'string') throw new Error('invalid entry');
         if (signedOut) return;
+        exists = entry.exists;
         lastSavedText = entry.text;
         // Never overwrite input typed while loading. A recovered backup keeps
         // its original base version so changed server content yields a conflict.
@@ -213,8 +235,10 @@
       }
     }
 
-    async function saveEntry() {
-      if (!loaded || saving || signedOut || resolving) return;
+    async function saveEntry({ automatic = false, keepalive = false } = {}) {
+      if (!loaded || saving || deleting || signedOut || resolving || !isDirty()) return;
+      if (automatic && !canAutosave()) return;
+      cancelAutosave();
       const sentText = textarea.value;
       const payload = { text: sentText, baseVersion };
       persistDraft();
@@ -224,10 +248,13 @@
       try {
         const response = await fetch(`/api/v1/entries/${date}`, {
           method: 'PUT',
+          keepalive,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload),
         });
+        if (signedOut) return;
         if (!response.ok) {
+          autosavePaused = true;
           unverifiedDraft = true;
           conflicted = response.status === 409;
           const key = response.status === 409 ? 'editor.conflict'
@@ -235,7 +262,7 @@
             : response.status === 413 ? 'editor.saveTooLarge' : 'editor.saveFailed';
           const kept = persistDraft();
           setSaveState('');
-          notice(t(key) + (kept ? t('editor.draftKept') : ''));
+          notice(t(key) + (kept ? t('editor.draftKept') : '') + (automatic && !conflicted ? t('editor.autosavePaused') : ''));
           return;
         }
         const entry = await response.json();
@@ -243,8 +270,11 @@
         if (signedOut) return;
         saving = false;
         conflicted = false;
+        autosavePaused = false;
+        autosaveReady = true;
         unverifiedDraft = false;
         baseVersion = entry.version;
+        exists = entry.exists;
         lastSavedText = entry.text;
         // Only normalize acknowledged text when the user has not typed since
         // the request snapshot. Later text remains dirty and backed up.
@@ -253,20 +283,68 @@
         setSaveState(isDirty() ? '' : 'saved');
         notice(t(isDirty() ? 'editor.unsaved' : (entry.exists ? 'editor.saved' : 'editor.blank')));
       } catch (error) {
+        if (signedOut) return;
+        autosavePaused = true;
         unverifiedDraft = true;
         const kept = persistDraft();
         setSaveState('');
-        notice(t('editor.saveFailed') + (kept ? t('editor.draftKept') : ''));
+        notice(t('editor.saveFailed') + (kept ? t('editor.draftKept') : '') + (automatic ? t('editor.autosavePaused') : ''));
       } finally {
         saving = false;
         refreshControls();
+        scheduleAutosave();
       }
     }
 
+    async function deleteEntry() {
+      if (!loaded || !exists || saving || deleting || resolving || signedOut) return;
+      if (!window.confirm(t('editor.deleteConfirm'))) return;
+      cancelAutosave();
+      deleting = true;
+      refreshControls();
+      notice(t('editor.deleting'));
+      try {
+        const response = await fetch(`/api/v1/entries/${date}`, { method: 'DELETE' });
+        if (signedOut) return;
+        if (response.status !== 204) {
+          autosavePaused = true;
+          unverifiedDraft = true;
+          const kept = persistDraft();
+          notice(t(response.status === 401 ? 'editor.sessionExpired' : 'editor.deleteFailed') + (kept ? t('editor.draftKept') : ''));
+          return;
+        }
+        textarea.value = '';
+        lastSavedText = '';
+        baseVersion = '';
+        draft = null;
+        exists = false;
+        edited = false;
+        conflicted = false;
+        unverifiedDraft = false;
+        autosaveReady = false;
+        autosavePaused = false;
+        const cleared = persistDraft();
+        setSaveState('');
+        setStatus(t(cleared ? 'editor.deleted' : 'editor.deletedBackupRetained'));
+      } catch (error) {
+        if (signedOut) return;
+        autosavePaused = true;
+        unverifiedDraft = true;
+        const kept = persistDraft();
+        notice(t('editor.deleteFailed') + (kept ? t('editor.draftKept') : ''));
+      } finally {
+        deleting = false;
+        refreshControls();
+      }
+    }
+    deleteBtn?.addEventListener('click', deleteEntry);
+
     async function resolveConflict(choice) {
-      if (!conflicted || saving || resolving || signedOut) return;
+      if (!conflicted || saving || deleting || resolving || signedOut) return;
       if (choice === 'other' && !window.confirm(t('editor.loadOtherConfirm'))) return;
       resolving = true;
+      cancelAutosave();
+      autosaveReady = false;
       refreshControls();
       notice(t('editor.loading'));
       let shouldSave = false;
@@ -277,6 +355,7 @@
         if (typeof entry.text !== 'string' || typeof entry.version !== 'string') throw new Error('invalid entry');
         if (signedOut) return;
         const mine = textarea.value;
+        exists = entry.exists;
         lastSavedText = entry.text;
         baseVersion = entry.version;
         // Rebase explicitly on the just-fetched version. A subsequent writer
@@ -285,6 +364,7 @@
         if (choice === 'both') textarea.value = mine + (mine && entry.text ? '\n\n' : '') + entry.text;
         draft = null;
         edited = choice !== 'other';
+        autosavePaused = false;
         unverifiedDraft = false;
         conflicted = false;
         persistDraft();
@@ -310,16 +390,29 @@
         return;
       }
       edited = true;
+      autosaveReady = loaded;
       if (!loaded) unverifiedDraft = true;
       persistDraft();
       setSaveState(saving ? 'saving' : '');
-      notice(t(saving ? 'editor.saving' : isDirty() ? 'editor.unsaved' : 'editor.saved'));
+      notice(t(saving ? 'editor.saving' : isDirty() ? 'editor.unsaved' : 'editor.saved') + (autosavePaused && !conflicted ? t('editor.autosavePaused') : ''));
+      scheduleAutosave();
     });
-    saveBtn.addEventListener('click', saveEntry);
+    saveBtn.addEventListener('click', () => saveEntry());
+    // Some browsers blur the textarea without focusing a clicked button.
+    [saveBtn, deleteBtn].forEach((button) => button?.addEventListener('pointerdown', () => { explicitAction = true; }));
+    window.addEventListener('pointerup', () => { explicitAction = false; });
+    window.addEventListener('pointercancel', () => { explicitAction = false; });
+    textarea.addEventListener('blur', (event) => {
+      // Let explicit actions run first; autosaving here would disable Delete
+      // before its click and save text the user intended to discard.
+      if (!explicitAction && event.relatedTarget !== deleteBtn && event.relatedTarget !== saveBtn) saveEntry({ automatic: true });
+    });
     retryBtn?.addEventListener('click', loadEntry);
     legacyBtn?.addEventListener('click', () => {
       if (!loaded || saving || isDirty() || legacyDraft === null) return;
       if (!window.confirm(t('editor.legacyDraftConfirm'))) return;
+      cancelAutosave();
+      autosaveReady = false;
       textarea.value = legacyDraft;
       edited = true;
       if (legacyVersionKnown) { baseVersion = legacyVersion; draft = { versionKnown: true }; }
@@ -338,12 +431,21 @@
         event.returnValue = '';
       }
     });
+    function saveBeforeLeaving() {
+      if (!isDirty() || signedOut) return;
+      persistDraft();
+      // Best effort only: navigation may prevent an acknowledgement. The draft
+      // and leave warning remain until the normal save path confirms success.
+      saveEntry({ automatic: true, keepalive: true });
+    }
     document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'hidden' && isDirty()) persistDraft();
+      if (document.visibilityState === 'hidden') saveBeforeLeaving();
     });
+    window.addEventListener('pagehide', saveBeforeLeaving);
     window.addEventListener('storage', (event) => {
       if (event.key === `mj-signout:${scope}`) {
         signedOut = true;
+        cancelAutosave();
         try {
           for (let i = sessionStorage.length - 1; i >= 0; i--) {
             const key = sessionStorage.key(i);
@@ -439,77 +541,101 @@
     const listRoot = document.querySelector('[data-entry-list]');
     if (!listRoot) return;
 
-    fetch('/api/v1/entries?page=1&size=20')
-      .then(async (response) => {
-        if (!response.ok) {
-          throw new Error(t('entries.unavailable'));
-        }
-        return response.json();
-      })
-      .then((data) => {
-        listRoot.innerHTML = '';
-        if (!data.items || data.items.length === 0) {
-          const empty = document.createElement('p');
-          empty.className = 'mj-empty-state';
-          empty.textContent = t('entries.empty');
-          listRoot.appendChild(empty);
-          return;
-        }
+    const newer = document.querySelector('[data-entries-newer]');
+    const older = document.querySelector('[data-entries-older]');
+    const status = document.querySelector('[data-entries-status]');
+    const retry = document.querySelector('[data-entries-retry]');
+    const requested = new URLSearchParams(window.location.search).get('page');
+    const page = /^[1-9]\d*$/.test(requested || '') && Number(requested) <= 10000 ? Number(requested) : 1;
+    if (newer) { newer.hidden = page === 1; newer.href = `/entries?page=${page - 1}`; }
 
-        const years = new Map();
-        data.items.forEach((item) => {
-          const date = new Date(`${item.date}T00:00:00Z`);
-          const year = String(date.getUTCFullYear());
-          if (!years.has(year)) {
-            years.set(year, []);
+    function loadEntries() {
+      if (retry) { retry.disabled = true; retry.hidden = true; }
+      listRoot.setAttribute('aria-busy', 'true');
+      if (status) status.textContent = t('entries.loading');
+      return fetch(`/api/v1/entries?page=${page}&size=20`)
+        .then(async (response) => {
+          if (!response.ok) {
+            throw new Error(t('entries.unavailable'));
           }
-          years.get(year).push(item);
-        });
+          return response.json();
+        })
+        .then((data) => {
+          if (!Array.isArray(data.items) || data.page !== page || typeof data.hasNext !== 'boolean') throw new Error('invalid list');
+          if (older) { older.hidden = !data.hasNext || page >= 10000; older.href = `/entries?page=${page + 1}`; }
+          if (status) status.textContent = t('entries.page', { page });
+          listRoot.innerHTML = '';
+          if (!data.items || data.items.length === 0) {
+            const empty = document.createElement('p');
+            empty.className = 'mj-empty-state';
+            empty.textContent = t('entries.empty');
+            listRoot.appendChild(empty);
+            return;
+          }
 
-        const yearsInOrder = [...years.keys()].sort((a, b) => Number(b) - Number(a));
-        yearsInOrder.forEach((year) => {
-          const yearSection = document.createElement('section');
-          yearSection.className = 'mj-entry-year';
-
-          const heading = document.createElement('h2');
-          heading.textContent = year;
-          yearSection.appendChild(heading);
-
-          const items = years.get(year).sort((a, b) => b.date.localeCompare(a.date));
-          items.forEach((item) => {
-            const article = document.createElement('article');
-            article.className = 'mj-entry-row';
-
-            const time = document.createElement('time');
-            time.dateTime = item.date;
+          const years = new Map();
+          data.items.forEach((item) => {
             const date = new Date(`${item.date}T00:00:00Z`);
-            time.textContent = date.toLocaleDateString(document.documentElement.lang, { weekday: 'short', day: '2-digit', month: 'short', timeZone: 'UTC' });
-
-            const body = document.createElement('div');
-            const title = document.createElement('h3');
-            title.innerHTML = escapeHTML(item.preview || t('entries.previewUnavailable'));
-            body.appendChild(title);
-
-            const link = document.createElement('a');
-            link.href = `/entries/${item.date}`;
-            link.className = 'mj-entry-link';
-            link.textContent = t('entries.open');
-            body.appendChild(link);
-
-            article.appendChild(time);
-            article.appendChild(body);
-            yearSection.appendChild(article);
+            const year = String(date.getUTCFullYear());
+            if (!years.has(year)) {
+              years.set(year, []);
+            }
+            years.get(year).push(item);
           });
 
-          listRoot.appendChild(yearSection);
+          const yearsInOrder = [...years.keys()].sort((a, b) => Number(b) - Number(a));
+          yearsInOrder.forEach((year) => {
+            const yearSection = document.createElement('section');
+            yearSection.className = 'mj-entry-year';
+
+            const heading = document.createElement('h2');
+            heading.textContent = year;
+            yearSection.appendChild(heading);
+
+            const items = years.get(year).sort((a, b) => b.date.localeCompare(a.date));
+            items.forEach((item) => {
+              const article = document.createElement('article');
+              article.className = 'mj-entry-row';
+
+              const time = document.createElement('time');
+              time.dateTime = item.date;
+              const date = new Date(`${item.date}T00:00:00Z`);
+              time.textContent = date.toLocaleDateString(document.documentElement.lang, { weekday: 'short', day: '2-digit', month: 'short', timeZone: 'UTC' });
+
+              const body = document.createElement('div');
+              const title = document.createElement('h3');
+              title.textContent = item.preview || t('entries.previewUnavailable');
+              body.appendChild(title);
+
+              const link = document.createElement('a');
+              link.href = `/entries/${item.date}`;
+              link.className = 'mj-entry-link';
+              link.textContent = t('entries.open');
+              body.appendChild(link);
+
+              article.appendChild(time);
+              article.appendChild(body);
+              yearSection.appendChild(article);
+            });
+
+            listRoot.appendChild(yearSection);
+          });
+        })
+        .catch(() => {
+          const error = document.createElement('p');
+          error.className = 'mj-empty-state';
+          error.textContent = t('entries.unavailable');
+          listRoot.replaceChildren(error);
+          if (older) older.hidden = true;
+          if (retry) retry.hidden = false;
+          if (status) status.textContent = t('entries.unavailable');
+        }).finally(() => {
+          listRoot.setAttribute('aria-busy', 'false');
+          if (retry) retry.disabled = false;
         });
-      })
-      .catch(() => {
-        const error = document.createElement('p');
-        error.className = 'mj-empty-state';
-        error.textContent = t('entries.unavailable');
-        listRoot.replaceChildren(error);
-      });
+    }
+    retry?.addEventListener('click', () => { if (!retry.disabled) loadEntries(); });
+    loadEntries();
   }
 
   function currentMonth() {
