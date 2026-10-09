@@ -3,6 +3,7 @@ package web
 import (
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -79,5 +80,49 @@ func TestLoginCookieHasFixedExpiry(t *testing.T) {
 	decoded, err := session.Decode(cfg.SessionKey, cookie.Value)
 	if err != nil || !decoded.IssuedAt.Equal(now) {
 		t.Fatalf("issuance mismatch: %v", err)
+	}
+}
+
+func TestSecurityHeadersAndExternalScripts(t *testing.T) {
+	cfg := config.Config{BaseURL: "http://localhost:3030", SessionKey: "test-key"}
+	router := NewRouter(cfg, provider.NewRegistry(localProvider.New(cfg.BaseURL)), mockClock{now: time.Now()}, nil)
+	for _, path := range []string{"/", "/settings", "/missing", "/api/v1/settings", "/static/js/theme-init.js"} {
+		req := httptest.NewRequest(http.MethodGet, path, nil)
+		res := httptest.NewRecorder()
+		router.ServeHTTP(res, req)
+		policy := res.Header().Get("Content-Security-Policy")
+		for _, directive := range []string{"script-src 'self'", "style-src 'self'", "object-src 'none'", "base-uri 'none'", "frame-ancestors 'none'", "form-action 'self'"} {
+			if !strings.Contains(policy, directive) {
+				t.Fatalf("%s missing %s", path, directive)
+			}
+		}
+		if strings.Contains(policy, "unsafe-inline") || strings.Contains(policy, "unsafe-eval") {
+			t.Fatal("unsafe CSP")
+		}
+		if res.Header().Get("X-Content-Type-Options") != "nosniff" || res.Header().Get("X-Frame-Options") != "DENY" || res.Header().Get("Referrer-Policy") != "no-referrer" {
+			t.Fatalf("missing security headers for %s", path)
+		}
+		if !strings.HasPrefix(path, "/static/") && res.Header().Get("Cache-Control") != "no-store" {
+			t.Fatalf("cache allowed for %s", path)
+		}
+		if path == "/" {
+			body := res.Body.String()
+			if strings.Contains(body, "<script>") || !strings.Contains(body, `src="/static/js/theme-init.js"`) {
+				t.Fatal("theme bootstrap must be external")
+			}
+			if strings.Index(body, "/static/js/theme-init.js") > strings.Index(body, "/static/css/app.css") {
+				t.Fatal("theme must initialize before stylesheet")
+			}
+		}
+		if strings.HasPrefix(path, "/static/") && res.Code != 200 {
+			t.Fatal("theme bootstrap asset unavailable")
+		}
+	}
+	req := httptest.NewRequest(http.MethodPost, "http://localhost:3030/api/v1/logout", nil)
+	req.Header.Set("Sec-Fetch-Site", "cross-site")
+	res := httptest.NewRecorder()
+	router.ServeHTTP(res, req)
+	if res.Code != 403 || res.Header().Get("Content-Security-Policy") == "" || res.Header().Get("Cache-Control") != "no-store" {
+		t.Fatal("cross-origin rejection missing headers")
 	}
 }

@@ -48,7 +48,7 @@ Goal: a usable and accessible local journaling flow, without requiring Google.
 - Verify keyboard interaction, accessible labels/live status, focus, contrast in both themes, reduced motion, 200% zoom, long/emoji/unbroken text, and template execution. Respect the device-testing waiver while recording the exact coverage performed.
 - Record S8 date/session, S9 theme, and S10 save-safety evidence and actual remaining limitations.
 
-Fixed 30-day server-side age and cookie expiry, key-rotation rejection, unsafe-request cross-origin protection, a 1 MiB save-envelope cap, and query-free logging are implemented with automated checks (2026-10-09). Timeouts/draining, CSP, complete API contract alignment, autosave, deletion/browsing controls, and real OAuth remain open. Accepted recovery/conflict/date/logout scenarios do not complete the whole phase.
+Fixed 30-day server-side age and cookie expiry, key-rotation rejection, unsafe-request cross-origin protection, a 1 MiB save-envelope cap, and query-free logging are implemented with automated checks (2026-10-09). HTTP timeouts/draining and same-origin CSP/security headers are implemented (ADR 012); Covered CSP flows passed in Chrome 155/native Safari 26.4 (see csp-browser-qa.md); Safari full startup-console history remains unverified. Complete API contract alignment, autosave, deletion/browsing controls, and real OAuth remain open. Accepted recovery/conflict/date/logout scenarios do not complete the whole phase.
 
 ## Phase 4: Google adapter
 

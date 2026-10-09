@@ -8,16 +8,7 @@
     <title>{{if .Title}}{{.Title}} · {{t "app.name"}}{{else if .TitleKey}}{{t .TitleKey}} · {{t "app.name"}}{{else}}{{t "app.name"}}{{end}}</title>
     <link rel="icon" type="image/png" sizes="64x64" href="/static/favicons/myjournal-tab-icon.png">
     <script src="/static/js/timezone.js"></script>
-    <script>
-      (function () {
-        try {
-          const saved = localStorage.getItem('mj-theme');
-          const preferred = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-          const theme = saved || preferred;
-          document.documentElement.setAttribute('data-theme', theme);
-        } catch (e) {}
-      })();
-    </script>
+    <script src="/static/js/theme-init.js"></script>
     <link rel="stylesheet" href="/static/css/app.css">
   </head>
   <body class="mj-shell" data-messages="{{.Messages}}" data-draft-scope="{{.DraftScope}}" data-today="{{.Today}}">
