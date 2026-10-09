@@ -36,11 +36,7 @@ func (s *Server) ListEntries(w http.ResponseWriter, r *http.Request, params api.
 
 	result, err := service.Page(r.Context(), page, size)
 	if err != nil {
-		if errors.Is(err, journal.ErrInvalidPagination) {
-			http.Error(w, s.message("errors.pagination"), http.StatusBadRequest)
-			return
-		}
-		http.Error(w, s.message("errors.internal"), http.StatusInternalServerError)
+		s.writeServiceError(w, err)
 		return
 	}
 
@@ -62,15 +58,11 @@ func (s *Server) GetEntry(w http.ResponseWriter, r *http.Request, date openapi_t
 
 	entry, err := service.Open(r.Context(), civil.DateOf(date.Time))
 	if err != nil {
-		if errors.Is(err, journal.ErrFutureDate) {
-			http.Error(w, s.message("errors.futureDate"), http.StatusBadRequest)
-			return
-		}
 		if errors.Is(err, journal.ErrNotFound) {
 			_ = json.NewEncoder(w).Encode(api.Entry{Date: date, Exists: false})
 			return
 		}
-		http.Error(w, s.message("errors.entryUnavailable"), http.StatusInternalServerError)
+		s.writeServiceError(w, err)
 		return
 	}
 
@@ -95,42 +87,31 @@ func (s *Server) SaveEntry(w http.ResponseWriter, r *http.Request, date openapi_
 	if err != nil {
 		var tooLarge *http.MaxBytesError
 		if errors.As(err, &tooLarge) {
-			http.Error(w, s.message("errors.requestTooLarge"), http.StatusRequestEntityTooLarge)
+			api.WriteError(w, http.StatusRequestEntityTooLarge, s.message("errors.requestTooLarge"))
 		} else {
-			http.Error(w, s.message("errors.invalidRequest"), http.StatusBadRequest)
+			api.WriteError(w, http.StatusBadRequest, s.message("errors.invalidRequest"))
 		}
 		return
 	}
-	var req api.SaveEntryRequest
-	if !utf8.Valid(payload) || json.Unmarshal(payload, &req) != nil {
-		http.Error(w, s.message("errors.invalidRequest"), http.StatusBadRequest)
+	// Pointers distinguish explicit empty strings from absent or null fields.
+	var req struct {
+		Text        *string `json:"text"`
+		BaseVersion *string `json:"baseVersion"`
+	}
+	if !utf8.Valid(payload) || json.Unmarshal(payload, &req) != nil || req.Text == nil || req.BaseVersion == nil {
+		api.WriteError(w, http.StatusBadRequest, s.message("errors.invalidRequest"))
 		return
 	}
 
 	if errors.Is(validateJSONUnicode(payload), journal.ErrInvalidText) {
-		http.Error(w, s.message("errors.invalidText"), http.StatusBadRequest)
+		api.WriteError(w, http.StatusBadRequest, s.message("errors.invalidText"))
 		return
 	}
-	base := journal.Version("")
-	if req.BaseVersion != nil {
-		base = journal.Version(*req.BaseVersion)
-	}
+	base := journal.Version(*req.BaseVersion)
 
-	entry, err := service.Save(r.Context(), civil.DateOf(date.Time), req.Text, base)
+	entry, err := service.Save(r.Context(), civil.DateOf(date.Time), *req.Text, base)
 	if err != nil {
-		if errors.Is(err, journal.ErrInvalidText) {
-			http.Error(w, s.message("errors.invalidText"), http.StatusBadRequest)
-			return
-		}
-		if errors.Is(err, journal.ErrConflict) {
-			http.Error(w, s.message("errors.conflict"), http.StatusConflict)
-			return
-		}
-		if errors.Is(err, journal.ErrFutureDate) {
-			http.Error(w, s.message("errors.futureDate"), http.StatusBadRequest)
-			return
-		}
-		http.Error(w, s.message("errors.entryUnavailable"), http.StatusInternalServerError)
+		s.writeServiceError(w, err)
 		return
 	}
 
@@ -149,15 +130,7 @@ func (s *Server) DeleteEntry(w http.ResponseWriter, r *http.Request, date openap
 		return
 	}
 	if err := service.Delete(r.Context(), civil.DateOf(date.Time)); err != nil {
-		if errors.Is(err, journal.ErrFutureDate) {
-			http.Error(w, s.message("errors.futureDate"), http.StatusBadRequest)
-			return
-		}
-		if errors.Is(err, journal.ErrNotFound) {
-			http.Error(w, s.message("errors.entryUnavailable"), http.StatusNotFound)
-			return
-		}
-		http.Error(w, s.message("errors.entryUnavailable"), http.StatusInternalServerError)
+		s.writeServiceError(w, err)
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
@@ -171,19 +144,16 @@ func (s *Server) GetCalendar(w http.ResponseWriter, r *http.Request, params api.
 		return
 	}
 
-	today := service.Today(journal.TimeZone(r.Context()))
-	monthKey := time.Date(today.Year, today.Month, today.Day, 0, 0, 0, 0, time.UTC)
-	if params.Month != "" {
-		parsed, err := time.Parse("2006-01", params.Month)
-		if err == nil {
-			monthKey = parsed
-		}
+	monthKey, err := time.Parse("2006-01", params.Month)
+	if err != nil || monthKey.Year() < 1 {
+		api.WriteError(w, http.StatusBadRequest, s.message("errors.invalidRequest"))
+		return
 	}
 
 	year, month := monthKey.Year(), monthKey.Month()
 	monthView, err := service.Month(r.Context(), year, month)
 	if err != nil {
-		http.Error(w, s.message("errors.entryUnavailable"), http.StatusInternalServerError)
+		s.writeServiceError(w, err)
 		return
 	}
 	weeks := make([][]api.CalendarDay, 0, len(monthView.Weeks))

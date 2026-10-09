@@ -10,13 +10,13 @@ import (
 func (s *Server) StartProviderLogin(w http.ResponseWriter, r *http.Request, providerName api.StartProviderLoginParamsProvider) {
 	p, ok := s.registry.Get(string(providerName))
 	if !ok {
-		http.Error(w, s.message("errors.providerUnavailable"), http.StatusNotFound)
+		api.WriteError(w, http.StatusNotFound, s.message("errors.providerUnavailable"))
 		return
 	}
 
 	authURL, err := p.Begin(r.Context(), "")
 	if err != nil {
-		http.Error(w, s.message("errors.signInUnavailable"), http.StatusBadGateway)
+		api.WriteError(w, http.StatusBadGateway, s.message("errors.signInUnavailable"))
 		return
 	}
 	http.Redirect(w, r, authURL, http.StatusFound)
@@ -25,20 +25,20 @@ func (s *Server) StartProviderLogin(w http.ResponseWriter, r *http.Request, prov
 func (s *Server) CompleteProviderLogin(w http.ResponseWriter, r *http.Request, providerName api.CompleteProviderLoginParamsProvider, params api.CompleteProviderLoginParams) {
 	p, ok := s.registry.Get(string(providerName))
 	if !ok {
-		http.Error(w, s.message("errors.providerUnavailable"), http.StatusNotFound)
+		api.WriteError(w, http.StatusNotFound, s.message("errors.providerUnavailable"))
 		return
 	}
 
 	conn, err := p.Complete(r.Context(), "")
 	if err != nil {
-		http.Error(w, s.message("errors.signInFailed"), http.StatusUnauthorized)
+		api.WriteError(w, http.StatusUnauthorized, s.message("errors.signInFailed"))
 		return
 	}
 
 	stored := session.Session{Connection: conn, IssuedAt: s.now().UTC()}
 	encoded, err := session.Encode(s.cfg.SessionKey, stored)
 	if err != nil {
-		http.Error(w, s.message("errors.session"), http.StatusInternalServerError)
+		api.WriteError(w, http.StatusInternalServerError, s.message("errors.session"))
 		return
 	}
 

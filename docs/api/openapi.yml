@@ -10,10 +10,13 @@ info:
 servers:
   - url: http://localhost:3030
     description: Local development server
+security:
+  - sessionCookie: []
 paths:
   /healthz:
     get:
       summary: Health check
+      security: []
       operationId: healthz
       responses:
         '200':
@@ -34,15 +37,21 @@ paths:
         '400':
           description: Page or size is outside the supported range, or is not an integer
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
+                $ref: '#/components/schemas/Error'
         '200':
           description: Paginated list of entries
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ListEntriesResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/Unavailable'
 
   /api/v1/entries/{date}:
     parameters:
@@ -52,15 +61,19 @@ paths:
       operationId: getEntry
       responses:
         '400':
-          $ref: '#/components/responses/FutureDate'
+          $ref: '#/components/responses/BadRequest'
         '200':
-          description: Entry payload
+          description: Entry payload. Missing entries return 200 with exists false and empty text/version.
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/Entry'
-        '404':
-          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/Unavailable'
     put:
       summary: Save or create an entry
       description: Requires a valid session. JSON envelope is limited to 1048576 bytes. Invalid UTF-8 and unpaired Unicode surrogate escapes are rejected without saving. Unsafe cross-origin browser requests are rejected.
@@ -73,11 +86,11 @@ paths:
               $ref: '#/components/schemas/SaveEntryRequest'
       responses:
         '400':
-          description: Invalid JSON, invalid Unicode, or a future entry date.
+          description: Invalid JSON, missing/null/non-string required fields, invalid Unicode, or a future entry date.
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
+                $ref: '#/components/schemas/Error'
         '200':
           description: Updated entry
           content:
@@ -91,27 +104,37 @@ paths:
         '403':
           description: Cross-origin browser request rejected.
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
+                $ref: '#/components/schemas/Error'
         '413':
           description: JSON envelope exceeds 1048576 bytes.
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
-        '422':
-          $ref: '#/components/responses/ValidationError'
+                $ref: '#/components/schemas/Error'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/Unavailable'
     delete:
       summary: Move an entry to trash
       operationId: deleteEntry
       responses:
         '400':
-          $ref: '#/components/responses/FutureDate'
+          $ref: '#/components/responses/BadRequest'
         '204':
           description: Entry deleted
         '404':
           $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
   /api/v1/calendar:
     get:
@@ -126,20 +149,38 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CalendarResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/Unavailable'
 
   /api/v1/auth/{provider}/login:
     get:
       summary: Start provider login flow
+      security: []
       operationId: startProviderLogin
       parameters:
         - $ref: '#/components/parameters/ProviderPathParam'
       responses:
         '302':
           description: Redirect to provider login
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '502':
+          $ref: '#/components/responses/BadGateway'
 
   /api/v1/auth/{provider}/callback:
     get:
       summary: Complete provider login flow
+      security: []
       operationId: completeProviderLogin
       parameters:
         - $ref: '#/components/parameters/ProviderPathParam'
@@ -150,14 +191,25 @@ paths:
           description: Redirect to authenticated app page
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalError'
 
   /api/v1/logout:
     post:
       summary: Log the current user out
+      security: []
       operationId: logout
       responses:
         '302':
           description: Redirect to landing page
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '403':
+          $ref: '#/components/responses/Forbidden'
 
   /api/v1/settings:
     get:
@@ -170,8 +222,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SettingsResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalError'
 
 components:
+  securitySchemes:
+    sessionCookie:
+      type: apiKey
+      in: cookie
+      name: mj_session
+      description: Encrypted authenticated HttpOnly cookie, SameSite=Lax, fixed 30-day lifetime. Secure is required for HTTPS deployment; localhost development can disable it. Missing, expired, invalid, or revoked connections require sign-in (401).
   parameters:
     ProviderPathParam:
       name: provider
@@ -212,7 +276,8 @@ components:
       required: true
       schema:
         type: string
-        pattern: '^\d{4}-\d{2}$'
+        pattern: '^[0-9]{4}-(0[1-9]|1[0-2])$'
+        description: Required calendar month in YYYY-MM format, year 0001 through 9999.
     AuthCodeQueryParam:
       in: query
       name: code
@@ -252,12 +317,13 @@ components:
     SaveEntryRequest:
       type: object
       required: [text, baseVersion]
+      description: Both fields must be explicit strings. Empty text is valid; omitted or null fields are rejected.
       properties:
         text:
           type: string
         baseVersion:
           type: string
-          nullable: true
+          description: Empty string creates a missing entry; otherwise must match the current opaque version.
 
     ListEntriesResponse:
       type: object
@@ -339,12 +405,6 @@ components:
           type: string
 
   responses:
-    FutureDate:
-      description: Entry date is later than today in the resolved user time zone.
-      content:
-        text/plain:
-          schema:
-            type: string
     NotFound:
       description: Resource not found
       content:
@@ -357,14 +417,38 @@ components:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
-    ValidationError:
-      description: Validation failed
+    BadRequest:
+      description: Invalid parameters, JSON shape, Unicode, or future date
       content:
         application/json:
           schema:
             $ref: '#/components/schemas/Error'
     Unauthorized:
       description: Authentication is required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Cross-origin browser request rejected
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    InternalError:
+      description: Unexpected server error; internal details are suppressed
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unavailable:
+      description: Storage temporarily unavailable
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    BadGateway:
+      description: Sign-in provider could not be reached
       content:
         application/json:
           schema:
