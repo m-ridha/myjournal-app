@@ -79,3 +79,20 @@ Record observations here or in findings.md. The user confirmed all eight checks 
 4. If testing HTTP 503 with request interception, repeat the backup-retention check with that response. A transport failure can occur after the server has cleared the cookie; in that case text still recovers, but saving can require reconnecting.
 
 Automated regressions cover pending logout, HTTP 503, network rejection, editor recovery/save after failure, successful retry, and a storage failure after successful logout. The latter must clearly say signed out and offer Retry draft cleanup without repeating the logout request. The user confirmed this failed-logout recovery checklist works on 2026-10-09; browser/version and any optional request-interception scenarios were not specified.
+
+
+## Oversized save recovery (PR #5 follow-up)
+
+Use a disposable past entry. Copy any existing unsaved text somewhere safe first. After the entry finishes loading, run this in the browser console to insert synthetic oversized text:
+
+```js
+const oversizedEditor = document.querySelector('[data-entry-text]');
+oversizedEditor.value = 'x'.repeat(1024 * 1024);
+oversizedEditor.dispatchEvent(new Event('input', { bubbles: true }));
+```
+
+1. Click Save. The PUT must return 413. The status should identify the 1 MiB request limit and advise copying the full text somewhere safe before shortening it. The text stays visible/editable and the page must not show Saved.
+2. If browser backup is available, the status also says Draft kept locally. Reload: the synthetic draft should restore. If quota/storage access prevents backup, the status must instead advise keeping the page open or copying the text; reload recovery is not promised.
+3. After copying anything you need to preserve, replace the synthetic text with a short test sentence and Save. It should succeed and clear the saved draft.
+
+The cap applies to the entire serialized JSON request, so exactly 1 MiB of ASCII text exceeds it once the request fields are added. Automated regressions cover the 413 response, newer edits during the pending request, recovery/retry, and unavailable backup. This browser follow-up is not yet human-reported.

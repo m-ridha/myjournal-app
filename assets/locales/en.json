@@ -72,6 +72,7 @@
   "settings.signOutFailed": "Unable to sign out. Please retry.",
   "settings.draftCleanupFailed": "Unable to clear browser drafts. Clear this site's browser storage before signing out on a shared device.",
   "editor.saveFailed": "Save failed.",
+  "editor.saveTooLarge": "This entry is too large to save (1 MiB request limit). Copy your full text somewhere safe before shortening it and saving again.",
   "editor.draftKept": " Draft kept locally.",
   "editor.saveFailedDraftKept": "Save failed. Draft kept locally.",
   "entries.kicker": "Journal",

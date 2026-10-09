@@ -344,3 +344,12 @@ Save reads at most a 1 MiB JSON envelope using MaxBytesReader and returns locali
 Automated coverage includes Unicode/LF preservation, leading blanks beyond the preview cap, emoji/CJK/combining-mark boundaries, invalid external files, malformed JSON bytes/surrogates, oversize requests, exact expiry/future/zero issuance, old-key rejection, cookie attributes, page/API rejection, cross-origin mutation/logout rejection before cookie changes, same-origin logout, and log secret omission. No new human browser acceptance or Google result is claimed. Remaining security work includes HTTP timeouts/draining, CSP-compatible scripts/headers, real OAuth state/PKCE and provider validation, and complete API alignment.
 
 Verification after the final changes: `make fmt lint test` passed with 0 lint issues, both JavaScript suites, and all Go tests. `go test -race ./internal/journal ./internal/provider/local ./internal/cachestore ./internal/session ./internal/web/...` passed. `git diff --check` passed. No commit or push was performed.
+
+
+## PR #5 review: explain permanent save-size rejection (2026-10-09)
+
+Checked the review and sole unresolved inline comment, [discussion_r4227283422](https://github.com/mridha-work/myjournal-app/pull/5#discussion_r4227283422), against the current editor. The P2 finding is valid: the server's new 413 response was mapped to generic Save failed, hiding the permanent request-size limit. Text/backups were retained, but retrying the unchanged request could not succeed.
+
+The shared save path now maps 413 to a dedicated locale message stating the 1 MiB request limit and advising copying the full text somewhere safe before shortening and saving again. This also covers saves initiated by Keep mine. Existing draft persistence, base-version handling, unsaved status, and control re-enabling are retained; the UI does not render arbitrary server error bodies.
+
+Editor regressions cover 413 during pending-save edits, retained latest text/base version/backup, leave warning, reload recovery, successful save after shortening, and truthful warning when browser backup is unavailable. `make fmt lint test` passed with 0 lint issues, both JavaScript suites, and all Go tests. `git diff --check` passed. No new human browser result is claimed; the optional browser check is in editor-recovery-checks.md. The fix remains local: no commit, push, review reply, or thread resolution performed.
