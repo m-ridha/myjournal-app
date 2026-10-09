@@ -806,3 +806,11 @@ html[data-theme="dark"] .icon-moon {
     text-align: left;
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition: none !important;
+    animation: none !important;
+    scroll-behavior: auto !important;
+  }
+}

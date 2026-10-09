@@ -212,6 +212,9 @@ type ServerInterface interface {
 	// GetCalendar Get a calendar view for a month
 	// (GET /api/v1/calendar)
 	GetCalendar(w http.ResponseWriter, r *http.Request, params GetCalendarParams)
+	// Disconnect Revoke the connected provider and sign out
+	// (POST /api/v1/disconnect)
+	Disconnect(w http.ResponseWriter, r *http.Request)
 	// ListEntries List entries
 	// (GET /api/v1/entries)
 	ListEntries(w http.ResponseWriter, r *http.Request, params ListEntriesParams)
@@ -254,6 +257,12 @@ func (_ Unimplemented) StartProviderLogin(w http.ResponseWriter, r *http.Request
 // GetCalendar Get a calendar view for a month
 // (GET /api/v1/calendar)
 func (_ Unimplemented) GetCalendar(w http.ResponseWriter, r *http.Request, params GetCalendarParams) {
+	w.WriteHeader(http.StatusNotImplemented)
+}
+
+// Disconnect Revoke the connected provider and sign out
+// (POST /api/v1/disconnect)
+func (_ Unimplemented) Disconnect(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -413,6 +422,20 @@ func (siw *ServerInterfaceWrapper) GetCalendar(w http.ResponseWriter, r *http.Re
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.GetCalendar(w, r, params)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// Disconnect operation middleware
+func (siw *ServerInterfaceWrapper) Disconnect(w http.ResponseWriter, r *http.Request) {
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.Disconnect(w, r)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -727,6 +750,9 @@ func HandlerWithOptions(si ServerInterface, options ChiServerOptions) http.Handl
 	})
 	r.Group(func(r chi.Router) {
 		r.Post(options.BaseURL+"/api/v1/logout", wrapper.Logout)
+	})
+	r.Group(func(r chi.Router) {
+		r.Post(options.BaseURL+"/api/v1/disconnect", wrapper.Disconnect)
 	})
 	r.Group(func(r chi.Router) {
 		r.Get(options.BaseURL+"/api/v1/settings", wrapper.GetSettings)

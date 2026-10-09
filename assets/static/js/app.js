@@ -483,15 +483,23 @@
   }
 
   function initSignOut() {
-    const button = document.querySelector('[data-sign-out]');
+    const signOut = document.querySelector('[data-sign-out]');
+    const disconnect = document.querySelector('[data-disconnect]');
+    const buttons = [signOut, disconnect].filter(Boolean);
     const status = document.querySelector('[data-sign-out-status]');
     const scope = document.body.dataset.draftScope;
-    if (!button || !status || !scope) return;
+    if (!buttons.length || !status || !scope) return;
     let loggedOut = false;
-    button.addEventListener('click', async () => {
+    function unlock(active) {
+      buttons.forEach((button) => { button.disabled = loggedOut && button !== active; });
+    }
+    buttons.forEach((button) => button.addEventListener('click', async () => {
       if (button.disabled) return;
-      button.disabled = true;
+      const revoking = button === disconnect;
+      if (!loggedOut && revoking && !window.confirm(t('settings.disconnectConfirm'))) return;
+      buttons.forEach((button) => { button.disabled = true; });
       if (!loggedOut) {
+        status.textContent = t(revoking ? 'settings.disconnecting' : 'settings.signingOut');
         try {
           // Check storage access without deleting drafts or announcing logout.
           // A failed request must leave every tab's recovery path intact.
@@ -502,16 +510,16 @@
           });
         } catch (error) {
           status.textContent = t('settings.draftCleanupFailed');
-          button.disabled = false;
+          unlock(button);
           return;
         }
         try {
-          const response = await fetch('/api/v1/logout', { method: 'POST' });
-          if (!response.ok) throw new Error('sign out failed');
+          const response = await fetch(revoking ? '/api/v1/disconnect' : '/api/v1/logout', { method: 'POST' });
+          if (revoking ? response.status !== 204 : !response.ok) throw new Error('connection not ended');
           loggedOut = true;
         } catch (error) {
-          status.textContent = t('settings.signOutFailed');
-          button.disabled = false;
+          status.textContent = t(revoking ? 'settings.disconnectFailed' : 'settings.signOutFailed');
+          unlock(button);
           return;
         }
       }
@@ -532,9 +540,9 @@
       } catch (error) {
         status.textContent = t('settings.signedOutCleanupFailed');
         button.textContent = t('settings.retryDraftCleanup');
-        button.disabled = false;
+        unlock(button);
       }
-    });
+    }));
   }
 
   function initEntriesList() {
@@ -658,6 +666,7 @@
     const nextBtn = calendar.querySelector('[data-calendar-next]');
     const todayBtn = calendar.querySelector('[data-calendar-today]');
     let month = currentMonth();
+    let calendarRequest = 0;
 
     function renderDay(day) {
       const button = document.createElement('button');
@@ -700,41 +709,54 @@
     }
 
     async function loadCalendar() {
+      const request = ++calendarRequest;
+      const requestedMonth = month;
       monthLabel.textContent = t('calendar.loading');
-      grid.innerHTML = '';
-      const response = await fetch(`/api/v1/calendar?month=${month}`);
-      if (!response.ok) throw new Error(t('calendar.unavailable'));
-      const data = await response.json();
-      monthLabel.textContent = new Date(Date.UTC(data.year, data.month - 1, 1)).toLocaleDateString(document.documentElement.lang, {
-        month: 'long',
-        year: 'numeric',
-        timeZone: 'UTC',
-      });
+      grid.setAttribute('aria-busy', 'true');
+      try {
+        grid.innerHTML = '';
+        const response = await fetch(`/api/v1/calendar?month=${requestedMonth}`);
+        if (!response.ok) throw new Error(t('calendar.unavailable'));
+        const data = await response.json();
+        if (request !== calendarRequest) return;
+        if (`${String(data.year).padStart(4, '0')}-${String(data.month).padStart(2, '0')}` !== requestedMonth || !Array.isArray(data.weeks)) throw new Error('invalid calendar');
+        monthLabel.textContent = new Date(`${requestedMonth}-01T00:00:00Z`).toLocaleDateString(document.documentElement.lang, {
+          month: 'long',
+          year: 'numeric',
+          timeZone: 'UTC',
+        });
 
-      Array.from({ length: 7 }, (_, offset) => {
-        const weekday = new Date(Date.UTC(2024, 0, 1 + offset));
-        return weekday.toLocaleDateString(document.documentElement.lang, { weekday: 'short', timeZone: 'UTC' });
-      }).forEach((name) => {
-        const heading = document.createElement('span');
-        heading.textContent = name;
-        grid.appendChild(heading);
-      });
-      data.weeks.flat().forEach((day) => grid.appendChild(renderDay(day)));
+        Array.from({ length: 7 }, (_, offset) => {
+          const weekday = new Date(Date.UTC(2024, 0, 1 + offset));
+          return weekday.toLocaleDateString(document.documentElement.lang, { weekday: 'short', timeZone: 'UTC' });
+        }).forEach((name) => {
+          const heading = document.createElement('span');
+          heading.textContent = name;
+          grid.appendChild(heading);
+        });
+        data.weeks.flat().forEach((day) => grid.appendChild(renderDay(day)));
+      } catch (error) {
+        if (request !== calendarRequest) return;
+        grid.innerHTML = '';
+        monthLabel.textContent = t('calendar.unavailable');
+      } finally {
+        if (request === calendarRequest) grid.setAttribute('aria-busy', 'false');
+      }
     }
 
     prevBtn.addEventListener('click', () => {
       month = shiftMonth(month, -1);
-      loadCalendar().catch(() => { monthLabel.textContent = t('calendar.unavailable'); });
+      loadCalendar();
     });
     nextBtn.addEventListener('click', () => {
       month = shiftMonth(month, 1);
-      loadCalendar().catch(() => { monthLabel.textContent = t('calendar.unavailable'); });
+      loadCalendar();
     });
     todayBtn.addEventListener('click', () => {
       month = currentMonth();
-      loadCalendar().catch(() => { monthLabel.textContent = t('calendar.unavailable'); });
+      loadCalendar();
     });
-    loadCalendar().catch(() => { monthLabel.textContent = t('calendar.unavailable'); });
+    loadCalendar();
   }
 
   document.addEventListener('DOMContentLoaded', () => {

@@ -43,7 +43,7 @@ The fallback while no production domain exists is to continue local/test-account
 - Keep the existing standard-library AES-GCM codec; S7 provided round-trip/lifecycle evidence. Implement production age enforcement against the approved lifetime before enabling Google.
 - Use standard-library `net/http.CrossOriginProtection` for unsafe browser requests. The installed Go toolchain exposes it (`go doc net/http.CrossOriginProtection`), and S7 tests reject a cross-origin POST. OAuth callbacks still require explicit state and PKCE checks. Production CSRF wiring is pending.
 - Keep `html/template`, chi, `log/slog`, `cloud.google.com/go/civil`, `golang.org/x/oauth2`, and `google.golang.org/api/drive/v3`/`idtoken`. These are existing dependencies or standard packages exercised in the repository/spikes; no new dependency or maintenance ranking was introduced.
-- Add focused security headers in the existing web layer during the security phase. Retain Google Wire and oapi-codegen as already decided. The vanilla-JavaScript/HTMX discrepancy still needs its own decision; these choices do not silently settle it.
+- Add focused security headers in the existing web layer during the security phase. Retain Google Wire and oapi-codegen as already decided. The browser architecture was subsequently settled by user decision in [ADR 014](adr/014-json-vanilla-javascript.md): keep JSON API and vanilla JavaScript; HTMX is excluded.
 
 ## Go decision and gates
 

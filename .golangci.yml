@@ -19,7 +19,7 @@ linters:
       rules:
         core:
           files:
-            - "internal/journal/**/*.go"
+            - "**/internal/journal/**.go"
           deny:
             - pkg: net/http
               desc: "The core domain must not import HTTP packages"
@@ -38,9 +38,10 @@ linters:
 
         driving-side:
           files:
-            - "internal/web/**/*.go"
-            - "internal/session/**/*.go"
-            - "internal/provider/provider.go"
+            - "!**/*_test.go"
+            - "**/internal/web/**.go"
+            - "**/internal/session/**.go"
+            - "**/internal/provider/provider.go"
           deny:
             - pkg: github/mridha/myjournal-app/internal/provider/google
               desc: "Only cmd/app may import a concrete provider implementation"
@@ -48,11 +49,13 @@ linters:
               desc: "Only cmd/app may import a concrete provider implementation"
             - pkg: github/mridha/myjournal-app/internal/cachestore
               desc: "Only cmd/app wires the cache; web talks to journal.Service"
+            - pkg: github/mridha/myjournal-app/internal/clock
+              desc: "Only cmd/app wires the system clock; web uses journal.Clock"
 
         driven-side:
           files:
-            - "internal/provider/google/**/*.go"
-            - "internal/provider/local/**/*.go"
+            - "**/internal/provider/google/**.go"
+            - "**/internal/provider/local/**.go"
           deny:
             - pkg: github/mridha/myjournal-app/internal/web
               desc: "A provider must never import the web layer"

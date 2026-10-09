@@ -55,7 +55,7 @@ func (s *Server) CompleteProviderLogin(w http.ResponseWriter, r *http.Request, p
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
-func (s *Server) Logout(w http.ResponseWriter, r *http.Request) {
+func (s *Server) clearSessionCookie(w http.ResponseWriter) {
 	http.SetCookie(w, &http.Cookie{
 		Name:     session.CookieName,
 		Value:    "",
@@ -65,5 +65,28 @@ func (s *Server) Logout(w http.ResponseWriter, r *http.Request) {
 		SameSite: http.SameSiteLaxMode,
 		Secure:   s.cfg.CookieSecure,
 	})
+}
+
+func (s *Server) Logout(w http.ResponseWriter, r *http.Request) {
+	s.clearSessionCookie(w)
 	http.Redirect(w, r, "/", http.StatusFound)
+}
+
+func (s *Server) Disconnect(w http.ResponseWriter, r *http.Request) {
+	current, err := s.currentSession(r)
+	if err != nil {
+		s.writeServiceError(w, err)
+		return
+	}
+	p, ok := s.registry.Get(current.ProviderID)
+	if !ok {
+		s.writeServiceError(w, ErrUnauthenticated)
+		return
+	}
+	if err := p.Revoke(r.Context(), current.Connection); err != nil {
+		s.writeServiceError(w, err)
+		return
+	}
+	s.clearSessionCookie(w)
+	w.WriteHeader(http.StatusNoContent)
 }

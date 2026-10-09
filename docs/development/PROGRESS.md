@@ -104,6 +104,10 @@ Validation result: `make fmt lint test` passed successfully in the current works
 - [x] Add confirmed entry trash with pending-mutation locks, failure recovery, acknowledged draft cleanup, and Newer/Older list links with bounded page queries/retry (2026-10-09)
 - [x] Move trash action to a theme-aware accessible SVG button inside the editor, with a solid floating background, right-side text clearance, keyboard focus and touch visibility; Chrome desktop/touch emulation checked (2026-10-09)
 - [x] Address PR #8 review: reset saved styling on confirmed deletion; cover HTTP failures/lost acknowledgements with retained recovery and neutral status (2026-10-09)
+- [x] Ignore stale calendar successes/errors and expose loading state; implement confirmed Settings disconnect through provider revocation, retaining session/drafts on failure and preserving saved files (local Chrome QA and automated regressions, 2026-10-09)
+- [x] Verify and fix depguard path matching with seven temporary forbidden-import probes; add make test-architecture and explicit clock wiring boundary (2026-10-09)
+- [x] Follow device theme until explicit selection, tolerate blocked/invalid theme storage, add reduced-motion support and localized navigation/calendar status semantics; focused Chrome keyboard/reflow checks pass (2026-10-09)
+- [x] Adopt JSON API and vanilla JavaScript; exclude HTMX by user decision, record ADR 014, and preserve migration research as historical documentation (2026-10-09)
 - [ ] Remaining Phase 2/3 security/API/UI acceptance gates remain open
 
 ## Restructuring addendum
