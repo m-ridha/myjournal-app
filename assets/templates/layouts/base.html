@@ -7,6 +7,7 @@
     <meta name="description" content="{{if .DescriptionKey}}{{t .DescriptionKey}}{{else if .Description}}{{.Description}}{{else}}{{t "app.description"}}{{end}}">
     <title>{{if .Title}}{{.Title}} · {{t "app.name"}}{{else if .TitleKey}}{{t .TitleKey}} · {{t "app.name"}}{{else}}{{t "app.name"}}{{end}}</title>
     <link rel="icon" type="image/png" sizes="64x64" href="/static/favicons/myjournal-tab-icon.png">
+    <script src="/static/js/timezone.js"></script>
     <script>
       (function () {
         try {
@@ -19,7 +20,7 @@
     </script>
     <link rel="stylesheet" href="/static/css/app.css">
   </head>
-  <body class="mj-shell" data-messages="{{.Messages}}">
+  <body class="mj-shell" data-messages="{{.Messages}}" data-draft-scope="{{.DraftScope}}" data-today="{{.Today}}">
     <header class="mj-header">
       <div class="mj-container mj-header-inner">
         <a class="mj-brand" href="/">{{t "app.name"}}</a>

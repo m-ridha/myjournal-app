@@ -133,6 +133,16 @@
 - Decision: production ensure-path operations need a shared per-provider/account lock across session-scoped stores, plus deterministic oldest-wins handling for existing duplicates. Preserve duplicate/data-bearing folders for inspection; this run did not test automatic merging, cross-instance locking, or eventual list consistency. No test folders were cleaned up automatically.
 - Phase 1 evidence/fallbacks and the user's go decision are now recorded in `docs/development/phase-1-review.md`. S5/S6 are conservative documented fallback plans, not live revision/latency acceptance. Production OAuth setup, Phase 2/3 acceptance gaps, and validated Google implementation remain outstanding.
 
+## Editor text safety follow-up (2026-10-08)
+
+- The editor restores account-scoped drafts over server text and keeps recovered text dirty against the server baseline. Drafts carry the version they were based on, so recovery of stale text does not silently adopt the newest server version. Empty and whitespace-only edits are retained; loading cannot overwrite text typed while the GET is pending. Save stays disabled until the server baseline is known, with a localized retry-loading action after failures.
+- Save acknowledges only the submitted snapshot. Text typed during a PUT stays dirty and backed up against the newly returned version; Save remains disabled until the in-flight request settles. Conflicts, expired sessions, network failures, and invalid response bodies preserve text and restore usable controls. Storage errors are guarded and do not falsely claim that a backup was kept.
+- Reverting to the previously loaded text while a different save is in flight still keeps a backup and leave warning. If the response is lost, the editor treats the outcome as uncertain rather than clearing that text as clean; a regression covers this case.
+- New draft keys use an opaque SHA-256 scope over provider/account identity plus the selected date. Labels and credentials are not exposed in that scope. Older date-only drafts are never automatically assigned to an account: an explicit confirmation offers recovery, and migration removes the old copy only after a successful scoped write.
+- Settings Sign out now clears the current account's drafts and legacy unscoped drafts, preserves unrelated account/theme keys, and broadcasts a storage marker to stop other open editor tabs from recreating drafts. Failed cleanup is visible before the logout request; failed logout is retryable. Disconnect remains separate and unwired.
+- Dependency-free JavaScript interaction regressions run through `make test-js`, using Node.js or macOS JavaScriptCore, and are included in `make test`. Go tests cover provider/account scope separation, stable scope across label changes, and rendering without credentials. `make fmt lint test` passed: 0 lint issues, editor interaction regressions passed, and all Go tests passed.
+- Manual browser checks are documented in `docs/development/editor-recovery-checks.md`; none were reported or automated in a real browser during this change. Multiple simultaneous same-date tabs still share a draft key; this change does not establish independent backup histories. Autosave/page-hide network saves, conflict-resolution choices, timezone handling, and the remaining Phase 2/3 acceptance work are still pending. Google remains disabled.
+
 ## Unverified assumptions
 
 - S2 Google Drive folder metadata behavior is verified for the test account; production adapter behavior remains unverified.
@@ -183,3 +193,58 @@
 - The local provider can only be registered for exact `localhost` or loopback IP hostnames; `localhost.evil.com` is rejected.
 - Startup refuses the Google provider while OAuth and Drive storage remain stubs, instead of allowing placeholder credentials to appear successful.
 - Session expiration and key rotation remain open; `IssuedAt` is required but no maximum session age is enforced yet.
+
+
+## Browser date consistency (2026-10-08)
+
+Implemented ADR 010: browser IANA preference resolves once per request, with UTC fallback. Pages, calendar defaults/markers, and future-date checks now share that location. Entry reads and deletes reject future dates before storage access, as saves already do; the API contract documents the actual 400 text response. Regenerated OpenAPI with installed oapi-codegen v2.8.0; generated Go output was unchanged.
+
+Default editor URLs become explicit selected dates before editor requests start. Time-zone correction reloads an explicit URL without changing its date. Saving after midnight retains that date. Browser bootstrap tolerates blocked cookies without repeated reloads; app startup embeds the IANA database.
+
+Verification: `make generate-openapi` and `make fmt lint test` passed (0 lint issues, editor and timezone JavaScript regressions, all Go tests). Fixed-clock cases include Jakarta midnight, Los Angeles, Kiritimati/Honolulu, and New York spring/fall DST transitions. Router tests verify local-day access and UTC fallback; middleware tests verify invalid input and one resolution per request. These are automated observations, not live browser acceptance.
+
+Human-reported check (2026-10-08): `/entries/today` immediately became `/entries/2026-10-08`. This confirms default-route date canonicalization in the tested browser; browser/version was not specified for this check. The user subsequently confirmed that reloading an explicit past entry preserves its date and the calendar marks October 8 as today. Timezone cookie/correction was subsequently confirmed on 2026-10-09; broader browser coverage remains limited to the reported checks.
+
+Manual follow-up: run local mode with `make run`; inspect `mj_tz` in Chrome and Safari, verify correction when the browser timezone changes, and check current-day navigation. Default-route canonicalization, past-date reload, and the today calendar marker have passed in the user-tested browser. Selected-date preservation was accepted by the user based on the observed date-specific PUT request; automated tests cover the midnight crossing. A loaded page retains its initial today snapshot until navigation/reload. Configurable week start remains pending.
+
+
+Human-reported midnight check (2026-10-09): at 00:00 WIB (Asia/Jakarta), the entry date became `2026-10-09` and the calendar marked October 9 as the current day. Browser/version and navigation method were not specified. This confirms the observed current-day selection and calendar marker at local midnight; the user subsequently accepted selected-date preservation based on the observed `PUT /api/v1/entries/2026-10-09` request. The request targets the selected record date. An already-open prior-day save across midnight is covered by automated domain tests; the reported API observation does not independently demonstrate that particular live scenario.
+
+
+Human-reported browser/layout checks (2026-10-09): Safari testing and simulated mobile screen-size changes looked good. Exact scenarios and browser version were not specified in this report. This records Safari and responsive-layout observations; actual phone-browser testing was subsequently skipped by user decision (see below). Time-zone correction was subsequently confirmed as recorded below.
+
+
+Human-reported time-zone correction (2026-10-09): after the stale-cookie test, the user confirmed that the timezone cookie corrects itself and `/entries/today` selects the correct date for `Asia/Jakarta`. Browser/version was not specified for this check. This completes the reported manual cookie-correction and local-today checks; actual phone-browser testing was subsequently skipped by user decision; configurable calendar week start remains pending.
+
+
+Acceptance decision (2026-10-09): the user chose to skip actual phone-browser testing and accept browser developer-mode device-toolbar testing for this stage. This records a waived device check, not evidence of a physical phone run.
+
+
+## Week-start deferral and pagination bounds (2026-10-09)
+
+The user explicitly shelved configurable calendar week start as a nice-to-have feature. This supersedes the guide's current-phase requirement for both week starts. Keep Monday first; the idea is parked in `docs/development/ideas.md` and is no longer an acceptance blocker.
+
+Pagination previously allocated all dates up to the requested offset and multiplied unchecked page values. The service now accepts pages 1–10000 and sizes 1–100, validating before storage access. It skips offset entries and retains at most size+1 dates to detect the next page. API defaults remain page 1/size 20; explicitly invalid ranges return localized HTTP 400 instead of silently defaulting. The API contract records those bounds and responses. Year metadata still comes from the provider's year index; this change bounds retained page dates, not provider index allocations or total scan time.
+
+Verification: `make generate-openapi`, `make fmt lint test`, and `git diff --check` passed. Lint reported 0 issues; editor/timezone JavaScript regressions and all Go tests passed. New tests cover maximum-int and invalid ranges, cross-year ordering, an empty high page without preview reads, and API 400 mapping. Generated Go output was unchanged. Full API error-contract alignment, atomic local writes, and session/security lifecycle work remain separate acceptance tasks.
+
+
+## User editor-recovery acceptance report (2026-10-09)
+
+User reported checks 1–6 passed: normal/empty draft restoration, save snapshot state while typing, offline retry, retained conflict text, and retained text after HTTP 401. Reconnecting to local in another tab allowed the original tab to save. Conflict reload deliberately retains its stale base version; conflict-resolution choices remain open. Browser/version was not specified for this report.
+
+Check 7 was inconclusive: blocking all site data prevented cookie-based login and produced 401. That does not isolate draft-storage failure. The checklist now provides a console override for draft writes that preserves cookies. Check 8 passed theme retention and the reported remaining sign-out checks; Appearance controls were observed to be inert and stuck on System and remain an open UI issue. Check 9 was not yet performed; explicit synthetic legacy-key steps are now documented.
+
+Check 10 partially passed: Save was disabled during GET, but the user observed typed text replaced on response. Existing mocked input-event tests preserve such text, so the actual cause is not established. Following the user's suggestion, the initial HTML textarea is now read-only until a valid GET succeeds; failed GET keeps it read-only and offers Retry. Typing during PUT remains enabled. Defensive input preservation remains tested. The initial-load lock was subsequently confirmed in the user retest recorded below.
+
+`make fmt lint test` passed (0 lint issues; all JavaScript regressions and Go tests). A reconnect action on 401 is a reasonable future auth flow, provided drafts are preserved and account identity is rechecked; no automatic Google redirect was added while production Google remains disabled.
+
+
+## Recovery checks 7 and 9 passed (2026-10-09)
+
+Human-reported check 9: the synthetic legacy backup produced Review older draft; cancel preserved server text; confirm restored the synthetic text as unsaved; reload recovered it with Draft restored. This verifies the reported explicit legacy recovery and subsequent scoped-backup restoration. Legacy-key removal was not separately reported.
+
+Human-reported check 7 with draft writes blocked and cookies enabled: editing displayed Unsaved changes plus the unavailable-backup warning; online Save succeeded. An offline save displayed Save failed plus the same warning, without claiming a local backup. Reload lost the unsaved edit, as expected when the backup write failed. The warning accurately instructs the user to keep the page open or copy the text. Browser/version was unspecified. Both checks are accepted; check 10 was subsequently confirmed as recorded below.
+
+
+Human-reported check 10 retest (2026-10-09): the initial-load lock works normally. After loading finishes, typing remains enabled during a slow save; after acknowledgement, newer text correctly shows Unsaved changes. This accepts the reported initial-load lock and in-flight save interaction. Browser/version was unspecified. The failure/retry branch is covered by automated tests but was not separately reported in this retest. The focused recovery checks are accepted for the reported scenarios; Appearance controls, full conflict actions, and same-date tab draft isolation remain separate work.

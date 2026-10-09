@@ -2,6 +2,7 @@ package handler
 
 import (
 	"encoding/json"
+	"errors"
 	"net/http"
 	"time"
 
@@ -21,17 +22,21 @@ func (s *Server) ListEntries(w http.ResponseWriter, r *http.Request, params api.
 	}
 
 	page := 1
-	if params.Page != nil && *params.Page > 0 {
+	if params.Page != nil {
 		page = *params.Page
 	}
 
 	size := 20
-	if params.Size != nil && *params.Size > 0 && *params.Size <= 100 {
+	if params.Size != nil {
 		size = *params.Size
 	}
 
 	result, err := service.Page(r.Context(), page, size)
 	if err != nil {
+		if errors.Is(err, journal.ErrInvalidPagination) {
+			http.Error(w, s.message("errors.pagination"), http.StatusBadRequest)
+			return
+		}
 		http.Error(w, s.message("errors.internal"), http.StatusInternalServerError)
 		return
 	}
@@ -54,7 +59,11 @@ func (s *Server) GetEntry(w http.ResponseWriter, r *http.Request, date openapi_t
 
 	entry, err := service.Open(r.Context(), civil.DateOf(date.Time))
 	if err != nil {
-		if err == journal.ErrNotFound {
+		if errors.Is(err, journal.ErrFutureDate) {
+			http.Error(w, s.message("errors.futureDate"), http.StatusBadRequest)
+			return
+		}
+		if errors.Is(err, journal.ErrNotFound) {
 			_ = json.NewEncoder(w).Encode(api.Entry{Date: date, Exists: false})
 			return
 		}
@@ -91,11 +100,11 @@ func (s *Server) SaveEntry(w http.ResponseWriter, r *http.Request, date openapi_
 
 	entry, err := service.Save(r.Context(), civil.DateOf(date.Time), req.Text, base)
 	if err != nil {
-		if err == journal.ErrConflict {
+		if errors.Is(err, journal.ErrConflict) {
 			http.Error(w, s.message("errors.conflict"), http.StatusConflict)
 			return
 		}
-		if err == journal.ErrFutureDate {
+		if errors.Is(err, journal.ErrFutureDate) {
 			http.Error(w, s.message("errors.futureDate"), http.StatusBadRequest)
 			return
 		}
@@ -118,7 +127,11 @@ func (s *Server) DeleteEntry(w http.ResponseWriter, r *http.Request, date openap
 		return
 	}
 	if err := service.Delete(r.Context(), civil.DateOf(date.Time)); err != nil {
-		if err == journal.ErrNotFound {
+		if errors.Is(err, journal.ErrFutureDate) {
+			http.Error(w, s.message("errors.futureDate"), http.StatusBadRequest)
+			return
+		}
+		if errors.Is(err, journal.ErrNotFound) {
 			http.Error(w, s.message("errors.entryUnavailable"), http.StatusNotFound)
 			return
 		}
@@ -136,7 +149,7 @@ func (s *Server) GetCalendar(w http.ResponseWriter, r *http.Request, params api.
 		return
 	}
 
-	today := service.Today(time.UTC)
+	today := service.Today(journal.TimeZone(r.Context()))
 	monthKey := time.Date(today.Year, today.Month, today.Day, 0, 0, 0, 0, time.UTC)
 	if params.Month != "" {
 		parsed, err := time.Parse("2006-01", params.Month)

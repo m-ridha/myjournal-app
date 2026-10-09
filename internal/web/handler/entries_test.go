@@ -161,3 +161,18 @@ func testCatalog(t *testing.T) i18n.Catalog {
 	}
 	return catalog
 }
+
+func TestListRejectsOutOfRangePagination(t *testing.T) {
+	registry := provider.NewRegistry(local.New("http://localhost:3030", t.TempDir()))
+	server := New(config.Config{SessionKey: "test-key"}, registry, localServiceFactory(registry), testCatalog(t))
+	for _, pair := range [][2]int{{0, 20}, {journal.MaxPage + 1, 20}, {1, 101}, {1, -1}} {
+		page, size := pair[0], pair[1]
+		request := httptest.NewRequest(http.MethodGet, "/api/v1/entries", nil)
+		addLocalSession(t, request)
+		response := httptest.NewRecorder()
+		server.ListEntries(response, request, api.ListEntriesParams{Page: &page, Size: &size})
+		if response.Code != http.StatusBadRequest {
+			t.Fatalf("bounds=%v status=%d", pair, response.Code)
+		}
+	}
+}

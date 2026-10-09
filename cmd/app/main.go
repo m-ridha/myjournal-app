@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+	_ "time/tzdata" // Keep IANA locations available in minimal deployment images.
 
 	"github/mridha/myjournal-app/internal/config"
 )

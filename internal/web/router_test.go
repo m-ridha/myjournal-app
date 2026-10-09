@@ -199,6 +199,32 @@ func TestSettingsPageRendersTemplate(t *testing.T) {
 	if got := res.Body.String(); !strings.Contains(got, "Settings") {
 		t.Fatalf("settings page body = %q, want Settings heading", got)
 	}
+	if !strings.Contains(res.Body.String(), "data-sign-out") || !strings.Contains(res.Body.String(), "data-draft-scope=") {
+		t.Fatal("settings must expose account-scoped draft cleanup and sign-out controls")
+	}
+}
+
+func TestEditorDraftScopeIsAccountAndProviderSpecific(t *testing.T) {
+	a := session.Session{Connection: provider.Connection{ProviderID: "local", AccountID: "dev", Credentials: "private-credentials"}}
+	b := a
+	b.AccountID = "another-account"
+	c := a
+	c.ProviderID = "google"
+	if draftScope(a) == draftScope(b) || draftScope(a) == draftScope(c) {
+		t.Fatal("draft scopes must separate accounts and providers")
+	}
+	res := httptest.NewRecorder()
+	clk := mockClock{now: time.Date(2026, 10, 8, 12, 0, 0, 0, time.UTC)}
+	renderEntryPage(res, clk.Now(), clk, a, time.UTC)
+	body := res.Body.String()
+	if !strings.Contains(body, `data-draft-scope="`+draftScope(a)+`"`) || strings.Contains(body, a.Credentials) {
+		t.Fatal("editor must expose opaque draft scope without credentials")
+	}
+	b = a
+	b.AccountEmail = "new-label@example.test"
+	if draftScope(a) != draftScope(b) {
+		t.Fatal("account-label changes must not orphan drafts")
+	}
 }
 
 func addLocalSessionCookie(t *testing.T, req *http.Request, secret string) {
@@ -211,4 +237,34 @@ func addLocalSessionCookie(t *testing.T, req *http.Request, secret string) {
 		t.Fatalf("session.Encode() error = %v", err)
 	}
 	req.AddCookie(&http.Cookie{Name: session.CookieName, Value: encoded})
+}
+
+func TestEntryPagesUseRequestTimeZone(t *testing.T) {
+	cfg := config.Config{BaseURL: "http://localhost:3030", SessionKey: "0123456789abcdef0123456789abcdef"}
+	router := NewRouter(cfg, provider.NewRegistry(localProvider.New(cfg.BaseURL)), mockClock{now: time.Date(2026, 10, 7, 19, 0, 0, 0, time.UTC)}, nil)
+	for _, tc := range []struct {
+		path, zone string
+		status     int
+		date       string
+	}{
+		{"/entries/today", "Asia%2FJakarta", 200, "2026-10-08"},
+		{"/entries/2026-10-08", "Asia%2FJakarta", 200, "2026-10-08"},
+		{"/entries/2026-10-09", "Asia%2FJakarta", 404, ""},
+		{"/entries/2026-10-08", "America%2FLos_Angeles", 404, ""},
+		{"/entries/today", "invalid", 200, "2026-10-07"},
+	} {
+		t.Run(tc.path+tc.zone, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodGet, tc.path, nil)
+			addLocalSessionCookie(t, req, cfg.SessionKey)
+			req.AddCookie(&http.Cookie{Name: "mj_tz", Value: tc.zone})
+			res := httptest.NewRecorder()
+			router.ServeHTTP(res, req)
+			if res.Code != tc.status {
+				t.Fatalf("status=%d want %d", res.Code, tc.status)
+			}
+			if tc.date != "" && (!strings.Contains(res.Body.String(), `data-entry-date="`+tc.date+`"`) || !strings.Contains(res.Body.String(), `data-today="`+tc.date+`"`)) {
+				t.Fatal("editor date and today disagree with request timezone")
+			}
+		})
+	}
 }

@@ -42,6 +42,17 @@ Validation result: `make fmt lint test` passed successfully in the current works
 
 - [x] Local storage and day entry behavior are working for the development provider
 - [x] Future dates are rejected at the router and API layer
+- [x] Resolve browser IANA `mj_tz` once per request with UTC fallback; align pages, entry operations, and calendar defaults/markers (ADR 010)
+- [x] Keep selected entry URLs/draft keys fixed across midnight; cover midnight, extreme offsets, DST, and browser bootstrap behavior with deterministic tests
+- [x] User confirmed `/entries/today` immediately becomes `/entries/2026-10-08` (2026-10-08; browser unspecified)
+- [x] User confirmed reloading a past entry preserves its selected date and the calendar marks October 8 as today (2026-10-08; browser unspecified)
+- [x] User confirmed at 00:00 WIB on 2026-10-09 that the entry date became `2026-10-09` and the calendar marked October 9 as today (browser/navigation method unspecified)
+- [x] User accepted selected-date preservation based on the observed `PUT /api/v1/entries/2026-10-09` request; automated tests separately cover saving across midnight (2026-10-09)
+- [x] User reports Safari checks and simulated mobile screen sizes look good (2026-10-09; exact scenarios/version unspecified)
+- [x] User confirmed stale timezone cookie corrects to `Asia/Jakarta` and `/entries/today` selects the correct Jakarta date (2026-10-09; browser unspecified)
+- Actual phone-browser testing skipped by user decision (2026-10-09); browser device-toolbar coverage accepted for this stage
+- Configurable calendar week start deferred as nice to have by user decision (2026-10-09); Monday first retained, idea recorded in `docs/development/ideas.md`
+- [x] Bound pagination to pages 1–10000 and sizes 1–100; retain only page-size-plus-one dates, reject invalid API ranges with 400, and test cross-year/empty/oversized requests (2026-10-09)
 - [x] Entry list and preview generation are implemented
 - [x] Preview logic trims leading blank lines and uses the first meaningful line
 - [x] 404 routes render the branded not-found template rather than raw Go output
@@ -63,6 +74,15 @@ Validation result: `make fmt lint test` passed successfully in the current works
 - [x] Services are constructed from the decoded session provider/account rather than a fixed local connection
 - [x] Startup rejects invalid environment values, malformed session keys, unknown providers, and non-loopback local mode
 - [x] Google provider selection is rejected until its OAuth and Drive implementations are complete
+- [x] Fix draft recovery, snapshot-based save acknowledgement, dirty tracking, empty-edit backup, failed-save retry, and guarded storage access; add account-scoped drafts and explicit legacy recovery (2026-10-08)
+- [x] Wire Settings sign-out with account-scoped/legacy draft cleanup and cross-tab notification; account scope excludes labels and credentials
+- [x] Add dependency-free editor interaction regressions to `make test` and Go coverage for draft-scope isolation/rendering; `make fmt lint test` passed
+- [x] User reported editor-recovery checks 1–6 and sign-out/theme-retention check 8 passed (2026-10-09); full conflict actions remain pending
+- [x] Lock initial editor typing until GET succeeds, including pre-JavaScript HTML; retain Retry on failure and typing during PUT; automated checks passed
+- [x] User confirmed check 7: accurate unavailable-backup warnings, successful online save, and preserved visible text after offline failure (2026-10-09)
+- [x] User confirmed check 9: explicit older-draft review/cancel/restore and account-scoped recovery after reload (2026-10-09)
+- [x] User confirmed check 10 initial-load lock and continued typing during slow saves; newer text shows Unsaved changes after acknowledgement (2026-10-09)
+- [ ] Wire Settings Appearance controls to actual theme preference; remaining Phase 2/3 security/API/UI gates remain open
 
 ## Restructuring addendum
 
@@ -77,8 +97,7 @@ Validation result: `make fmt lint test` passed successfully in the current works
 - [x] Calendar entry markers load from one year index instead of reading every day individually
 - [x] Locale catalog is loaded by `internal/i18n` and shared with templates and browser scripts
 - [x] ADRs 008 and 009 document generated API placement and Wire
-- [x] `internal/web/middleware` scaffolded as an empty extension point
-- [ ] Middleware behavior remains deferred until the relevant development phases
+- [x] `internal/web/middleware` contains focused request time-zone resolution with tests; other middleware concerns remain pending
 
 ## Blockers
 
@@ -87,7 +106,7 @@ Validation result: `make fmt lint test` passed successfully in the current works
 - Full Google Drive provider behavior remains human-assisted until the real OAuth and Drive validation steps are run.
 - S2 folder behavior checks passed for the test account (human-reported 2026-10-08); production Google storage remains unimplemented.
 - Phase 1 evidence/fallbacks and the user go decision are recorded, including S3 single-process concurrency. Phase 4 remains gated on Phase 2/3 acceptance and validated Google implementation; cross-instance folder convergence, revision/latency measurements, and production OAuth checks remain explicit follow-ups.
-- Session expiration, CSRF, browser-timezone handling, editor auto-save/page-hide, and Google OAuth state/PKCE persistence remain incomplete.
+- Session expiration, CSRF, real-browser timezone acceptance, editor auto-save/page-hide, and Google OAuth state/PKCE persistence remain incomplete.
 
 ## Notes
 

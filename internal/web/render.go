@@ -35,8 +35,10 @@ type pageData struct {
 	Theme          string
 	Page           string
 	Date           string
+	Today          string
 	IsToday        bool
 	AccountName    string
+	DraftScope     string
 	FolderName     string
 	Locale         string
 	Messages       string

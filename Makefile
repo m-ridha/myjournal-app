@@ -2,7 +2,7 @@ GOCMD ?= go
 GOTEST ?= $(GOCMD) test ./...
 GOLINT ?= golangci-lint
 
-.PHONY: run generate generate-openapi generate-wire fmt lint test
+.PHONY: run generate generate-openapi generate-wire fmt lint test test-js
 
 run:
 	@if [ -f .env ]; then set -a; . ./.env; set +a; fi; \
@@ -24,5 +24,12 @@ fmt:
 lint:
 	$(GOLINT) run
 
-test:
+test-js:
+	@if command -v node >/dev/null 2>&1; then node tests/editor.test.js && node tests/timezone.test.js; \
+	elif [ -x /System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc ]; then \
+	  /System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc tests/editor.test.js && \
+	  /System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc tests/timezone.test.js; \
+	else echo "Editor tests require Node.js or macOS JavaScriptCore (jsc)."; exit 1; fi
+
+test: test-js
 	$(GOTEST)
