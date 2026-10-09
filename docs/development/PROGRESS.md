@@ -113,7 +113,7 @@ Validation result: `make fmt lint test` passed successfully in the current works
 - Full Google Drive provider behavior remains human-assisted until the real OAuth and Drive validation steps are run.
 - S2 folder behavior checks passed for the test account (human-reported 2026-10-08); production Google storage remains unimplemented.
 - Phase 1 evidence/fallbacks and the user go decision are recorded, including S3 single-process concurrency. Phase 4 remains gated on Phase 2/3 acceptance and validated Google implementation; cross-instance folder convergence, revision/latency measurements, and production OAuth checks remain explicit follow-ups.
-- Session expiration, CSRF, real-browser timezone acceptance, editor auto-save/page-hide, and Google OAuth state/PKCE persistence remain incomplete.
+- Session expiration, CSRF, editor auto-save/page-hide, and Google OAuth state/PKCE persistence remain incomplete. Reported browser time-zone checks passed; physical-phone testing is waived for this stage.
 
 ## Notes
 
@@ -129,3 +129,7 @@ The local development provider is now sufficient to validate the journaling flow
 - branded not-found page rendering
 
 OpenAPI base contract added: the API definition now lives in `docs/api/openapi.yml`, and the generated chi-server scaffold is emitted under `internal/web/api/` using `oapi-codegen`.
+
+## Contributor onboarding
+
+- [x] Reconcile root `AGENTS.md` with current code, accepted Google/editor/date/conflict/logout observations, and user deferrals; distill product/UI/phase requirements so private planning files are not required (2026-10-09)
