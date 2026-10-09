@@ -284,3 +284,17 @@ The user reported all eight checks in the Conflict actions and independent tab b
 - Settings navigation, shared theme control, and the checklist's layout checks passed.
 
 These are human-reported results; browser/version was not specified in this report. They accept the focused conflict/tab-isolation/Settings checks, not the remaining security/API/provider acceptance backlog. Actual physical-phone testing remains waived by user decision.
+
+
+## PR #3 review: failed logout backup loss (2026-10-09)
+
+Reviewed the submitted review and discussion thread `discussion_r4226317173` against head `9757a2c`. One unresolved P2 finding was present and is valid: cleanup/broadcast occurred before POST logout, so a rejected/failed request could erase backups and mark other editors signed out despite no confirmed logout. The review summary reported an independent 503 reproduction; this session verified the ordering in the code and added targeted regressions.
+
+Fixed locally: perform a non-draft storage-access probe, request logout, then broadcast final sign-out and clear backups only after a successful response. Pending, HTTP 503, and network-failed logout retain tab/legacy backups and do not publish the sign-out marker. Editors can recover and save afterward when the server session remains active. Confirmed logout followed by storage-cleanup failure gets a distinct signed-out warning and a cleanup-only retry. A failed transport may follow server-side cookie clearing, so retaining drafts does not assert that authentication always survived.
+
+Regression coverage includes pending logout, 503/network failures, restored-editor saving, successful retry, and cleanup retry without another POST. Browser retest is documented separately. No review replies, thread resolution, commits, or pushes were performed; the review finding remains open until the fix is published and assessed.
+
+Verification of the review fix: `make fmt lint test` passed with 0 lint issues, both JavaScript suites, and all Go tests. `git diff --check` passed. These are local automated checks; the user subsequently confirmed the failed-logout browser checklist works, as recorded below.
+
+
+Human-reported failed-logout acceptance (2026-10-09): the user tested the Failed logout recovery (PR #3 follow-up) checklist and confirmed it works. Browser/version and optional HTTP 503 interception details were not specified; those branches remain supported by automated regressions. The user will commit the changes to the PR. No commit, push, or remote review-thread resolution was performed by the assistant.

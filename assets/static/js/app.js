@@ -383,32 +383,51 @@
     const status = document.querySelector('[data-sign-out-status]');
     const scope = document.body.dataset.draftScope;
     if (!button || !status || !scope) return;
+    let loggedOut = false;
     button.addEventListener('click', async () => {
       if (button.disabled) return;
       button.disabled = true;
+      if (!loggedOut) {
+        try {
+          // Check storage access without deleting drafts or announcing logout.
+          // A failed request must leave every tab's recovery path intact.
+          const probe = `mj-cleanup-probe:${scope}:${Date.now()}:${Math.random()}`;
+          [sessionStorage, localStorage].forEach((store) => {
+            store.setItem(probe, '1');
+            store.removeItem(probe);
+          });
+        } catch (error) {
+          status.textContent = t('settings.draftCleanupFailed');
+          button.disabled = false;
+          return;
+        }
+        try {
+          const response = await fetch('/api/v1/logout', { method: 'POST' });
+          if (!response.ok) throw new Error('sign out failed');
+          loggedOut = true;
+        } catch (error) {
+          status.textContent = t('settings.signOutFailed');
+          button.disabled = false;
+          return;
+        }
+      }
       try {
-        // Broadcast first so other editor tabs stop recreating cleared drafts.
+        // Only confirmed logout makes cleanup final. Broadcast before clearing
+        // so other editors stop recreating drafts, including pending saves.
+        localStorage.setItem(`mj-signout:${scope}`, `${Date.now()}:${Math.random()}`);
         for (let i = sessionStorage.length - 1; i >= 0; i--) {
           const key = sessionStorage.key(i);
           if (key?.startsWith(`mj-draft:v3:${scope}:`)) sessionStorage.removeItem(key);
         }
-        localStorage.setItem(`mj-signout:${scope}`, `${Date.now()}:${Math.random()}`);
         const keys = [];
         for (let i = 0; i < localStorage.length; i += 1) keys.push(localStorage.key(i));
         keys.forEach((key) => {
           if (key?.startsWith(`mj-draft:v2:${scope}:`) || /^mj-draft:\d{4}-\d{2}-\d{2}$/.test(key)) localStorage.removeItem(key);
         });
-      } catch (error) {
-        status.textContent = t('settings.draftCleanupFailed');
-        button.disabled = false;
-        return;
-      }
-      try {
-        const response = await fetch('/api/v1/logout', { method: 'POST' });
-        if (!response.ok) throw new Error('sign out failed');
         window.location.href = '/';
       } catch (error) {
-        status.textContent = t('settings.signOutFailed');
+        status.textContent = t('settings.signedOutCleanupFailed');
+        button.textContent = t('settings.retryDraftCleanup');
         button.disabled = false;
       }
     });

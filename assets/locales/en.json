@@ -67,6 +67,8 @@
   "editor.backupUnavailable": " Browser backup unavailable. Keep this page open or copy your text.",
   "editor.loadFailedDraft": "Unable to load entry. Your draft is here; retry loading before saving.",
   "editor.sessionExpired": "Please sign in again to save. Your text is still here.",
+  "settings.signedOutCleanupFailed": "You are signed out, but browser drafts could not all be cleared. Retry cleanup or clear this site’s browser storage before leaving a shared device.",
+  "settings.retryDraftCleanup": "Retry draft cleanup",
   "settings.signOutFailed": "Unable to sign out. Please retry.",
   "settings.draftCleanupFailed": "Unable to clear browser drafts. Clear this site's browser storage before signing out on a shared device.",
   "editor.saveFailed": "Save failed.",
