@@ -76,6 +76,8 @@ Validation result: `make fmt lint test` passed successfully in the current works
 - [x] Google provider selection is rejected until its OAuth and Drive implementations are complete
 - [x] Fix draft recovery, snapshot-based save acknowledgement, dirty tracking, empty-edit backup, failed-save retry, and guarded storage access; add account-scoped drafts and explicit legacy recovery (2026-10-08)
 - [x] Wire Settings sign-out with account-scoped/legacy draft cleanup and cross-tab notification; account scope excludes labels and credentials
+- [x] User confirmed Failed logout recovery browser checklist works (2026-10-09); commit/push to PR remains user-managed
+- [x] Fix PR #3 failed-logout finding: preserve backups and editor usability until logout succeeds; distinguish/retry cleanup failure after logout; pending/503/network/retry regressions pass (2026-10-09)
 - [x] Add dependency-free editor interaction regressions to `make test` and Go coverage for draft-scope isolation/rendering; `make fmt lint test` passed
 - [x] User reported editor-recovery checks 1–6 and sign-out/theme-retention check 8 passed (2026-10-09); full conflict actions remain pending
 - [x] Lock initial editor typing until GET succeeds, including pre-JavaScript HTML; retain Retry on failure and typing during PUT; automated checks passed

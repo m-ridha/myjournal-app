@@ -103,6 +103,33 @@ async function run() {
   f = setup({ signOut: true, storageThrows: true }); f.button.fire('click'); await tick();
   assert(f.calls.length === 0 && f.status.textContent === 'settings.draftCleanupFailed', 'cleanup failure must be visible before signout');
 
+  const failedTab = new Map([[key, JSON.stringify({text:'recover me',baseVersion:'v1',versionKnown:true})]]);
+  const failedLocal = new Map([[`mj-draft:${date}`,'older draft'], [`mj-draft:v2:account-a:${date}`, 'scoped backup']]);
+  f = setup({ signOut: true, sessionValues: failedTab, localValues: failedLocal });
+  const logout = deferred(); f.queue.shift(); f.queue.push(logout.promise); f.button.fire('click'); await tick();
+  assert(f.values.has(key) && f.localValues.has(`mj-draft:${date}`) && !f.localValues.has('mj-signout:account-a'), 'pending logout must not erase or broadcast');
+  logout.resolve({ ok:false, status:503 }); await tick();
+  assert(!f.button.disabled && f.status.textContent === 'settings.signOutFailed' && f.values.has(key) && f.localValues.has(`mj-draft:${date}`) && f.localValues.has(`mj-draft:v2:account-a:${date}`) && !f.localValues.has('mj-signout:account-a'), '503 logout must retain every backup and avoid locking editors');
+  // Reload the editor using the retained tab backup: normal editing/save works.
+  f = setup({ sessionValues: failedTab, localValues: failedLocal }); await tick();
+  assert(f.text.value === 'recover me' && !f.text.readOnly && !f.save.disabled, 'editor can recover after failed logout');
+  f.input('still editable'); f.queue.push(response('still editable','v2')); f.save.fire('click'); await tick();
+  assert(!f.values.has(key) && f.editor.classList.contains('is-saved'), 'editor can save after failed logout');
+
+  f = setup({ signOut:true, draft:{text:'retain on network failure',baseVersion:'v1',versionKnown:true}, legacy:'retain legacy' });
+  f.queue.shift(); f.queue.push(Promise.reject(new Error('network failure'))); f.button.fire('click'); await tick();
+  assert(f.values.has(key) && f.localValues.has(`mj-draft:${date}`) && !f.localValues.has('mj-signout:account-a') && !f.button.disabled, 'network failure must preserve backups without broadcasting');
+  f.queue.push({ok:true}); f.button.fire('click'); await tick();
+  assert(!f.values.has(key) && !f.localValues.has(`mj-draft:${date}`) && f.localValues.has('mj-signout:account-a'), 'successful retry can finalize cleanup');
+
+  f = setup({signOut:true,draft:{text:'cleanup failure',baseVersion:'v1',versionKnown:true}});
+  const remove = sessionStorage.removeItem;
+  sessionStorage.removeItem = (k) => { if (k === key) throw new Error('cleanup denied'); remove(k); };
+  f.queue.shift(); f.queue.push({ok:true}); f.button.fire('click'); await tick();
+  assert(f.status.textContent === 'settings.signedOutCleanupFailed' && f.button.textContent === 'settings.retryDraftCleanup' && f.values.has(key), 'post-logout cleanup failure must distinguish signed-out state');
+  sessionStorage.removeItem = remove; f.button.fire('click'); await tick();
+  assert(!f.values.has(key) && f.calls.length === 1 && window.location.href === '/', 'cleanup retry must not repeat logout');
+
   f = setup(); await tick(); f.input('open tab'); f.winEvents.storage({ key: 'mj-signout:account-a' }); f.input('later input');
   assert(f.save.disabled && !f.values.has(key), 'signed-out tabs must stop rewriting drafts');
   f = setup({ draft: { text: 'mine', baseVersion: 'old', versionKnown: true } }); await tick();

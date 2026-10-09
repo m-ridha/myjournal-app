@@ -69,3 +69,13 @@ New backups use tab-local sessionStorage. Reload and same-tab navigation retain 
 8. Use the new Settings header link on desktop and device-toolbar widths. Appearance is removed from Settings; the shared header theme button still works.
 
 Record observations here or in findings.md. The user confirmed all eight checks above passed on 2026-10-09; results are recorded in findings.md. Browser/version was not specified in that report.
+
+
+## Failed logout recovery (PR #3 follow-up)
+
+1. Leave synthetic unsaved text in an editor tab. Open Settings in another tab.
+2. Set Settings' network offline, then click Sign out. It should show Unable to sign out and allow retry. The original editor must remain editable, keep its leave warning and backup, and recover its text on reload. No final sign-out notification should be written for this failed attempt.
+3. Restore networking. The editor should still be able to Save if the failed request never reached the server. Retry Sign out: only confirmed success should clear backups and stop editing in other tabs.
+4. If testing HTTP 503 with request interception, repeat the backup-retention check with that response. A transport failure can occur after the server has cleared the cookie; in that case text still recovers, but saving can require reconnecting.
+
+Automated regressions cover pending logout, HTTP 503, network rejection, editor recovery/save after failure, successful retry, and a storage failure after successful logout. The latter must clearly say signed out and offer Retry draft cleanup without repeating the logout request. The user confirmed this failed-logout recovery checklist works on 2026-10-09; browser/version and any optional request-interception scenarios were not specified.
