@@ -1,0 +1,108 @@
+// Dependency-free interaction regressions. Run from the repository root with
+// `node tests/editor.test.js`, or macOS JavaScriptCore's `jsc tests/editor.test.js`.
+const output = typeof print === 'function' ? print : console.log;
+const assert = (condition, message) => { if (!condition) throw new Error(message); };
+const tick = async () => { for (let i = 0; i < 16; i += 1) await Promise.resolve(); };
+const deferred = () => { let resolve; let reject; const promise = new Promise((a, b) => { resolve = a; reject = b; }); return { promise, resolve, reject }; };
+const response = (text, version = 'v1', status = 200) => ({ ok: status === 200, status, json: async () => ({ text, version, exists: true }) });
+const date = '2020-01-01';
+const key = `mj-draft:v2:account-a:${date}`;
+
+function element() {
+  const listeners = {};
+  const classes = new Set();
+  return { value: '', textContent: '', disabled: false, hidden: false,
+    addEventListener: (name, fn) => { listeners[name] = fn; },
+    fire: (name, event = {}) => listeners[name]?.(event),
+    setAttribute() {},
+    classList: { add: (x) => classes.add(x), remove: (...xs) => xs.forEach((x) => classes.delete(x)), contains: (x) => classes.has(x) },
+  };
+}
+
+function setup({ draft = null, initial = response('server'), storageThrows = false, signOut = false, legacy = null } = {}) {
+  const text = element(); const status = element(); const save = element(); const retry = element(); const old = element(); const button = element();
+  const fields = { '[data-entry-text]': text, '[data-entry-status]': status, '[data-entry-save]': save,
+    '[data-entry-load-retry]': retry, '[data-entry-legacy-draft]': old };
+  const editor = element(); editor.dataset = { entryDate: date }; editor.querySelector = (selector) => fields[selector] || null;
+  const values = new Map(); if (draft !== null) values.set(key, JSON.stringify(draft));
+  if (legacy !== null) values.set(`mj-draft:${date}`, legacy);
+  const guard = () => { if (storageThrows) throw new Error('storage denied'); };
+  globalThis.localStorage = { getItem: (k) => { guard(); return values.has(k) ? values.get(k) : null; },
+    setItem: (k, v) => { guard(); values.set(k, v); }, removeItem: (k) => { guard(); values.delete(k); },
+    key: (i) => { guard(); return [...values.keys()][i] ?? null; }, get length() { guard(); return values.size; } };
+  const docEvents = {}; const winEvents = {};
+  globalThis.document = { body: { dataset: { messages: '{}', draftScope: 'account-a', today: '2026-10-08' } },
+    querySelector: (s) => s === '[data-entry-editor]' ? (signOut ? null : editor) : s === '[data-sign-out]' ? (signOut ? button : null) : s === '[data-sign-out-status]' ? status : null,
+    addEventListener: (name, fn) => { docEvents[name] = fn; } };
+  globalThis.window = { location: { href: '' }, confirm: () => true, addEventListener: (name, fn) => { winEvents[name] = fn; } };
+  const calls = []; const queue = [initial];
+  globalThis.fetch = async (url, options) => { calls.push({ url, options }); if (!queue.length) throw new Error('unplanned request'); return queue.shift(); };
+  if (typeof require === 'function') (0, eval)(require('node:fs').readFileSync('assets/static/js/app.js', 'utf8'));
+  else load('assets/static/js/app.js');
+  docEvents.DOMContentLoaded();
+  return { text, status, save, retry, old, button, editor, values, calls, queue, winEvents,
+    input(value) { text.value = value; text.fire('input'); } };
+}
+
+async function run() {
+  let f = setup({ draft: { text: 'recovered', baseVersion: 'old', versionKnown: true } }); await tick();
+  assert(f.text.value === 'recovered' && f.status.textContent === 'editor.draftRestored', 'server text must not replace draft');
+  let warned = false; f.winEvents.beforeunload({ preventDefault() { warned = true; } }); assert(warned, 'restored draft must be dirty');
+  f.queue.push(response('', '', 409)); f.save.fire('click'); await tick();
+  assert(JSON.parse(f.calls[1].options.body).baseVersion === 'old', 'recovered draft must retain stale version');
+  assert(f.text.value === 'recovered' && f.values.has(key) && !f.save.disabled, 'conflict must retain text and enable retry');
+
+  f = setup(); await tick(); f.input('sent'); const pendingSave = deferred(); f.queue.push(pendingSave.promise);
+  f.save.fire('click'); f.input('later'); f.save.fire('click');
+  assert(f.save.disabled && f.calls.length === 2, 'typing must not permit overlapping saves');
+  pendingSave.resolve(response('sent', 'v2')); await tick();
+  assert(f.text.value === 'later' && f.status.textContent === 'editor.unsaved' && !f.editor.classList.contains('is-saved'), 'unsent text must not be marked saved');
+  assert(JSON.parse(f.values.get(key)).text === 'later' && JSON.parse(f.values.get(key)).baseVersion === 'v2', 'later draft needs latest acknowledged version');
+  f.queue.push(response('later', 'v3')); f.save.fire('click'); await tick();
+  assert(!f.values.has(key) && f.editor.classList.contains('is-saved'), 'matching saved snapshot clears draft');
+
+  f.input(''); assert(JSON.parse(f.values.get(key)).text === '', 'intentional empty draft must survive');
+  f.queue.push(Promise.reject(new Error('offline'))); f.save.fire('click'); await tick();
+  assert(!f.save.disabled && f.text.value === '' && f.values.has(key), 'network failure must preserve empty edits and enable Save');
+  f.queue.push(response('', '', 401)); f.save.fire('click'); await tick();
+  assert(f.status.textContent.includes('editor.sessionExpired') && f.values.has(key), 'expired session must retain draft');
+
+  f = setup(); await tick(); f.input('sent'); const lostResponse = deferred(); f.queue.push(lostResponse.promise); f.save.fire('click');
+  f.input('server'); assert(f.values.has(key), 'reverting to old baseline during save still needs a backup');
+  lostResponse.reject(new Error('response lost')); await tick();
+  let uncertainWarned = false; f.winEvents.beforeunload({ preventDefault() { uncertainWarned = true; } });
+  assert(uncertainWarned && f.values.has(key) && !f.save.disabled, 'ambiguous save failure must retain rollback text as dirty');
+
+  f = setup({ storageThrows: true }); await tick(); f.input('keep me'); f.queue.push(Promise.reject(new Error('offline'))); f.save.fire('click'); await tick();
+  assert(!f.save.disabled && f.text.value === 'keep me' && f.status.textContent.includes('editor.backupUnavailable') && !f.status.textContent.includes('editor.draftKept'), 'storage errors must not claim backup or disable saving');
+
+  const loading = deferred(); f = setup({ initial: loading.promise }); f.input('typed during load');
+  assert(f.save.disabled && f.text.readOnly, 'cannot edit or save before base version is known'); loading.resolve(response('server')); await tick();
+  assert(f.text.value === 'typed during load' && f.values.has(key) && !f.text.readOnly, 'load must preserve programmatic input and unlock after success');
+
+  const recovery = deferred(); f = setup({ initial: recovery.promise, draft: { text: 'old text', baseVersion: 'old', versionKnown: true } });
+  f.input('edited recovery'); assert(JSON.parse(f.values.get(key)).versionKnown, 'typing while loading must retain recovered version knowledge');
+  recovery.resolve(response('new server', 'new')); await tick(); f.queue.push(response('', '', 409)); f.save.fire('click'); await tick();
+  assert(JSON.parse(f.calls[1].options.body).baseVersion === 'old', 'typing during recovery must not silently adopt new server version');
+
+  f = setup({ initial: response('', '', 503), draft: { text: '', baseVersion: 'old', versionKnown: true } }); await tick();
+  assert(f.retry.hidden === false && f.save.disabled && f.text.readOnly, 'failed load offers retry while preserving read-only text');
+  f.queue.push(response('server', 'new')); f.retry.fire('click'); await tick();
+  assert(f.text.value === '' && !f.save.disabled && f.values.has(key), 'retry must preserve recovered empty draft');
+
+  f = setup({ legacy: 'legacy' }); await tick(); assert(f.text.value === 'server' && !f.old.hidden, 'unscoped draft requires explicit recovery');
+  f.old.fire('click'); assert(f.text.value === 'legacy' && f.values.has(key) && !f.values.has(`mj-draft:${date}`), 'explicit recovery migrates only after backup succeeds');
+
+  f = setup({ signOut: true }); f.values.set(key, 'draft'); f.values.set('mj-draft:v2:account-b:2020-01-01', 'other'); f.values.set(`mj-draft:${date}`, 'legacy'); f.values.set('mj-theme', 'dark');
+  f.queue.shift(); f.queue.push({ ok: true }); f.button.fire('click'); await tick();
+  assert(!f.values.has(key) && !f.values.has(`mj-draft:${date}`) && f.values.has('mj-draft:v2:account-b:2020-01-01') && f.values.has('mj-theme'), 'signout must clear current account and legacy drafts only');
+  assert(window.location.href === '/', 'successful logout returns home');
+  f = setup({ signOut: true, storageThrows: true }); f.button.fire('click'); await tick();
+  assert(f.calls.length === 0 && f.status.textContent === 'settings.draftCleanupFailed', 'cleanup failure must be visible before signout');
+
+  f = setup(); await tick(); f.input('open tab'); f.winEvents.storage({ key: 'mj-signout:account-a' }); f.input('later input');
+  assert(f.save.disabled && JSON.parse(f.values.get(key)).text === 'open tab', 'signed-out tabs must stop rewriting drafts');
+  output('PASS editor interaction regressions');
+}
+
+run().catch((error) => { output(error.stack || String(error)); if (typeof quit === 'function') quit(1); else process.exitCode = 1; });

@@ -10,6 +10,11 @@ import (
 	"cloud.google.com/go/civil"
 )
 
+const (
+	MaxPage     = 10000
+	MaxPageSize = 100
+)
+
 // Service contains the journal domain rules.
 type Service struct {
 	store Store
@@ -21,6 +26,9 @@ func NewService(store Store, clock Clock) *Service {
 }
 
 func (s *Service) Today(tz *time.Location) Date {
+	if tz == nil {
+		tz = time.UTC
+	}
 	return civil.DateOf(s.clock.Now().In(tz))
 }
 
@@ -29,7 +37,7 @@ func normalizeText(s string) string {
 }
 
 func (s *Service) Save(ctx context.Context, d Date, text string, base Version) (Entry, error) {
-	if d.After(civil.DateOf(s.clock.Now())) {
+	if d.After(s.Today(TimeZone(ctx))) {
 		return Entry{}, ErrFutureDate
 	}
 	clean := normalizeText(text)
@@ -37,21 +45,24 @@ func (s *Service) Save(ctx context.Context, d Date, text string, base Version) (
 }
 
 func (s *Service) Open(ctx context.Context, d Date) (Entry, error) {
+	if d.After(s.Today(TimeZone(ctx))) {
+		return Entry{}, ErrFutureDate
+	}
 	return s.store.Get(ctx, d)
 }
 
 func (s *Service) Page(ctx context.Context, page, size int) (ListPage, error) {
-	page = max(1, page)
-	size = max(1, size)
-
+	if page < 1 || page > MaxPage || size < 1 || size > MaxPageSize {
+		return ListPage{}, ErrInvalidPagination
+	}
 	years, err := s.store.ListYears(ctx)
 	if err != nil {
 		return ListPage{}, err
 	}
 	sort.Sort(sort.Reverse(sort.IntSlice(years)))
 	offset := (page - 1) * size
-	limit := offset + size + 1
-	dates := make([]Date, 0, limit)
+	// Retain only the requested page plus one item to detect a next page.
+	pageDates := make([]Date, 0, size+1)
 	for _, year := range years {
 		meta, err := s.store.ListYear(ctx, year)
 		if err != nil {
@@ -59,21 +70,26 @@ func (s *Service) Page(ctx context.Context, page, size int) (ListPage, error) {
 		}
 		sort.Slice(meta, func(i, j int) bool { return meta[i].Date.After(meta[j].Date) })
 		for _, item := range meta {
-			dates = append(dates, item.Date)
-			if len(dates) == limit {
+			if offset > 0 {
+				offset--
+				continue
+			}
+			pageDates = append(pageDates, item.Date)
+			if len(pageDates) == size+1 {
 				break
 			}
 		}
-		if len(dates) == limit {
+		if len(pageDates) == size+1 {
 			break
 		}
 	}
-
-	if offset >= len(dates) {
+	hasNext := len(pageDates) > size
+	if hasNext {
+		pageDates = pageDates[:size]
+	}
+	if len(pageDates) == 0 {
 		return ListPage{Page: page, PageSize: size}, nil
 	}
-	end := min(offset+size, len(dates))
-	pageDates := dates[offset:end]
 	previews, err := s.store.Previews(ctx, pageDates, 40)
 	if err != nil {
 		return ListPage{}, err
@@ -86,7 +102,7 @@ func (s *Service) Page(ctx context.Context, page, size int) (ListPage, error) {
 		Items:    items,
 		Page:     page,
 		PageSize: size,
-		HasNext:  len(dates) > offset+size,
+		HasNext:  hasNext,
 	}, nil
 }
 
@@ -107,7 +123,7 @@ func (s *Service) Month(ctx context.Context, year int, month time.Month) (MonthV
 	first := time.Date(year, month, 1, 0, 0, 0, 0, time.UTC)
 	last := time.Date(year, month+1, 0, 0, 0, 0, 0, time.UTC)
 	start := first.AddDate(0, 0, -((int(first.Weekday()) + 6) % 7))
-	today := civil.DateOf(s.clock.Now())
+	today := s.Today(TimeZone(ctx))
 	meta, err := s.store.ListYear(ctx, year)
 	if err != nil {
 		return MonthView{}, err
@@ -138,5 +154,8 @@ func (s *Service) Month(ctx context.Context, year int, month time.Month) (MonthV
 }
 
 func (s *Service) Delete(ctx context.Context, d Date) error {
+	if d.After(s.Today(TimeZone(ctx))) {
+		return ErrFutureDate
+	}
 	return s.store.Trash(ctx, d)
 }

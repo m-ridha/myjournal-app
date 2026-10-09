@@ -17,11 +17,12 @@ type Date = civil.Date
 type Version string
 
 var (
-	ErrConflict     = errors.New("entry changed elsewhere")
-	ErrNotFound     = errors.New("entry not found")
-	ErrAuthRequired = errors.New("reconnect required")
-	ErrUnavailable  = errors.New("storage unavailable")
-	ErrFutureDate   = errors.New("future date is not allowed")
+	ErrConflict          = errors.New("entry changed elsewhere")
+	ErrNotFound          = errors.New("entry not found")
+	ErrAuthRequired      = errors.New("reconnect required")
+	ErrUnavailable       = errors.New("storage unavailable")
+	ErrInvalidPagination = errors.New("invalid pagination")
+	ErrFutureDate        = errors.New("future date is not allowed")
 )
 
 type Entry struct {

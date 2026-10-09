@@ -3,7 +3,10 @@ info:
   title: myjournal API
   version: 0.1.0
   description: >-
-    API contract for the 'myjournal' journaling app.
+    API contract for the 'myjournal' journaling app. Requests use the optional
+    mj_tz cookie containing a URL-encoded browser IANA time zone. Missing,
+    invalid, or host-dependent Local values fall back to UTC. Today and future
+    date validation use this resolved zone; an explicit entry date stays fixed.
 servers:
   - url: http://localhost:3030
     description: Local development server
@@ -28,6 +31,12 @@ paths:
         - $ref: '#/components/parameters/PaginationPageQueryParam'
         - $ref: '#/components/parameters/PaginationSizeQueryParam'
       responses:
+        '400':
+          description: Page or size is outside the supported range, or is not an integer
+          content:
+            text/plain:
+              schema:
+                type: string
         '200':
           description: Paginated list of entries
           content:
@@ -42,6 +51,8 @@ paths:
       summary: Fetch a single entry
       operationId: getEntry
       responses:
+        '400':
+          $ref: '#/components/responses/FutureDate'
         '200':
           description: Entry payload
           content:
@@ -60,6 +71,8 @@ paths:
             schema:
               $ref: '#/components/schemas/SaveEntryRequest'
       responses:
+        '400':
+          $ref: '#/components/responses/FutureDate'
         '200':
           description: Updated entry
           content:
@@ -74,6 +87,8 @@ paths:
       summary: Move an entry to trash
       operationId: deleteEntry
       responses:
+        '400':
+          $ref: '#/components/responses/FutureDate'
         '204':
           description: Entry deleted
         '404':
@@ -161,6 +176,7 @@ components:
       schema:
         type: integer
         minimum: 1
+        maximum: 10000
         default: 1
     PaginationSizeQueryParam:
       in: query
@@ -304,6 +320,12 @@ components:
           type: string
 
   responses:
+    FutureDate:
+      description: Entry date is later than today in the resolved user time zone.
+      content:
+        text/plain:
+          schema:
+            type: string
     NotFound:
       description: Resource not found
       content:

@@ -165,3 +165,43 @@ func TestServiceMonthUsesYearIndexInsteadOfPerDayReads(t *testing.T) {
 		}
 	}
 }
+
+func TestPaginationRejectsUnsafeBounds(t *testing.T) {
+	for _, pair := range [][2]int{{0, 20}, {-1, 20}, {MaxPage + 1, 20}, {int(^uint(0) >> 1), 100}, {1, 0}, {1, -1}, {1, MaxPageSize + 1}} {
+		store := newInMemStore()
+		_, err := NewService(store, dummyClock{}).Page(context.Background(), pair[0], pair[1])
+		if err != ErrInvalidPagination {
+			t.Fatalf("Page(%d,%d): %v", pair[0], pair[1], err)
+		}
+		if store.listYearCalls != 0 || store.previewCalls != 0 {
+			t.Fatal("invalid request read storage")
+		}
+	}
+}
+
+func TestPaginationAcrossYearsAndEmptyPage(t *testing.T) {
+	store := newInMemStore()
+	for _, value := range []string{"2026-01-01", "2025-12-31", "2025-12-30", "2024-12-31"} {
+		date, err := civil.ParseDate(value)
+		if err != nil {
+			t.Fatal(err)
+		}
+		store.entries[date] = Entry{Date: date, Text: value}
+	}
+	service := NewService(store, dummyClock{})
+	page, err := service.Page(context.Background(), 2, 2)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(page.Items) != 2 || page.Items[0].Date.String() != "2025-12-30" || page.Items[1].Date.String() != "2024-12-31" || page.HasNext {
+		t.Fatalf("page=%#v", page)
+	}
+	calls := store.previewCalls
+	empty, err := service.Page(context.Background(), MaxPage, MaxPageSize)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(empty.Items) != 0 || empty.HasNext || store.previewCalls != calls {
+		t.Fatalf("empty=%#v", empty)
+	}
+}

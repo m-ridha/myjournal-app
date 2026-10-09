@@ -33,6 +33,8 @@ make lint
 make test
 ```
 
+`make test` runs the editor interaction regressions and `go test ./...`. The JavaScript checks use Node.js when available, or the built-in JavaScriptCore shell on macOS; no npm packages are required. Run only those checks with `make test-js`. Manual browser acceptance steps are in `docs/development/editor-recovery-checks.md`.
+
 ## Architecture
 
 The project is organized into an application shell, core domain packages, and adapters following the guide's lightweight hexagonal structure.

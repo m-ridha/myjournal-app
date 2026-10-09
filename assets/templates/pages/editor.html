@@ -11,9 +11,13 @@
 
   <div class="mj-status-row" role="status" aria-live="polite">
     <span class="mj-status-pill" data-entry-status>{{t "editor.loading"}}</span>
-    <button class="mj-btn mj-btn-secondary mj-btn-small" type="button" data-entry-save>{{t "editor.save"}}</button>
+    <button class="mj-btn mj-btn-secondary mj-btn-small" type="button" data-entry-save disabled>{{t "editor.save"}}</button>
   </div>
 
-  <textarea class="mj-editor" aria-label="{{t "editor.label"}}" rows="14" data-entry-text></textarea>
+  <div>
+    <button class="mj-btn mj-btn-secondary mj-btn-small" type="button" data-entry-load-retry hidden>{{t "editor.retryLoad"}}</button>
+    <button class="mj-btn mj-btn-secondary mj-btn-small" type="button" data-entry-legacy-draft hidden>{{t "editor.reviewLegacyDraft"}}</button>
+  </div>
+  <textarea class="mj-editor" aria-label="{{t "editor.label"}}" rows="14" readonly aria-busy="true" data-entry-text></textarea>
 </section>
 {{end}}
