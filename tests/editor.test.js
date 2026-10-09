@@ -79,6 +79,24 @@ async function run() {
   f = setup({ storageThrows: true }); await tick(); f.input('keep me'); f.queue.push(Promise.reject(new Error('offline'))); f.save.fire('click'); await tick();
   assert(!f.save.disabled && f.text.value === 'keep me' && f.status.textContent.includes('editor.backupUnavailable') && !f.status.textContent.includes('editor.draftKept'), 'storage errors must not claim backup or disable saving');
 
+  // A permanent size rejection must explain the limit without losing newer edits.
+  f = setup(); await tick(); f.input('oversized snapshot');
+  const oversizedSave = deferred(); f.queue.push(oversizedSave.promise); f.save.fire('click');
+  f.input('newer oversized draft'); oversizedSave.resolve(response('', '', 413)); await tick();
+  assert(f.status.textContent.includes('editor.saveTooLarge') && !f.status.textContent.includes('editor.saveFailed'), '413 must explain the size limit instead of a generic failure');
+  assert(f.text.value === 'newer oversized draft' && JSON.parse(f.values.get(key)).text === 'newer oversized draft' && JSON.parse(f.values.get(key)).baseVersion === 'v1' && !f.save.disabled, '413 preserves current text, backup, base version, and editing');
+  let sizeWarned = false; f.winEvents.beforeunload({ preventDefault() { sizeWarned = true; } });
+  assert(sizeWarned && !f.editor.classList.contains('is-saved'), 'rejected text remains unsaved with a leave warning');
+  const rejectedBackup = f.values;
+  f = setup({ sessionValues: rejectedBackup }); await tick();
+  assert(f.text.value === 'newer oversized draft' && f.status.textContent === 'editor.draftRestored', '413 backup must survive reload');
+  f.input('shorter'); f.queue.push(response('shorter', 'v2')); f.save.fire('click'); await tick();
+  assert(!f.values.has(key) && f.editor.classList.contains('is-saved'), 'shortening after recovery can save normally');
+
+  f = setup({ storageThrows: true }); await tick(); f.input('keep oversized text');
+  f.queue.push(response('', '', 413)); f.save.fire('click'); await tick();
+  assert(f.status.textContent.includes('editor.saveTooLarge') && f.status.textContent.includes('editor.backupUnavailable') && !f.status.textContent.includes('editor.draftKept') && f.text.value === 'keep oversized text' && !f.save.disabled, '413 with unavailable backup must keep visible text and give truthful recovery guidance');
+
   const loading = deferred(); f = setup({ initial: loading.promise }); f.input('typed during load');
   assert(f.save.disabled && f.text.readOnly, 'cannot edit or save before base version is known'); loading.resolve(response('server')); await tick();
   assert(f.text.value === 'typed during load' && f.values.has(key) && !f.text.readOnly, 'load must preserve programmatic input and unlock after success');

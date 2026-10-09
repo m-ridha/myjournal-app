@@ -94,6 +94,7 @@ Validation result: `make fmt lint test` passed successfully in the current works
 - [x] Make previews UTF-8-safe within byte caps, trim leading whitespace before truncation, and retain ellipsis through list lookahead; extend shared contracts to cached local storage (2026-10-09)
 - [x] Enforce fixed 30-day server-side session age and matching persistent-cookie expiry; reject future/missing issuance and old-key cookies (2026-10-09)
 - [x] Add standard-library cross-origin protection for unsafe requests, localized rejection, 1 MiB save-envelope bounds, and query-free request logging (2026-10-09)
+- [x] Fix PR #5 review: show localized HTTP 413 size-limit/copy-before-shortening guidance; regression checks preserve newer edits, reload recovery, retry after shortening, and accurate unavailable-backup warnings (2026-10-09)
 - [ ] Remaining Phase 2/3 security/API/UI acceptance gates remain open
 
 ## Restructuring addendum

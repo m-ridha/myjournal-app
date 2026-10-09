@@ -230,7 +230,9 @@
         if (!response.ok) {
           unverifiedDraft = true;
           conflicted = response.status === 409;
-          const key = response.status === 409 ? 'editor.conflict' : response.status === 401 ? 'editor.sessionExpired' : 'editor.saveFailed';
+          const key = response.status === 409 ? 'editor.conflict'
+            : response.status === 401 ? 'editor.sessionExpired'
+            : response.status === 413 ? 'editor.saveTooLarge' : 'editor.saveFailed';
           const kept = persistDraft();
           setSaveState('');
           notice(t(key) + (kept ? t('editor.draftKept') : ''));
