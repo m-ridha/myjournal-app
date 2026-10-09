@@ -298,3 +298,12 @@ Verification of the review fix: `make fmt lint test` passed with 0 lint issues, 
 
 
 Human-reported failed-logout acceptance (2026-10-09): the user tested the Failed logout recovery (PR #3 follow-up) checklist and confirmed it works. Browser/version and optional HTTP 503 interception details were not specified; those branches remain supported by automated regressions. The user will commit the changes to the PR. No commit, push, or remote review-thread resolution was performed by the assistant.
+
+
+## Self-contained contributor guide (2026-10-09)
+
+Rewrote root AGENTS.md to distill product requirements, architecture/generation decisions, UI/accessibility expectations, and phase acceptance without links or dependencies on private planning files. Rechecked the affected source and tracked experiment/ADR documentation. Replaced stale draft/timezone/pagination/conflict/S4/S7 gaps with implemented behavior and reported acceptance; retained actual storage/security/API/autosave/release gaps. Preserved the user decisions to defer week-start configuration, accept device-toolbar coverage, remove Settings Appearance, and use tab-lifetime recovery.
+
+The guide documents failed-logout ordering, tab-scoped backup/migration behavior, external SVG assets, current test tooling, and the next storage-correctness priority. Production Google remains disabled. Also corrected PROGRESS.md's stale browser-timezone blocker to match the recorded passed checks. This is a documentation change; no runtime behavior or private planning files were modified.
+
+Verification: checked the guide’s referenced repository paths, confirmed no private-file references remain, and checked both tracked edits and the untracked AGENTS.md for whitespace errors. Documentation-only; no runtime tests were rerun.
