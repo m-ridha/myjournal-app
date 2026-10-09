@@ -20,6 +20,7 @@ Use Go, chi, `html/template`, embedded assets, Google Wire, and oapi-codegen. Pr
 make run               # loads .env; go run ./cmd/app does not
 make fmt lint test     # required for implementation changes
 make test-js           # only browser interaction regressions
+make test-architecture # temporary forbidden-import probes; run without concurrent lint/build
 make generate-openapi  # after OpenAPI edits; requires oapi-codegen
 make generate-wire     # after Wire edits; requires wire
 ```
@@ -61,15 +62,15 @@ make generate-wire     # after Wire edits; requires wire
 - `journal.Service` owns open/save/delete/list/calendar. Handlers parse requests and call the injected session-scoped service factory. Only `cmd/app` wires concrete providers, cache adapters, and system clocks into production web/session code.
 - Keep Store/Clock in `internal/journal/store.go`; use `journal.Clock` and `internal/clock.System`, not a new utilities abstraction. Store methods are context-aware and `journal.Version` is opaque. Map wrapped errors with `errors.Is`; do not expose provider details to generic code.
 - Preserve shared account-isolated caches, invalidation/generation guards, bounded memory, page-only previews, and Get bypass. Pagination validates pages 1–10000/sizes 1–100 before storage access and retains at most size+1 dates.
-- Run shared store contracts for every adapter. Use fixed clocks, temporary directories, and mocked external services. Depguard's deliberate-violation canaries remain unverified; green lint alone does not prove all boundary patterns match.
-- APIs use `/api/v1/...`; `/healthz` is unversioned. Browser routes are separate. Current interactions use JSON and vanilla JavaScript; the original HTMX plan still needs migration or a recorded deviation. Do not claim fragments are implemented or silently introduce a framework.
+- Run shared store contracts for every adapter. Use fixed clocks, temporary directories, and mocked external services. Depguard's production file patterns are verified by make test-architecture (seven temporary violations including nested imports). Driving-side test files may compose real adapters for integration tests; production files may not. Keep this check separate from concurrent builds/lint and preserve cleanup.
+- APIs use `/api/v1/...`; `/healthz` is unversioned. Browser routes are separate. Use JSON and vanilla JavaScript by explicit user decision (ADR 014). HTMX is excluded from this project; the original HTMX plan is superseded. The migration assessment is historical research, not a backlog. Do not add fragment routes or silently introduce a frontend framework.
 
 ## UI and localization
 
 - Preserve Monochrome-inspired responsive styling and licenses. Hugo is not a runtime/build dependency; verified theme-port provenance remains an acceptance task.
 - Keep the initial editor empty, without sample content or placeholder. Use readable typography, plain text, preserved line breaks, and wrapping for long text/emoji.
 - Header: brand, centered Write/Entries/Calendar, theme toggle, signed-in Settings gear, Privacy/Help. Keep narrow-screen spacing/wrapping. Footer is centered `Built for quiet writing.` without duplicate links.
-- Appearance was removed from Settings by user decision. Do not restore System/Light/Dark controls there; the shared header owns switching. Automatic device-theme following is a separate open issue.
+- Appearance was removed from Settings by user decision. Do not restore System/Light/Dark controls there; the shared header owns switching. Without a saved preference, follow device-theme changes; persist only explicit toggle choices. Existing valid preferences remain respected.
 - Icons belong in `assets/static/svgs/`, not inline HTML. Use theme-aware currentColor masks and accessible labels/tooltips. Keep the evenly spaced gear and PNG favicon under `assets/static/favicons/`.
 - Use theme variables, visible keyboard focus, live-region status, disabled semantics, adequate touch targets, WCAG AA contrast, reduced-motion support, and 200% zoom. Color alone must not communicate status/calendar state.
 - Save feedback says `Saved`, not `Saved locally`; editing returns it to neutral grey. Today's next-date control is disabled; invalid/future routes use the styled 404. Previews start at the first meaningful line after leading whitespace.
@@ -110,3 +111,5 @@ Preserve these accepted behaviors when implementing autosave or other features:
 - Record work/evidence/remaining checks in PROGRESS.md/findings.md; use ADRs for durable decisions. Distinguish requirements, automated results, human reports, waivers, and release conditions. A backlog is not authorization to implement it all.
 - Never expose/commit `.env`, secrets, tokens, authorization codes, callback queries, whole cookies, account claims, or journal content. Logs contain method, query-free path, status, duration, and request IDs. Preserve query-free request logging before enabling real OAuth.
 - Production content is not persisted server-side beyond bounded preview/index memory; local filesystem storage is a development exception. Preserve text through reconnect without silently switching accounts or navigating away before recovery is safe.
+
+Calendar rendering accepts only the latest requested month, including failure feedback. Settings disconnect calls provider revocation before clearing the session, then reuses acknowledged sign-out draft cleanup; failures retain session/drafts and cleanup-only retries never repeat revocation. Local disconnect preserves saved files. Google revocation is not validated or enabled by this local flow.

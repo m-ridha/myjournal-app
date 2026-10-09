@@ -2,7 +2,7 @@ GOCMD ?= go
 GOTEST ?= $(GOCMD) test ./...
 GOLINT ?= golangci-lint
 
-.PHONY: run generate generate-openapi generate-wire fmt lint test test-js
+.PHONY: run generate generate-openapi generate-wire fmt lint test test-js test-architecture
 
 run:
 	@if [ -f .env ]; then set -a; . ./.env; set +a; fi; \
@@ -25,9 +25,9 @@ lint:
 	$(GOLINT) run
 
 test-js:
-	@if command -v node >/dev/null 2>&1; then node tests/editor.test.js && node tests/timezone.test.js && node tests/browsing.test.js; \
+	@if command -v node >/dev/null 2>&1; then node tests/editor.test.js && node tests/timezone.test.js && node tests/browsing.test.js && node tests/theme.test.js; \
 	elif [ -x /System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc ]; then \
-	  for suite in editor timezone browsing; do \
+	  for suite in editor timezone browsing theme; do \
 	    result=$$(/System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc tests/$$suite.test.js) || exit 1; \
 	    printf '%s\n' "$$result"; \
 	    case "$$result" in *"PASS $$suite"*) ;; *) exit 1 ;; esac; \
@@ -36,3 +36,7 @@ test-js:
 
 test: test-js
 	$(GOTEST)
+
+# Run separately: this temporarily adds forbidden imports and invokes lint.
+test-architecture:
+	sh scripts/check-architecture.sh

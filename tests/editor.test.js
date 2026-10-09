@@ -21,7 +21,7 @@ function element() {
 
 function setup({ draft = null, initial = response('server'), storageThrows = false, signOut = false, legacy = null, sessionValues = new Map(), localValues = new Map() } = {}) {
   const trash = element(); const panel = element(); const mine = element(); const other = element(); const both = element();
-  const text = element(); const status = element(); const save = element(); const retry = element(); const old = element(); const button = element();
+  const text = element(); const status = element(); const save = element(); const retry = element(); const old = element(); const button = element(); const disconnect = element();
   const fields = { '[data-entry-delete]': trash, '[data-entry-conflict]': panel, '[data-conflict-mine]': mine, '[data-conflict-other]': other, '[data-conflict-both]': both, '[data-entry-text]': text, '[data-entry-status]': status, '[data-entry-save]': save,
     '[data-entry-load-retry]': retry, '[data-entry-legacy-draft]': old };
   const editor = element(); editor.dataset = { entryDate: date }; editor.querySelector = (selector) => fields[selector] || null;
@@ -38,7 +38,7 @@ function setup({ draft = null, initial = response('server'), storageThrows = fal
   globalThis.clearTimeout = (id) => timers.delete(id);
   const docEvents = {}; const winEvents = {};
   globalThis.document = { body: { dataset: { messages: '{}', draftScope: 'account-a', today: '2026-10-08' } },
-    querySelector: (s) => s === '[data-entry-editor]' ? (signOut ? null : editor) : s === '[data-sign-out]' ? (signOut ? button : null) : s === '[data-sign-out-status]' ? status : null,
+    querySelector: (s) => s === '[data-entry-editor]' ? (signOut ? null : editor) : s === '[data-sign-out]' ? (signOut ? button : null) : s === '[data-disconnect]' ? (signOut ? disconnect : null) : s === '[data-sign-out-status]' ? status : null,
     addEventListener: (name, fn) => { docEvents[name] = fn; } };
   globalThis.window = { location: { href: '' }, confirm: () => true, addEventListener: (name, fn) => { winEvents[name] = fn; } };
   const calls = []; const queue = [initial];
@@ -54,7 +54,7 @@ function setup({ draft = null, initial = response('server'), storageThrows = fal
       now = due[1].at; timers.delete(due[0]); due[1].fn(); await tick();
     }
     now = end; await tick();
-  }, localValues, trash, panel, mine, other, both, text, status, save, retry, old, button, editor, values, calls, queue, winEvents,
+  }, localValues, trash, panel, mine, other, both, text, status, save, retry, old, button, disconnect, editor, values, calls, queue, winEvents,
     input(value) { text.value = value; text.fire('input'); } };
 }
 
@@ -324,6 +324,19 @@ async function run() {
     assert(f.editor.classList.contains('is-saved') && !f.values.has(key), 'acknowledged manual recovery can restore saved presentation');
   }
 
+  f=setup({signOut:true,draft:{text:'preserve on cancel',baseVersion:'v1',versionKnown:true}});f.queue.shift();window.confirm=()=>false;f.disconnect.fire('click');await tick();
+  assert(f.calls.length===0 && f.values.has(key),'cancelled disconnect leaves connection and drafts untouched');
+  window.confirm=()=>true;const disconnecting=deferred();f.queue.push(disconnecting.promise);f.disconnect.fire('click');await tick();
+  assert(f.calls.length===1 && f.calls[0].url==='/api/v1/disconnect' && f.button.disabled && f.disconnect.disabled && f.values.has(key),'disconnect calls revoke endpoint and locks both actions without clearing backups');
+  f.button.fire('click');await tick();assert(f.calls.length===1,'signout cannot overlap pending disconnect');
+  disconnecting.resolve({ok:false,status:503});await tick();assert(f.values.has(key) && !f.localValues.has('mj-signout:account-a') && !f.button.disabled && !f.disconnect.disabled && f.status.textContent==='settings.disconnectFailed','failed disconnect preserves backups/notification state and permits retry');
+  f.localValues.set('mj-theme','dark');f.values.set('mj-draft:v3:account-b:2020-01-01','other account');f.queue.push({ok:true,status:204});f.disconnect.fire('click');await tick();
+  assert(!f.values.has(key) && f.values.has('mj-draft:v3:account-b:2020-01-01') && f.localValues.has('mj-theme') && f.localValues.has('mj-signout:account-a') && window.location.href==='/','successful disconnect cleans current account and broadcasts only after acknowledgement');
+
+  f=setup({signOut:true,draft:{text:'retry cleanup',baseVersion:'v1',versionKnown:true}});f.queue.shift();f.queue.push({ok:true,status:204});
+  const removeAfterDisconnect=sessionStorage.removeItem;sessionStorage.removeItem=k=>{if(k===key)throw new Error('cleanup denied');removeAfterDisconnect(k);};
+  f.disconnect.fire('click');await tick();assert(f.status.textContent==='settings.signedOutCleanupFailed' && !f.disconnect.disabled && f.button.disabled,'confirmed disconnect with cleanup failure permits only cleanup retry');
+  sessionStorage.removeItem=removeAfterDisconnect;f.disconnect.fire('click');await tick();assert(f.calls.length===1 && !f.values.has(key),'cleanup retry never repeats revocation');
   output('PASS editor interaction regressions');
 }
 

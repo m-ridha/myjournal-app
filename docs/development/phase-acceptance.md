@@ -8,7 +8,7 @@ Later user decisions supersede earlier plans:
 - Physical-phone testing is waived for this stage; developer-device-toolbar coverage is accepted. Do not describe it as physical-device evidence.
 - Backups need reload/same-tab recovery; fresh-tab recovery after closing a tab is not required.
 - Settings Appearance is removed; the header light/dark toggle remains.
-- Keep the current module, Wire, and oapi-codegen. Do not silently settle the outstanding HTMX implementation decision.
+- Keep the current module, Wire, and oapi-codegen. Retain JSON API and vanilla JavaScript; HTMX is excluded by user decision (ADR 014).
 
 ## Phase 0 and 1: bootstrap and experiments
 
@@ -30,7 +30,7 @@ Goal: business rules work behind ports, with a reliable development provider.
 - Atomic local replacement, concurrency protection across stores targeting the same files, and collision-safe repeated trash.
 - Inward dependencies verified with temporary depguard violations for core/driving/driven rules; remove the canaries afterward.
 
-Local atomic replacement, same-process mutation protection across store instances, and collision-safe repeated trash are implemented and regression-tested (2026-10-09). The lock serializes all local mutations; separate processes and external filesystem writers are not coordinated. UTF-8 validation, byte-safe meaningful-line previews, and local/cache-wrapped store contracts are also implemented. Accepted date/recovery behavior must remain intact.
+Local atomic replacement, same-process mutation protection across store instances, and collision-safe repeated trash are implemented and regression-tested (2026-10-09). The lock serializes all local mutations; separate processes and external filesystem writers are not coordinated. UTF-8 validation, byte-safe meaningful-line previews, and local/cache-wrapped store contracts are also implemented. Accepted date/recovery behavior must remain intact. Depguard matching is now verified by seven temporary forbidden-import probes via make test-architecture, including nested packages and concrete clock/cache wiring. Test-only adapter composition is explicitly exempt from the driving-side rule (2026-10-09).
 
 ## Phase 3: complete local flow
 
@@ -44,11 +44,11 @@ Goal: a usable and accessible local journaling flow, without requiring Google.
 - Enforce the adopted fixed 30-day session age, cookie lifecycle/rotation, and cross-origin/CSRF protection. Add bounded request bodies and appropriate timeouts/draining; log paths without OAuth queries.
 - Align OpenAPI, handlers, and browser behavior: baseVersion, missing entries, validation statuses, response/error bodies, cookie security/401 documentation, and wrapped reconnect/unavailable errors.
 - Retain the shared header theme toggle and gear link. Review initial device-theme following without restoring Appearance controls.
-- Document theme source/version/license provenance and the actual HTMX-versus-JSON/vanilla-JavaScript decision. If HTMX is adopted, vendor a pinned version and implement full pages/fragments with Vary: HX-Request together. Do not claim these are already complete.
+- Document theme source/version/license provenance. The browser architecture decision is complete: JSON API and vanilla JavaScript (ADR 014); HTMX fragments and Vary: HX-Request are not requirements.
 - Verify keyboard interaction, accessible labels/live status, focus, contrast in both themes, reduced motion, 200% zoom, long/emoji/unbroken text, and template execution. Respect the device-testing waiver while recording the exact coverage performed.
 - Record S8 date/session, S9 theme, and S10 save-safety evidence and actual remaining limitations.
 
-Fixed 30-day server-side age and cookie expiry, key-rotation rejection, unsafe-request cross-origin protection, a 1 MiB save-envelope cap, and query-free logging are implemented with automated checks (2026-10-09). HTTP timeouts/draining and same-origin CSP/security headers are implemented (ADR 012); Covered CSP flows passed in Chrome 155/native Safari 26.4 (see csp-browser-qa.md); Safari full startup-console history remains unverified. API error/input/cookie contract alignment is implemented with regression coverage (2026-10-09). Safe local autosave is implemented (ADR 013); its browser coverage and navigation limits are recorded in findings. Confirmed trash and paginated list controls are implemented with local regressions (delete-browsing-checks.md). Stale calendar-response protection, functional disconnect/folder links, and real OAuth remain open. Accepted recovery/conflict/date/logout scenarios do not complete the whole phase.
+Fixed 30-day server-side age and cookie expiry, key-rotation rejection, unsafe-request cross-origin protection, a 1 MiB save-envelope cap, and query-free logging are implemented with automated checks (2026-10-09). HTTP timeouts/draining and same-origin CSP/security headers are implemented (ADR 012); Covered CSP flows passed in Chrome 155/native Safari 26.4 (see csp-browser-qa.md); Safari full startup-console history remains unverified. API error/input/cookie contract alignment is implemented with regression coverage (2026-10-09). Safe local autosave is implemented (ADR 013); its browser coverage and navigation limits are recorded in findings. Confirmed trash and paginated list controls are implemented with local regressions (delete-browsing-checks.md). Stale calendar-response protection and confirmed Settings disconnect are implemented with local browser and automated failure coverage (calendar-disconnect-checks.md). Actual Google revocation, provider folder links, and real OAuth remain open. Device-theme following until explicit selection and reduced-motion handling are implemented. Focused Chrome keyboard, Unicode wrapping, labeled controls, narrow-layout, and CSS 200% reflow checks passed; native zoom, full contrast/screen-reader auditing, and verified theme provenance remain open (ui-acceptance-checks.md). JSON API and vanilla JavaScript are adopted in ADR 014; htmx-migration-assessment.md preserves rejected migration research. Accepted recovery/conflict/date/logout scenarios do not complete the whole phase.
 
 ## Phase 4: Google adapter
 

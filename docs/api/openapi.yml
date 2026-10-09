@@ -211,6 +211,23 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
+  /api/v1/disconnect:
+    post:
+      summary: Revoke the connected provider and sign out
+      description: Saved journal files remain. Clear the session cookie only after provider revocation succeeds. Failures retain the session and return a JSON error; the browser retains drafts until confirmed success.
+      operationId: disconnect
+      responses:
+        '204':
+          description: Provider connection ended and session cookie cleared
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+        '503':
+          $ref: '#/components/responses/Unavailable'
+
   /api/v1/settings:
     get:
       summary: Get connected account settings
