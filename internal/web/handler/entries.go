@@ -3,8 +3,11 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
+	"strconv"
 	"time"
+	"unicode/utf8"
 
 	"cloud.google.com/go/civil"
 	openapi_types "github.com/oapi-codegen/runtime/types"
@@ -87,12 +90,27 @@ func (s *Server) SaveEntry(w http.ResponseWriter, r *http.Request, date openapi_
 		return
 	}
 
+	// Bound the complete JSON envelope, including escaped text and base version.
+	payload, err := io.ReadAll(http.MaxBytesReader(w, r.Body, MaxSaveRequestBytes))
+	if err != nil {
+		var tooLarge *http.MaxBytesError
+		if errors.As(err, &tooLarge) {
+			http.Error(w, s.message("errors.requestTooLarge"), http.StatusRequestEntityTooLarge)
+		} else {
+			http.Error(w, s.message("errors.invalidRequest"), http.StatusBadRequest)
+		}
+		return
+	}
 	var req api.SaveEntryRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+	if !utf8.Valid(payload) || json.Unmarshal(payload, &req) != nil {
 		http.Error(w, s.message("errors.invalidRequest"), http.StatusBadRequest)
 		return
 	}
 
+	if errors.Is(validateJSONUnicode(payload), journal.ErrInvalidText) {
+		http.Error(w, s.message("errors.invalidText"), http.StatusBadRequest)
+		return
+	}
 	base := journal.Version("")
 	if req.BaseVersion != nil {
 		base = journal.Version(*req.BaseVersion)
@@ -100,6 +118,10 @@ func (s *Server) SaveEntry(w http.ResponseWriter, r *http.Request, date openapi_
 
 	entry, err := service.Save(r.Context(), civil.DateOf(date.Time), req.Text, base)
 	if err != nil {
+		if errors.Is(err, journal.ErrInvalidText) {
+			http.Error(w, s.message("errors.invalidText"), http.StatusBadRequest)
+			return
+		}
 		if errors.Is(err, journal.ErrConflict) {
 			http.Error(w, s.message("errors.conflict"), http.StatusConflict)
 			return
@@ -182,4 +204,38 @@ func (s *Server) GetCalendar(w http.ResponseWriter, r *http.Request, params api.
 
 func toOpenAPIDate(d civil.Date) openapi_types.Date {
 	return openapi_types.Date{Time: time.Date(d.Year, time.Month(d.Month), d.Day, 0, 0, 0, 0, time.UTC)}
+}
+
+// MaxSaveRequestBytes caps the JSON envelope, not the character count.
+const MaxSaveRequestBytes = 1 << 20
+
+// encoding/json replaces unpaired UTF-16 escapes; reject them instead of changing text.
+// Called only after JSON syntax validation, so each escape has a complete operand.
+func validateJSONUnicode(payload []byte) error {
+	for i := 0; i < len(payload); i++ {
+		if payload[i] != '\\' {
+			continue
+		}
+		i++
+		if payload[i] != 'u' {
+			continue
+		}
+		value, _ := strconv.ParseUint(string(payload[i+1:i+5]), 16, 16)
+		i += 4
+		if value >= 0xdc00 && value <= 0xdfff {
+			return journal.ErrInvalidText
+		}
+		if value < 0xd800 || value > 0xdbff {
+			continue
+		}
+		if i+6 >= len(payload) || payload[i+1] != '\\' || payload[i+2] != 'u' {
+			return journal.ErrInvalidText
+		}
+		low, err := strconv.ParseUint(string(payload[i+3:i+7]), 16, 16)
+		if err != nil || low < 0xdc00 || low > 0xdfff {
+			return journal.ErrInvalidText
+		}
+		i += 6
+	}
+	return nil
 }

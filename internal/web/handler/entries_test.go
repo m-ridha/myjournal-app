@@ -25,7 +25,7 @@ import (
 
 func TestSaveAndGetEntryRoundTrip(t *testing.T) {
 	registry := provider.NewRegistry(local.New("http://localhost:3030", t.TempDir()))
-	h := New(config.Config{SessionKey: "test-key"}, registry, localServiceFactory(registry), testCatalog(t))
+	h := New(config.Config{SessionKey: "test-key"}, registry, localServiceFactory(registry), testCatalog(t), clock.System{})
 	date := openapi_types.Date{Time: time.Date(2026, 9, 21, 0, 0, 0, 0, time.UTC)}
 
 	body := strings.NewReader(`{"text":"hello journal"}`)
@@ -68,7 +68,7 @@ func TestSaveAndGetEntryRoundTrip(t *testing.T) {
 
 func TestGetEntryRequiresSession(t *testing.T) {
 	registry := provider.NewRegistry(local.New("http://localhost:3030", t.TempDir()))
-	h := New(config.Config{SessionKey: "test-key"}, registry, localServiceFactory(registry), testCatalog(t))
+	h := New(config.Config{SessionKey: "test-key"}, registry, localServiceFactory(registry), testCatalog(t), clock.System{})
 	date := openapi_types.Date{Time: time.Date(2026, 9, 21, 0, 0, 0, 0, time.UTC)}
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/entries/2026-09-21", nil)
 	res := httptest.NewRecorder()
@@ -80,7 +80,7 @@ func TestGetEntryRequiresSession(t *testing.T) {
 
 func TestSaveInvalidJSONUsesLocaleMessage(t *testing.T) {
 	registry := provider.NewRegistry(local.New("http://localhost:3030", t.TempDir()))
-	h := New(config.Config{SessionKey: "test-key"}, registry, localServiceFactory(registry), testCatalog(t))
+	h := New(config.Config{SessionKey: "test-key"}, registry, localServiceFactory(registry), testCatalog(t), clock.System{})
 	date := openapi_types.Date{Time: time.Date(2026, 9, 21, 0, 0, 0, 0, time.UTC)}
 	req := httptest.NewRequest(http.MethodPut, "/api/v1/entries/2026-09-21", strings.NewReader("{invalid"))
 	addLocalSession(t, req)
@@ -96,7 +96,7 @@ func TestSaveInvalidJSONUsesLocaleMessage(t *testing.T) {
 
 func TestPreviewTextUsesFirstMeaningfulLine(t *testing.T) {
 	registry := provider.NewRegistry(local.New("http://localhost:3030", t.TempDir()))
-	h := New(config.Config{SessionKey: "test-key"}, registry, localServiceFactory(registry), testCatalog(t))
+	h := New(config.Config{SessionKey: "test-key"}, registry, localServiceFactory(registry), testCatalog(t), clock.System{})
 	date := openapi_types.Date{Time: time.Date(2026, 9, 22, 0, 0, 0, 0, time.UTC)}
 
 	body := strings.NewReader(`{"text":"\n\n   My first line\nSecond line"}`)
@@ -164,7 +164,7 @@ func testCatalog(t *testing.T) i18n.Catalog {
 
 func TestListRejectsOutOfRangePagination(t *testing.T) {
 	registry := provider.NewRegistry(local.New("http://localhost:3030", t.TempDir()))
-	server := New(config.Config{SessionKey: "test-key"}, registry, localServiceFactory(registry), testCatalog(t))
+	server := New(config.Config{SessionKey: "test-key"}, registry, localServiceFactory(registry), testCatalog(t), clock.System{})
 	for _, pair := range [][2]int{{0, 20}, {journal.MaxPage + 1, 20}, {1, 101}, {1, -1}} {
 		page, size := pair[0], pair[1]
 		request := httptest.NewRequest(http.MethodGet, "/api/v1/entries", nil)
@@ -174,5 +174,40 @@ func TestListRejectsOutOfRangePagination(t *testing.T) {
 		if response.Code != http.StatusBadRequest {
 			t.Fatalf("bounds=%v status=%d", pair, response.Code)
 		}
+	}
+}
+
+func TestSaveRejectsMalformedUnicodeAndOversizedEnvelope(t *testing.T) {
+	registry := provider.NewRegistry(local.New("http://localhost:3030", t.TempDir()))
+	h := New(config.Config{SessionKey: "test-key"}, registry, localServiceFactory(registry), testCatalog(t), clock.System{})
+	date := openapi_types.Date{Time: time.Date(2026, 9, 21, 0, 0, 0, 0, time.UTC)}
+	for _, tc := range []struct {
+		body   string
+		status int
+	}{
+		{"{\"text\":\"\xff\"}", 400},
+		{`{"text":"\ud800"}`, 400}, {`{"text":"\udc00"}`, 400}, {`{"text":"\ud800\u0041"}`, 400},
+		{`{"text":"a"} {"text":"b"}`, 400},
+		{`{"text":"` + strings.Repeat("a", MaxSaveRequestBytes) + `"}`, 413},
+	} {
+		req := httptest.NewRequest(http.MethodPut, "/api/v1/entries/2026-09-21", strings.NewReader(tc.body))
+		addLocalSession(t, req)
+		res := httptest.NewRecorder()
+		h.SaveEntry(res, req, date)
+		if res.Code != tc.status {
+			t.Fatalf("status=%d want=%d", res.Code, tc.status)
+		}
+	}
+	for _, body := range []string{`{"text":"\ud83d\ude42"}`, `{"text":"\\ud800"}`, `{"text":"�"}`} {
+		if err := validateJSONUnicode([]byte(body)); err != nil {
+			t.Fatalf("valid Unicode rejected: %v", err)
+		}
+	}
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/entries/2026-09-21", nil)
+	addLocalSession(t, req)
+	res := httptest.NewRecorder()
+	h.GetEntry(res, req, date)
+	if !strings.Contains(res.Body.String(), `"exists":false`) {
+		t.Fatal("rejected save created entry")
 	}
 }

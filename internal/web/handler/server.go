@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"time"
 
 	"github/mridha/myjournal-app/internal/config"
 	"github/mridha/myjournal-app/internal/i18n"
@@ -23,10 +24,11 @@ type Server struct {
 	registry       *provider.Registry
 	serviceFactory ServiceFactory
 	messages       i18n.Catalog
+	now            func() time.Time
 }
 
-func New(cfg config.Config, registry *provider.Registry, service ServiceFactory, messages i18n.Catalog) *Server {
-	return &Server{cfg: cfg, registry: registry, serviceFactory: service, messages: messages}
+func New(cfg config.Config, registry *provider.Registry, service ServiceFactory, messages i18n.Catalog, clk journal.Clock) *Server {
+	return &Server{cfg: cfg, registry: registry, serviceFactory: service, messages: messages, now: clk.Now}
 }
 
 func (s *Server) message(key string) string { return s.messages.Text(key) }
@@ -37,7 +39,7 @@ func (s *Server) currentSession(r *http.Request) (session.Session, error) {
 		return session.Session{}, ErrUnauthenticated
 	}
 	current, err := session.Decode(s.cfg.SessionKey, cookie.Value)
-	if err != nil || current.ProviderID == "" || current.AccountID == "" || current.IssuedAt.IsZero() {
+	if err != nil || !current.ValidAt(s.now()) {
 		return session.Session{}, ErrUnauthenticated
 	}
 	if _, ok := s.registry.Get(current.ProviderID); !ok {

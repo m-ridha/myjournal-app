@@ -17,6 +17,7 @@ type Date = civil.Date
 type Version string
 
 var (
+	ErrInvalidText       = errors.New("entry text must be valid UTF-8")
 	ErrConflict          = errors.New("entry changed elsewhere")
 	ErrNotFound          = errors.New("entry not found")
 	ErrAuthRequired      = errors.New("reconnect required")

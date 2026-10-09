@@ -4,17 +4,24 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
+	"unicode/utf8"
 
 	"github/mridha/myjournal-app/internal/journal"
 
 	"cloud.google.com/go/civil"
 )
+
+// Local mutations share a bounded process-wide lock, including across Store instances.
+// This does not coordinate separate processes or external filesystem writers.
+var mutationLock sync.Mutex
 
 // Store persists entries as plain text files on disk in the local dev directory.
 type Store struct {
@@ -77,6 +84,9 @@ func (s *Store) ListYear(ctx context.Context, year int) ([]journal.EntryMeta, er
 }
 
 func (s *Store) Get(ctx context.Context, d civil.Date) (journal.Entry, error) {
+	if err := ctx.Err(); err != nil {
+		return journal.Entry{}, err
+	}
 	path := filepath.Join(s.root, journal.EntryPath(d))
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -85,6 +95,9 @@ func (s *Store) Get(ctx context.Context, d civil.Date) (journal.Entry, error) {
 		}
 		return journal.Entry{}, err
 	}
+	if !utf8.Valid(data) {
+		return journal.Entry{}, journal.ErrInvalidText
+	}
 	return journal.Entry{Date: d, Text: string(data), Version: journal.Version(hashText(string(data))), Exists: true}, nil
 }
 
@@ -92,19 +105,26 @@ func (s *Store) Previews(ctx context.Context, dates []civil.Date, maxBytes int) 
 	out := make(map[civil.Date]string, len(dates))
 	for _, d := range dates {
 		entry, err := s.Get(ctx, d)
-		if err != nil {
+		if errors.Is(err, journal.ErrNotFound) {
 			continue
 		}
-		preview := entry.Text
-		if len(preview) > maxBytes {
-			preview = preview[:maxBytes]
+		if err != nil {
+			return nil, err
 		}
-		out[d] = preview
+		out[d] = journal.PreviewPrefix(entry.Text, maxBytes)
 	}
 	return out, nil
 }
 
 func (s *Store) Put(ctx context.Context, d civil.Date, text string, base journal.Version) (journal.Entry, error) {
+	mutationLock.Lock()
+	defer mutationLock.Unlock()
+	if !utf8.ValidString(text) {
+		return journal.Entry{}, journal.ErrInvalidText
+	}
+	if err := ctx.Err(); err != nil {
+		return journal.Entry{}, err
+	}
 	if err := ensureDir(filepath.Join(s.root, "entries")); err != nil {
 		return journal.Entry{}, err
 	}
@@ -132,13 +152,18 @@ func (s *Store) Put(ctx context.Context, d civil.Date, text string, base journal
 	default:
 		return journal.Entry{}, statErr
 	}
-	if err := os.WriteFile(path, []byte(text), 0o644); err != nil {
+	if err := writeAtomically(ctx, path, []byte(text), os.Rename); err != nil {
 		return journal.Entry{}, err
 	}
 	return journal.Entry{Date: d, Text: text, Version: journal.Version(hashText(text)), Exists: true}, nil
 }
 
 func (s *Store) Trash(ctx context.Context, d civil.Date) error {
+	mutationLock.Lock()
+	defer mutationLock.Unlock()
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	path := filepath.Join(s.root, journal.EntryPath(d))
 	if _, err := os.Stat(path); err != nil {
 		if os.IsNotExist(err) {
@@ -150,8 +175,27 @@ func (s *Store) Trash(ctx context.Context, d civil.Date) error {
 	if err := ensureDir(trashDir); err != nil {
 		return err
 	}
-	trashPath := filepath.Join(trashDir, fmt.Sprintf("%d-%02d-%02d.txt", d.Year, d.Month, d.Day))
-	return os.Rename(path, trashPath)
+	reserved, err := os.CreateTemp(trashDir, d.String()+"-*.txt")
+	if err != nil {
+		return err
+	}
+	trashPath := reserved.Name()
+	if err := reserved.Close(); err != nil {
+		_ = os.Remove(trashPath)
+		return err
+	}
+	if err := ctx.Err(); err != nil {
+		_ = os.Remove(trashPath)
+		return err
+	}
+	if err := os.Rename(path, trashPath); err != nil {
+		_ = os.Remove(trashPath)
+		if errors.Is(err, os.ErrNotExist) {
+			return journal.ErrNotFound
+		}
+		return err
+	}
+	return nil
 }
 
 func ensureDir(path string) error {
@@ -161,4 +205,27 @@ func ensureDir(path string) error {
 func hashText(s string) string {
 	sum := sha256.Sum256([]byte(s))
 	return hex.EncodeToString(sum[:])
+}
+
+// Stage in the destination directory so rename atomically replaces the entry.
+// Readers see the complete old or new file; failures before rename preserve the old file.
+func writeAtomically(ctx context.Context, path string, data []byte, rename func(string, string) error) error {
+	temp, err := os.CreateTemp(filepath.Dir(path), ".entry-*")
+	if err != nil {
+		return err
+	}
+	defer func() { _ = temp.Close(); _ = os.Remove(temp.Name()) }()
+	if _, err := temp.Write(data); err != nil {
+		return err
+	}
+	if err := temp.Sync(); err != nil {
+		return err
+	}
+	if err := temp.Close(); err != nil {
+		return err
+	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	return rename(temp.Name(), path)
 }

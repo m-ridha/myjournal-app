@@ -156,7 +156,7 @@ func TestFutureDateEntryPageIsRejected(t *testing.T) {
 	h := NewRouter(cfg, provider.NewRegistry(localProvider.New("http://localhost:3030")), mockClock{now: time.Date(2026, 9, 21, 12, 0, 0, 0, time.UTC)}, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/entries/2026-09-22", nil)
-	addLocalSessionCookie(t, req, cfg.SessionKey)
+	addLocalSessionCookie(t, req, cfg.SessionKey, time.Date(2026, 9, 21, 0, 0, 0, 0, time.UTC))
 	res := httptest.NewRecorder()
 	h.ServeHTTP(res, req)
 
@@ -230,11 +230,15 @@ func TestEditorDraftScopeIsAccountAndProviderSpecific(t *testing.T) {
 	}
 }
 
-func addLocalSessionCookie(t *testing.T, req *http.Request, secret string) {
+func addLocalSessionCookie(t *testing.T, req *http.Request, secret string, issued ...time.Time) {
+	when := time.Now().UTC()
+	if len(issued) > 0 {
+		when = issued[0]
+	}
 	t.Helper()
 	encoded, err := session.Encode(secret, session.Session{
 		Connection: provider.Connection{ProviderID: "local", AccountID: "dev", AccountEmail: "dev@localhost", Credentials: "local-dev-user"},
-		IssuedAt:   time.Now().UTC(),
+		IssuedAt:   when,
 	})
 	if err != nil {
 		t.Fatalf("session.Encode() error = %v", err)
@@ -258,7 +262,7 @@ func TestEntryPagesUseRequestTimeZone(t *testing.T) {
 	} {
 		t.Run(tc.path+tc.zone, func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, tc.path, nil)
-			addLocalSessionCookie(t, req, cfg.SessionKey)
+			addLocalSessionCookie(t, req, cfg.SessionKey, time.Date(2026, 10, 7, 0, 0, 0, 0, time.UTC))
 			req.AddCookie(&http.Cookie{Name: "mj_tz", Value: tc.zone})
 			res := httptest.NewRecorder()
 			router.ServeHTTP(res, req)

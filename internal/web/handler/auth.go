@@ -2,7 +2,6 @@ package handler
 
 import (
 	"net/http"
-	"time"
 
 	"github/mridha/myjournal-app/internal/session"
 	"github/mridha/myjournal-app/internal/web/api"
@@ -36,7 +35,7 @@ func (s *Server) CompleteProviderLogin(w http.ResponseWriter, r *http.Request, p
 		return
 	}
 
-	stored := session.Session{Connection: conn, IssuedAt: time.Now().UTC()}
+	stored := session.Session{Connection: conn, IssuedAt: s.now().UTC()}
 	encoded, err := session.Encode(s.cfg.SessionKey, stored)
 	if err != nil {
 		http.Error(w, s.message("errors.session"), http.StatusInternalServerError)
@@ -46,6 +45,8 @@ func (s *Server) CompleteProviderLogin(w http.ResponseWriter, r *http.Request, p
 	http.SetCookie(w, &http.Cookie{
 		Name:     session.CookieName,
 		Value:    encoded,
+		Expires:  stored.IssuedAt.Add(session.Lifetime),
+		MaxAge:   int(session.Lifetime.Seconds()),
 		Path:     "/",
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,

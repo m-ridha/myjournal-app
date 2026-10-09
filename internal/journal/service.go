@@ -6,6 +6,7 @@ import (
 	"strings"
 	"time"
 	"unicode"
+	"unicode/utf8"
 
 	"cloud.google.com/go/civil"
 )
@@ -39,6 +40,9 @@ func normalizeText(s string) string {
 func (s *Service) Save(ctx context.Context, d Date, text string, base Version) (Entry, error) {
 	if d.After(s.Today(TimeZone(ctx))) {
 		return Entry{}, ErrFutureDate
+	}
+	if !utf8.ValidString(text) {
+		return Entry{}, ErrInvalidText
 	}
 	clean := normalizeText(text)
 	return s.store.Put(ctx, d, clean, base)
@@ -90,7 +94,7 @@ func (s *Service) Page(ctx context.Context, page, size int) (ListPage, error) {
 	if len(pageDates) == 0 {
 		return ListPage{Page: page, PageSize: size}, nil
 	}
-	previews, err := s.store.Previews(ctx, pageDates, 40)
+	previews, err := s.store.Previews(ctx, pageDates, 40+utf8.UTFMax)
 	if err != nil {
 		return ListPage{}, err
 	}
@@ -116,7 +120,24 @@ func PreviewText(text string, max int) string {
 	if max <= 0 || len(line) <= max {
 		return line
 	}
-	return line[:max] + "..."
+	return PreviewPrefix(line, max) + "..."
+}
+
+// PreviewPrefix returns the first meaningful line within a UTF-8 byte budget.
+// A nonpositive budget produces an empty preview; it never splits a code point.
+func PreviewPrefix(text string, maxBytes int) string {
+	if maxBytes <= 0 {
+		return ""
+	}
+	line := PreviewText(text, 0)
+	if len(line) <= maxBytes {
+		return line
+	}
+	end := maxBytes
+	for end > 0 && !utf8.RuneStart(line[end]) {
+		end--
+	}
+	return line[:end]
 }
 
 func (s *Service) Month(ctx context.Context, year int, month time.Month) (MonthView, error) {

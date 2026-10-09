@@ -30,7 +30,7 @@ Goal: business rules work behind ports, with a reliable development provider.
 - Atomic local replacement, concurrency protection across stores targeting the same files, and collision-safe repeated trash.
 - Inward dependencies verified with temporary depguard violations for core/driving/driven rules; remove the canaries afterward.
 
-The immediate priority is storage correctness. Accepted date/recovery behavior must remain intact. Passing sequential stale-save tests alone does not establish concurrent check/write safety.
+Local atomic replacement, same-process mutation protection across store instances, and collision-safe repeated trash are implemented and regression-tested (2026-10-09). The lock serializes all local mutations; separate processes and external filesystem writers are not coordinated. UTF-8 validation, byte-safe meaningful-line previews, and local/cache-wrapped store contracts are also implemented. Accepted date/recovery behavior must remain intact.
 
 ## Phase 3: complete local flow
 
@@ -48,7 +48,7 @@ Goal: a usable and accessible local journaling flow, without requiring Google.
 - Verify keyboard interaction, accessible labels/live status, focus, contrast in both themes, reduced motion, 200% zoom, long/emoji/unbroken text, and template execution. Respect the device-testing waiver while recording the exact coverage performed.
 - Record S8 date/session, S9 theme, and S10 save-safety evidence and actual remaining limitations.
 
-The accepted recovery/conflict/date/logout scenarios do not by themselves complete security, autosave, deletion, browsing controls, or the whole phase.
+Fixed 30-day server-side age and cookie expiry, key-rotation rejection, unsafe-request cross-origin protection, a 1 MiB save-envelope cap, and query-free logging are implemented with automated checks (2026-10-09). Timeouts/draining, CSP, complete API contract alignment, autosave, deletion/browsing controls, and real OAuth remain open. Accepted recovery/conflict/date/logout scenarios do not complete the whole phase.
 
 ## Phase 4: Google adapter
 
