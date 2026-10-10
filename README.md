@@ -1,53 +1,52 @@
 # myjournal-app
 
-A Go-based plain-text journal app. Contributor instructions are in [AGENTS.md](AGENTS.md); see [progress](docs/development/PROGRESS.md) and the [phase acceptance checklist](docs/development/phase-acceptance.md) for implementation status and remaining requirements.
+A Go app for one plain-text journal entry per day, stored in the user's Google Drive. The app uses a JSON API and vanilla JavaScript with server-rendered templates; production has no user database or persistent journal storage.
 
-## Current status
+Contributor instructions are in [AGENTS.md](AGENTS.md). See [progress](docs/development/PROGRESS.md), [findings](docs/development/findings.md), and the [phase acceptance requirements](docs/development/phase-acceptance.md) for evidence and remaining work.
 
-The implemented local development flow includes:
+## Features
 
-- app shell and router are in place
-- date-specific entry pages use `/entries/YYYY-MM-DD`; API routes are versioned under `/api/v{version_number}`
-- future dates are rejected
-- the branded 404 page is connected to the app
-- save status transitions are visible and styled
-- previews use the first meaningful line after trimming leading blank space
-- the local provider is used for day-to-day development; Google OAuth and Drive support localhost test mode and HTTPS/Secure-cookie acceptance deployments; automated production releases remain gated on live acceptance
+- One UTF-8 plain-text entry per day, with browser-time-zone dates and editable past entries.
+- Manual save and idle autosave, per-tab draft recovery, conflict-resolution controls and confirmed trash.
+- Paginated previews, calendar navigation, light/dark themes and account settings.
+- Google sign-in and Drive storage, with a local provider for development.
+
+The app is online-only. Browser drafts provide recovery rather than offline synchronization. Checksum comparisons are non-atomic; simultaneous external Drive edits are unsupported. See [ADR 016](docs/development/adr/016-restricted-google-release.md) for deployment and writer constraints.
 
 ## Quick start
 
-Create `.env` from `.env.example` and set `SESSION_KEY` to the output of `openssl rand -base64 32`.
+Use Go 1.27.2. Copy `.env.example` to `.env` and set `SESSION_KEY` to the output of `openssl rand -base64 32`. Keep `.env` private. Defaults use the development-only local provider at port 3030 with files under `.devdata`.
 
 ```bash
 make generate
 make run
 ```
 
-Then visit <http://localhost:3030/healthz>.
+Open <http://localhost:3030/> and use the local sign-in. Health is available at <http://localhost:3030/healthz>. `make run` loads `.env`; `go run ./cmd/app` does not. Keep `PORT` and `APP_BASE_URL` aligned.
+
+Install Wire and oapi-codegen before running `make generate`; see AGENTS.md for the required versions and commands. Generated files are committed, and the quick start regenerates them from their source definitions. Inspect generated diffs before committing.
 
 ## Development
 
 ```bash
 make fmt lint test
+make test-architecture
 ```
 
-`make test` runs the editor interaction regressions and `go test ./...`. The JavaScript checks use Node.js when available, or the built-in JavaScriptCore shell on macOS; no npm packages are required. Run only those checks with `make test-js`. Manual browser acceptance steps are in `docs/development/editor-recovery-checks.md`.
+Run architecture probes separately from other lint/build processes because they temporarily add forbidden imports. Lint requires golangci-lint v2.14.0. `make test` runs five JavaScript regression suites and `go test ./...`; JavaScript uses Node.js or macOS JavaScriptCore without npm packages. Run only browser interaction regressions with `make test-js`.
+
+The [editor recovery checklist](docs/development/editor-recovery-checks.md) and [UI acceptance checks](docs/development/ui-acceptance-checks.md) document manual coverage. Optional accessibility tooling is separate from ordinary CI. PR creation and updates run formatting, lint, tests and architecture checks.
 
 ## Architecture
 
-The project is organized into an application shell, core domain packages, and adapters following the guide's lightweight hexagonal structure.
-
-## Recent verified behaviors
-
-- entry routes render a branded 404 instead of the raw Go default text
-- entry preview intentionally ignores leading blank lines and starts from the first real line of user-written text
-- save status wording is intentionally short: `Saved`
-- editor state resets to neutral when content becomes dirty again after a successful save
+`internal/journal` owns domain rules and storage/clock ports. Local and Google providers implement adapters; the web layer handles JSON APIs under `/api/v1` and browser pages. `cmd/app` composes dependencies with Wire. Embedded assets use `html/template`, local CSS, scripts and SVGs. See AGENTS.md for boundaries and durable conventions.
 
 ## Google integration testing
 
-See [Google live checks](docs/development/google-live-checks.md) for the localhost-only opt-in, Console callback, and integrated acceptance sequence. Keep `GOOGLE_TEST_MODE=false` for normal local development. This switch cannot enable Google on a production hostname.
+See [Google live checks](docs/development/google-live-checks.md) for the localhost opt-in, Console callback and synthetic-data checks. Keep `GOOGLE_TEST_MODE=false` for ordinary local development. `GOOGLE_TEST_MODE=true` permits integrated Google testing only on localhost/loopback; non-test Google requires an HTTPS origin and Secure cookies. Preserve the approved `openid`, `email`, `profile` and `drive.file` scopes.
 
 ## Railway releases
 
-[Railway preparation](docs/development/railway-preparation.md) documents configuration, privacy, rollback and remaining acceptance. Published non-prerelease GitHub Releases tagged `vX.Y.Z` deploy their checked-out source using a pinned Railway CLI. Deployment completion and public health are checked. Google requires HTTPS and Secure cookies outside localhost test mode; release automation remains gated until public acceptance passes.
+[Railway preparation](docs/development/railway-preparation.md) documents configuration, privacy and rollback. Publishing a non-prerelease GitHub Release with a stable `vX.Y.Z` tag deploys that tag's source after main-ancestry and code checks. A tag push alone does not deploy. The workflow polls the exact Railway deployment ID and verifies public health.
+
+The workflow retains the repository-variable gate `RAILWAY_RELEASE_READY=true`. Configure `RAILWAY_PROJECT_ID` as a repository variable, `RAILWAY_SERVICE_ID` and `RAILWAY_ENVIRONMENT_ID` as production-environment variables, and `RAILWAY_TOKEN` as a secret. Keep one replica and branch autodeploys disabled. Maintain the same `SESSION_KEY` across restart/rollback; rollback does not revert Drive writes. Never commit credentials, cookies or journal content.

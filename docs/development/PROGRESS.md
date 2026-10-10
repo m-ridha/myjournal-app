@@ -110,7 +110,7 @@ Validation result: `make fmt lint test` passed successfully in the current works
 - [x] Adopt JSON API and vanilla JavaScript; exclude HTMX by user decision, record ADR 014, and preserve migration research as historical documentation (2026-10-09)
 - [x] Fix dark Disconnect contrast and calendar group naming; add optional repeatable accessibility QA with 18 passing scans, arrow contrast measurements, and keyboard reachability/focus checks (2026-10-10)
 - [x] Compare Monochrome source with current UI and local history; document visual inspiration rather than a copied theme port in ADR 004, preserving comparison limitations and separate icon-source follow-up (2026-10-10)
-- [ ] Remaining Phase 2/3 security/API/UI acceptance gates remain open
+- [ ] Full Phase 2/3 UI acceptance: native 200% zoom, screen-reader announcements, remaining focus/non-text contrast review and external trash-icon provenance remain unverified; core security/API work is complete for the restricted release (see ui-acceptance-checks.md).
 
 ## Restructuring addendum
 
@@ -127,14 +127,15 @@ Validation result: `make fmt lint test` passed successfully in the current works
 - [x] ADRs 008 and 009 document generated API placement and Wire
 - [x] `internal/web/middleware` contains focused request time-zone resolution with tests; other middleware concerns remain pending
 
-## Blockers
+## Current limitations and follow-ups
 
-- Preserve the user-selected module declaration from `go.mod`; module renaming is not authorized.
-- Live Google consent and the S1 first-consent/refresh/claim checks are complete for the test account.
-- Full Google Drive provider behavior remains human-assisted until the real OAuth and Drive validation steps are run.
-- S2 folder behavior checks passed for the test account (human-reported 2026-10-08); the integrated Drive adapter now has mocked contract coverage; live app acceptance remains open.
-- Phase 1 evidence/fallbacks and the user go decision are recorded, including S3 single-process concurrency. Phase 4 remains gated on Phase 2/3 acceptance and validated Google implementation; cross-instance folder convergence, revision/latency measurements, and production OAuth checks remain explicit follow-ups.
-- Session age, unsafe-request cross-origin protection, save-envelope bounds, and query-free request logging are implemented. HTTP timeout/draining and CSP baseline are implemented; Covered CSP flows pass in Chrome/native Safari, with Safari full startup-console history unverified. Safe editor autosave/page-hide is implemented with explicit recovery review and best-effort navigation limits (ADR 013); OAuth browser handoff now persists state/PKCE/nonce in a separate ten-minute encrypted cookie and validates callbacks before provider exchange (2026-10-10); code exchange/claim validation, refresh lifecycle, revocation, and Drive storage now have automated coverage and a localhost-only integration test switch. Live Google acceptance and external-writer race policy remain open. Reported browser time-zone checks passed; physical-phone testing is waived for this stage.
+- Full UI acceptance remains open: native zoom/screen-reader checks, remaining focus/non-text contrast review and external icon provenance; see [UI acceptance](ui-acceptance-checks.md).
+- Google Console remains Testing. Restricted test-user releases are accepted; unrestricted publication/verification is not claimed.
+- Checksum comparison/upload and entry creation are non-atomic across external writers/processes. ADR 016 records accepted platform-overlap risk; deliberate multiple writers remain unsupported.
+- Exploratory latency and Drive version measurements are recorded with limits. Original performance targets are not marked passed; the user accepted the gap for this restricted release.
+- January 3 failure investigation/fixture cleanup and optional performance experiments remain deferred by user decision.
+- The first published-release workflow, public OAuth/session/storage checks and rollback passed. No active Railway activation blocker remains for the restricted audience. Visible logging was checked and no drain is enabled; undocumented internal hosting retention is not proven.
+- Physical-phone testing is waived in favor of device-toolbar coverage; native Safari startup-console history remains unverified.
 
 ## Notes
 
@@ -176,11 +177,11 @@ OpenAPI base contract added: the API definition now lives in `docs/api/openapi.y
 - [x] User-assisted same-key restart followed by observed signed-in Drive reload; October 2 synthetic fixture trashed and absence verified (2026-10-10)
 - [x] External Drive Manage versions upload detected by stale-save conflict; local draft retained and Keep both retrieved external text (2026-10-10; check/upload race still open)
 - [x] User-revoked Google connection retained both draft versions; fresh reconnect, original-tab Save (200), reload, and synthetic cleanup passed (2026-10-10; first callback rejection remains unexplained)
-- [ ] Remaining integrated live sign-in/refresh/storage/reconnect/conflict checks: [Google live checklist](google-live-checks.md)
-- [ ] Record real changed/unchanged save revision measurements and cold/warm latency; synthetic probe provided
-- [ ] Resolve external-writer/checksum-upload race and multi-instance policy before production enabling
+- [x] Covered integrated live sign-in/restart/storage/reconnect/conflict smoke checks completed; later Google/recovery and Railway evidence below closes the restricted-release gate. This is not exhaustive real-outage or external-writer coverage.
+- [x] Record actual changed/unchanged Drive version observations (50 changed, no additional versions after 50 unchanged saves) and exploratory live latency. Controlled cold/warm cache state remains unverified; user accepted measured latency and revision-retention limits for the restricted release.
+- [x] Resolve the release policy in ADR 016: restricted single-service topology, accepted temporary overlap/lost-update/duplicate risk and no simultaneous external edits. The non-atomic storage race is not fixed.
 
-Partial live Google smoke success is recorded in findings; full integrated acceptance and production readiness remain open. Earlier spike evidence remains valid for its recorded scope.
+The later live Google and Railway sections record completed restricted-release acceptance. Exhaustive provider reliability and unrestricted production publication are not claimed; earlier spike evidence retains its original scope.
 
 
 ## Go review follow-up (2026-10-10)
@@ -188,7 +189,7 @@ Partial live Google smoke success is recorded in findings; full integrated accep
 - [x] Review Go style and clean architecture; record prioritized findings and fresh checks in [Go code review](go-code-review.md)
 - [x] Address cache/date/path/logger issues, shared provider constants, explicit configuration, shared session policy, Settings/rendering/cancellation handling, safe auth diagnostics, and batched Drive previews; record conventions in AGENTS.md
 - [x] Verify refactor with make fmt lint test, all seven architecture probes, go vet ./..., and go test -race -short ./... (2026-10-10)
-- [ ] Optional local bounded-prefix previews remain deferred; production Google concurrency/release gates are unchanged
+- Deferred: Optional local bounded-prefix previews remain deferred, not an unfinished release prerequisite.
 
 
 ## Performance baseline (2026-10-10)
@@ -224,7 +225,7 @@ Partial live Google smoke success is recorded in findings; full integrated accep
 - [x] Record human-assisted January 3 inspection flags: final attempted content is present despite the failed response
 - [x] Collect January 5 live timing records: ten successful five-call saves; upstream calls account for 99.94% of aggregate server time (discovery 40.5%, metadata 9.9%, upload 49.5%); cleanup verified
 - [x] User deferred January 3 root-cause investigation; retain evidence and fixture without cleanup
-- [ ] Evaluate ambiguous-write recovery/concurrency policy before further caching changes
+- [x] Evaluate and implement fresh-read uncertain-save reconciliation with Google live acceptance; record restricted concurrency policy in ADRs 013/016. No historical-outcome or atomicity guarantee.
 
 ## Uncertain-save retry (2026-10-10)
 
@@ -250,7 +251,7 @@ Performance plan status refreshed (2026-10-10): focused iteration complete; priv
 - [x] Simulate Drive applying both new-entry and update uploads before returning 503: report unavailable without automatic upload retry, recover applied content/version through Get, and reject stale original-base retries.
 - [x] Fresh make fmt lint test, go test -race ./internal/provider/google, and git diff --check pass. These are synthetic reliability results, not live Google or production acceptance.
 
-Next: remaining live Google checks (especially Settings Disconnect, omitted-refresh-token reconnect, folder recreation and revision measurements), external-writer/multi-instance policy, then remaining UI/release acceptance. Production Google stays disabled.
+Historical next-step note superseded: Disconnect, sign-in/restart refresh capability, disposable-year recreation and revision observations were subsequently completed; release policy and restricted Railway release acceptance are recorded below. Actual refresh-token omission during integrated live sign-in was not observed.
 
 ## Production Google acceptance preparation (2026-10-10)
 
@@ -263,7 +264,7 @@ Next: remaining live Google checks (especially Settings Disconnect, omitted-refr
 - [x] User trashed synthetic 2019-02-21 through the app and confirmed reload shows Blank page; revision fixture cleanup complete.
 - [x] User accepted restricted first-release policy (ADR 016): one active app process, no simultaneous external edits, explicit lost-update risk. Deployment compliance and remaining release acceptance stay open.
 
-No live pass or production readiness is claimed from this preparation.
+This section records scoped live observations; later Railway acceptance establishes restricted test-user release readiness, not unrestricted production publication.
 
 - [x] Run dependency vulnerability baseline with govulncheck v1.8.0 on Go 1.27.1.
 - [x] Upgrade to Go 1.27.2 and patched x/net dependency family; govulncheck v1.8.0 reports zero reachable/imported-package vulnerabilities. Unused openpgp module-only advisory remains documented.
@@ -281,52 +282,52 @@ No live pass or production readiness is claimed from this preparation.
 - [x] User confirmed failed-save pause does not automatically retry; trashed synthetic 2019-02-22 and reloaded to Blank page.
 
 - [x] Replace raw chi panic logging with generic event/request ID recovery; preserve API JSON errors, abort semantics and committed-response safety. Fresh make fmt lint test passes.
-- [ ] Finish startup/server/error privacy review and remaining production HTTPS/deployment acceptance.
+- [x] Complete startup/server/error privacy review and restricted-release HTTPS/deployment acceptance; sanitized panic/server diagnostics, public headers and first automated release are recorded below.
 
 - [x] Review app startup/server logging; sanitize net/http diagnostic fallback, regenerate Wire and verify secret-omission regression. Fresh make fmt lint test passes.
-- [ ] Select deployment target and verify production HTTPS, Google Console setup, non-overlapping rollout and infrastructure logging/privacy.
+- [x] Select Railway and verify HTTPS/Console test-user setup and visible query-free logging with no drains. Temporary rollout overlap is explicitly accepted (ADR 016), not proven absent; unrestricted Console publishing remains outside this release.
 
 ## Railway release preparation (2026-10-10)
 
 - [x] User selected Railway at https://myjournal-ink.up.railway.app; retain ADR 016 residual overlap/lost-update policy.
 - [x] Retain published GitHub Release trigger for stable vX.Y.Z tags; tag pushes alone do not deploy.
 - [x] Prepare Docker config, pinned CLI source upload, deployment-ID polling and public health verification; see [Railway preparation](railway-preparation.md).
-- [ ] Container smoke/build, actual Railway deployment and platform logging/privacy acceptance.
-- [ ] Review HTTPS-only Google registration enablement and perform public OAuth checks; current guard is still localhost-only. Initial public /healthz returned 404.
+- [x] Railway container build/deployment and restricted-release logging review completed through public acceptance and v0.1.0. Local Docker smoke was unavailable; internal provider retention is not claimed.
+- [x] HTTPS/Secure-cookie registration deployed and public OAuth checks passed. Initial 404 was superseded by successful health, sign-in and Drive smoke checks.
 - [x] Fresh format/lint/application tests, seven architecture probes, both workflow actionlint checks and three deployment-polling regressions passed. Railway schema validation tooling unavailable locally; authenticated deployment remains pending.
 
 - [x] User confirmed Railway runtime variables and exact Google callback are configured (human report).
-- [ ] Railway startup/public acceptance: fresh GET /healthz returned 502; generic startup diagnostic requested. No OAuth or cookie acceptance claimed.
+- [x] Railway startup/public acceptance recovered from initial 502; later health, OAuth, cookie and restart checks passed.
 
 ## Railway Google startup correction (2026-10-10)
 
 - [x] User supplied startup diagnostic confirming the old Google live-acceptance guard prevents Railway startup on current main.
 - [x] Prepare non-test Google registration requiring an HTTPS origin without credentials/path/query/fragment and COOKIE_SECURE=true; retain localhost-only test mode. Regenerate Wire and add startup-policy regressions.
 - [x] Fresh make generate-wire and make fmt lint test passed; lint reports 0 issues.
-- [ ] Review/publish/deploy acceptance build, verify public health and logging privacy, then perform OAuth acceptance. Release readiness remains unset; local changes are not deployed.
+- [x] Acceptance build reviewed/deployed; public health, visible logging and OAuth checks passed. Release readiness subsequently allowed the successful v0.1.0 workflow.
 
 ## Public Railway HTTPS checks (2026-10-10)
 
 - [x] Public /healthz, landing and Privacy return 200; unsigned entry API returns 401. CSP, no-store, no-referrer, nosniff and DENY framing headers observed.
 - [x] Login returns 302 and ten-minute transaction cookie with Secure/HttpOnly/SameSite=Lax; invalid dummy callback returns 401; cross-origin PUT without session returns 403. No real Google callback or session values recorded.
 - [x] Chrome public landing shows Continue with Google.
-- [ ] HSTS header absent on observed public responses; production header gate remains open.
-- [ ] Human Railway dummy-query log/export review pending; real consent, authenticated cookie, refresh/restart and entry smoke checks not yet performed.
+- [x] HSTS omission fixed and publicly verified on pages/assets/API errors/404 and after rollback restoration.
+- [x] Dummy query absent from inspected application/HTTP logs; user confirmed no log drain. Real consent, cookie attributes, restart/read and synthetic entry smoke subsequently passed; undocumented internal retention is not asserted.
 
 - [x] Human-supplied application logs show the dummy callback path without query marker; broader platform/export retention remains unverified.
-- [ ] Browser Continue with Google reached Railway 502; no real consent occurred. Recover hosting availability before retrying public OAuth acceptance.
+- [x] Initial login 502 resolved; later browser sign-in and public acceptance passed.
 
 - [x] Public availability recovered: fresh health GET 200 and login 302.
-- [ ] Google authorization displays 401 invalid_client (OAuth client was not found); human verification of deployed GOOGLE_CLIENT_ID requested. No consent/callback acceptance yet.
+- [x] Initial invalid_client resolved by human configuration correction; later sign-in/consent and public Drive checks passed.
 
 - [x] User reports corrected client ID deployed; fresh browser login reaches Google account chooser without invalid_client. Human sign-in/Drive consent pending.
 
 - [x] Public authenticated smoke: human completed Google consent; Chrome saved disposable 2019-02-23 with Unicode text, then reload returned identical text with Saved (not Draft restored).
-- [ ] Public restart/session-refresh check and synthetic fixture cleanup remain pending; authenticated cookie attributes require browser inspection.
+- [x] Public restart/read, human cookie-attribute inspection and synthetic fixture cleanup completed; evidence below distinguishes browser observations and human reports.
 
 - [x] Railway restart acceptance: user reported service restarted with unchanged configuration; Chrome reload remained signed in and returned the exact synthetic 2019-02-23 text with Saved.
 - [x] Human inspected mj_session: Secure, HttpOnly, SameSite=Lax, Path=/, expiry 2026-11-09 (approximately 30 days).
-- [ ] Synthetic 2019-02-23 cleanup attempted; Chrome exposed trash confirmation, then automation timed out during confirmation. Cleanup outcome remains unverified.
+- [x] After automation timed out, user confirmed synthetic 2019-02-23 trash and reload to Blank page; cleanup complete.
 
 - [x] Public synthetic fixture cleanup: user confirmed trash and reload of 2019-02-23 shows Blank page.
 
@@ -340,19 +341,35 @@ No live pass or production readiness is claimed from this preparation.
 - [x] Human reports callback HTTP logs show request IDs without query strings; export/internal retention remains a separately bounded claim.
 - [x] Approved HSTS policy implemented from configured HTTPS origin, ignoring forwarded headers; one-year host-only policy, no preload/subdomains. Regression first failed against missing header, then make fmt lint test passed with zero lint issues.
 - [x] Release workflow now reads RAILWAY_PROJECT_ID from secrets, matching the reported repository setup; service/environment IDs remain production-environment variables.
-- [ ] Deploy and verify HSTS publicly; perform rollback smoke; confirm log/export surfaces and Console/restricted-audience launch decisions before setting readiness. First published-release workflow remains an end-to-end verification step.
+- [x] Deployed HSTS, rollback/session smoke, visible log/no-drain review and restricted-audience decisions completed. First published-release workflow v0.1.0 passed.
 
 - [x] Fresh make test-architecture passed all seven forbidden-import probes after HSTS changes; git diff --check passed.
 
 - [x] User accepted restricted test-user automated releases with Google Testing expiry and measured latency/revision-retention limitations; recorded in ADR 016.
 - [x] User confirmed Railway log drains are not enabled. HTTP/application query-free observations cover configured visible logging; internal platform retention is not claimed.
-- [ ] Remaining activation prerequisites: reviewed HSTS/workflow changes deployed and publicly checked, known-good rollback/session smoke and restoration; readiness variable remains unset.
+- [x] Activation prerequisites completed: HSTS/workflow deployed, rollback/session smoke and restoration verified; successful v0.1.0 confirms the readiness gate allowed deployment.
 
 - [x] Public deployed HSTS verified (2026-10-10): /healthz and landing 200, static script 200, unsigned settings API 401 and missing route 404 all include Strict-Transport-Security: max-age=31536000 and CSP. Private/non-static responses retain no-store.
-- [ ] Final activation prerequisite: known-good Railway rollback/session smoke, restoration of current deployment and health/HSTS recheck.
+- [x] Final rollback/session/restoration prerequisite completed, including independent restored health/HSTS checks.
 
 - [x] Railway rollback/session smoke (human reported): rolled back to PR #15 deployment; health and an existing entry worked without signing in again. User then redeployed latest commit. Independent /healthz, /privacy and /help returned 200 with one-year HSTS after restoration.
 - [x] Restricted test-user activation prerequisites now have recorded evidence. Repository RAILWAY_RELEASE_READY may be set to true; its remote value has not been inspected or changed. First published-release workflow remains the end-to-end automation check.
-- [ ] Minor header regression: Privacy/Help omitted Settings for valid sessions. Local fix uses existing session validation; invalid/expired/missing sessions retain public access without the gear. Deployment pending.
+- [x] Privacy/Help Settings header regression fixed and deployed in v0.1.0. Authenticated Chrome verification shows Settings on both pages; regression tests cover invalid/expired/missing sessions retaining public access without the gear.
 
 Privacy/Help header fix validation: fresh make fmt lint test passed with zero lint issues, all five JavaScript suites and all Go packages; git diff --check passed.
+
+## First automated Railway release (2026-10-10)
+
+- [x] GitHub Release v0.1.0 job 114229543859 succeeded: stable-tag/main-ancestry validation, release checks and exact deployment verification all passed. Uploaded source commit 8ae5dc70a74e3e45d59dd4da659b6efec24b8431; helper confirmed deployment SUCCESS and health.
+- [x] Fresh public /healthz, /privacy and /help returned 200 with one-year HSTS and CSP. Chrome signed-in Privacy and Help both display Settings, closing the deployed header regression.
+- [x] Automated release path validated for the approved restricted Google test-user audience; Console remains Testing and prior limitations remain applicable.
+
+- [x] Release configuration follow-up: user moved RAILWAY_PROJECT_ID to a repository variable; workflow reads vars.RAILWAY_PROJECT_ID. RAILWAY_TOKEN remains a secret.
+
+## Progress checkbox reconciliation (2026-10-10)
+
+Reviewed every unchecked item against later findings, public acceptance and v0.1.0 workflow evidence. Closed superseded activation blockers without claiming atomic writes, controlled cold/warm benchmarks, unrestricted Google publication, local Docker smoke or full accessibility certification. Optional bounded-prefix previews are labeled deferred rather than a release blocker. The remaining unchecked umbrella is full UI acceptance as detailed above. This is a documentation audit; no new runtime tests were run.
+
+- [x] Review README/AGENTS against current code, workflow and release evidence: document v0.1.0 restricted test-user status, HSTS, Railway variables, remaining UI checks and public-page Settings behavior; remove mandatory generation from fresh-checkout quick start. Local links and git diff --check pass; documentation-only, no new runtime tests.
+
+- [x] README follow-up by user decision: retain make generate in quick start with prerequisites/diff review; keep evolving status in PROGRESS/findings and durable feature/setup/release instructions in README.
