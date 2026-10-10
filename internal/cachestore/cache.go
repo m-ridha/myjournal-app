@@ -3,6 +3,7 @@ package cachestore
 import (
 	"container/list"
 	"context"
+	"slices"
 	"sync"
 	"time"
 
@@ -142,19 +143,18 @@ func (s *Store) Previews(ctx context.Context, dates []civil.Date, maxBytes int) 
 
 func (s *Store) Put(ctx context.Context, d civil.Date, text string, base journal.Version) (journal.Entry, error) {
 	entry, err := s.base.Put(ctx, d, text, base)
+	// Failed uploads can be ambiguous; invalidate affected data without retrying.
+	s.cache.invalidateDate(s.account, d, err != nil || base == "")
 	if err != nil {
 		return journal.Entry{}, err
 	}
-	s.cache.invalidate(s.account)
 	return entry, nil
 }
 
 func (s *Store) Trash(ctx context.Context, d civil.Date) error {
-	if err := s.base.Trash(ctx, d); err != nil {
-		return err
-	}
-	s.cache.invalidate(s.account)
-	return nil
+	err := s.base.Trash(ctx, d)
+	s.cache.invalidateDate(s.account, d, true)
+	return err
 }
 
 func (c *Cache) get(key cacheKey) (any, uint64, bool) {
@@ -201,15 +201,54 @@ func (c *Cache) set(key cacheKey, value any, generation uint64) {
 	}
 }
 
-func (c *Cache) invalidate(account string) {
+// invalidateDate retains unrelated snapshots with their original expiry. It never
+// publishes acknowledgement text, which could arrive out of order across writers.
+func (c *Cache) invalidateDate(account string, date civil.Date, membershipMayChange bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	// A process-wide epoch bounds bookkeeping and rejects all older in-flight fills.
+	// Keep the bounded epoch: even targeted invalidation rejects older in-flight fills.
 	c.generation++
+	retainYearIndex, retainYears := false, false
+	if !membershipMayChange {
+		if element := c.items[cacheKey{account: account, kind: "years"}]; element != nil {
+			item := element.Value.(*cacheItem)
+			retainYears = c.now().Before(item.expiresAt) && slices.Contains(item.value.([]int), date.Year)
+		}
+		key := cacheKey{account: account, kind: "year", year: date.Year}
+		if element := c.items[key]; element != nil {
+			item := element.Value.(*cacheItem)
+			if c.now().Before(item.expiresAt) {
+				for _, meta := range item.value.([]journal.EntryMeta) {
+					if meta.Date == date {
+						retainYearIndex = true
+						break
+					}
+				}
+			}
+		}
+	}
 	for key, element := range c.items {
-		if key.account == account {
+		if key.account != account {
+			continue
+		}
+		affected := key.kind == "preview" && key.date == date
+		if (key.kind == "years" && !retainYears) || (key.kind == "year" && key.year == date.Year && !retainYearIndex) {
+			affected = true
+		}
+		if affected {
 			c.lru.Remove(element)
 			delete(c.items, key)
 		}
 	}
 }
+
+// ForOperation forwards scoped reuse without changing shared cache ownership.
+func (s *Store) ForOperation() journal.Store {
+	base := s.base
+	if scoped, ok := base.(journal.OperationStore); ok {
+		base = scoped.ForOperation()
+	}
+	return s.cache.Wrap(s.account, base)
+}
+
+var _ journal.OperationStore = (*Store)(nil)

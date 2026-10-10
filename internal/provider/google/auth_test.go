@@ -14,6 +14,8 @@ import (
 
 	"github/mridha/myjournal-app/internal/journal"
 	"github/mridha/myjournal-app/internal/provider"
+	"github/mridha/myjournal-app/internal/testutil"
+
 	"golang.org/x/oauth2"
 	"google.golang.org/api/idtoken"
 )
@@ -36,7 +38,7 @@ func TestExchangeAndRefresh(t *testing.T) {
 		_ = json.NewEncoder(w).Encode(map[string]any{"access_token": "access", "refresh_token": "refresh", "id_token": "signed-token", "token_type": "Bearer", "expires_in": 3600, "scope": driveScope})
 	}))
 	defer endpoint.Close()
-	p := New(Config{ClientID: "client", ClientSecret: "secret", BaseURL: "http://localhost:3030"})
+	p := New(Config{ClientID: "client", ClientSecret: "secret", BaseURL: testutil.LocalBaseURL})
 	p.endpoint = oauth2.Endpoint{TokenURL: endpoint.URL, AuthStyle: oauth2.AuthStyleInParams}
 	p.validate = func(_ context.Context, token, audience string) (*idtoken.Payload, error) {
 		if token != "signed-token" || audience != "client" {

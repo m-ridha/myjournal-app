@@ -189,3 +189,51 @@ Partial live Google smoke success is recorded in findings; full integrated accep
 - [x] Address cache/date/path/logger issues, shared provider constants, explicit configuration, shared session policy, Settings/rendering/cancellation handling, safe auth diagnostics, and batched Drive previews; record conventions in AGENTS.md
 - [x] Verify refactor with make fmt lint test, all seven architecture probes, go vet ./..., and go test -race -short ./... (2026-10-10)
 - [ ] Optional local bounded-prefix previews remain deferred; production Google concurrency/release gates are unchanged
+
+
+## Performance baseline (2026-10-10)
+
+- [x] Add isolated real-adapter/service/cache benchmarks against fake Drive; run six repetitions of 20 operations for eight scenarios and retain sanitized raw output/source manifest
+- [x] Confirm request counts and profile changed-save allocations; record [baseline findings](performance-benchmark.md) without changing production behavior
+- [x] Add same-origin browser probe with overwrite refusal, stop-on-error, sanitized reporting, and recoverable cleanup; safety regressions pass
+- [x] make fmt lint test, seven architecture probes, benchmark race smoke, and git diff --check pass
+- [x] Collect user-executed live browser probe timings: 60 HTTP-200 samples, reported cleanup verified; post-save browse median 7.078 s (user confirms January 2 invocation but result labels January 1; mismatch unexplained; running build/cache state unverified)
+- [x] Implement and separately measure upload streaming, operation-scoped discovery, and targeted invalidation; production concurrency/release gates remain unchanged
+
+- [x] Retain January 2 successful results and January 3 partial failure; keep failed sample and unknown write outcome explicit
+- [x] Add probe progress/single-running guard and reproduce/fix deadline errors falling through to HTTP 500 (now existing 503 unavailable response)
+- [ ] Confirm January 3 error category from safe terminal/response evidence and inspect retained fixture before any cleanup/retry
+
+
+## Performance candidates (2026-10-10)
+
+- [x] Revise private performance plan and add tracked implementation plan/ADR 015
+- [x] Remove 16 MiB SDK upload buffering with bounded single-request streaming; changed-save allocations ~17.04 MB → 0.17 MB
+- [x] Add bounded per-operation discovery reuse through an optional Store port and cache forwarding; cold page calls 28 → 24
+- [x] Target preview/index invalidation while preserving TTL, account isolation and generation barriers; off-page save/page calls 33 → 5, visible save/page 29 → 9 against matching scoped baseline
+- [x] Retain per-candidate raw benchmark runs; add visible/off-page comparison and focused integrity/race/error regressions
+- [x] make fmt lint test and seven separate architecture probes pass; go vet ./... and go test -race -short ./... pass
+- [x] Record user-assisted targeted live comparison: 30 HTTP-200 samples, cleanup verified; post-save browsing median 6.673 → 2.277 s (~66% lower), changed save 3.385 → 3.632 s (no improvement); exploratory limits and failure-rate acceptance remain explicit
+- [x] Inspect retained January 3 fixture: user-reported two stable reads match the final attempted B content; no cleanup performed, failure cause remains unconfirmed
+
+## Save latency investigation (2026-10-10)
+
+- [x] Add debug-only sanitized Drive transport timing categories, header/body durations and outcomes; preserve request behavior and no raw URL/error logging
+- [x] Add read-only January 3 fixture inspector returning only stability/known-synthetic-content flags; no cleanup or write
+- [x] Fresh make fmt lint test, Google package race tests and git diff --check pass
+- [x] Record human-assisted January 3 inspection flags: final attempted content is present despite the failed response
+- [x] Collect January 5 live timing records: ten successful five-call saves; upstream calls account for 99.94% of aggregate server time (discovery 40.5%, metadata 9.9%, upload 49.5%); cleanup verified
+- [x] User deferred January 3 root-cause investigation; retain evidence and fixture without cleanup
+- [ ] Evaluate ambiguous-write recovery/concurrency policy before further caching changes
+
+## Uncertain-save retry (2026-10-10)
+
+- [x] Implement approved fresh-read-before-manual-retry behavior with exact snapshot acknowledgement and original-version conditional retry
+- [x] Add lost-acknowledgement, later-typing, failed-read, conflict, empty/absent, reload and sign-out regressions
+- [x] Document current-content versus historical-outcome limits in ADR 013 and recovery checklist; preserve external-writer production gate
+- [x] Fresh make fmt lint test passes (zero lint issues, five JavaScript suites, all Go packages); git diff --check passes
+- [x] Agent-driven Chrome/local-provider uncertain-save retry checklist passes with scoped acknowledgement-loss/delay/network-failure injection; sign-out race and recoverable fixture cleanup verified (2026-10-10). Safari/Google coverage not implied
+
+Performance plan status refreshed (2026-10-10): focused iteration complete; private plan labels the original proposal as historical, records completed measurements/changes, and separates optional controlled-session evidence and deferred experiments from production gates.
+
+- [x] Review and adopt dependency-free shared test origin fixtures with standard Go naming; retain independent contract/boundary literals and production/test separation.

@@ -1,0 +1,346 @@
+{
+  "mode": "exploratory, token primed; browsing cache state unverified",
+  "date": "2020-01-02",
+  "fixtureBytes": 2230,
+  "cleanupVerified": true,
+  "samples": [
+    {
+      "scenario": "open",
+      "status": 200,
+      "elapsedMs": 2060.5999999046326
+    },
+    {
+      "scenario": "open",
+      "status": 200,
+      "elapsedMs": 2106.7999999523163
+    },
+    {
+      "scenario": "open",
+      "status": 200,
+      "elapsedMs": 2088.7000000476837
+    },
+    {
+      "scenario": "open",
+      "status": 200,
+      "elapsedMs": 2200.100000143051
+    },
+    {
+      "scenario": "open",
+      "status": 200,
+      "elapsedMs": 2498.5
+    },
+    {
+      "scenario": "open",
+      "status": 200,
+      "elapsedMs": 2873.899999856949
+    },
+    {
+      "scenario": "open",
+      "status": 200,
+      "elapsedMs": 2176.100000143051
+    },
+    {
+      "scenario": "open",
+      "status": 200,
+      "elapsedMs": 2211.7999999523163
+    },
+    {
+      "scenario": "open",
+      "status": 200,
+      "elapsedMs": 2348.800000190735
+    },
+    {
+      "scenario": "open",
+      "status": 200,
+      "elapsedMs": 2388.5999999046326
+    },
+    {
+      "scenario": "changed-save",
+      "status": 200,
+      "elapsedMs": 3165.100000143051
+    },
+    {
+      "scenario": "changed-save",
+      "status": 200,
+      "elapsedMs": 3389.5999999046326
+    },
+    {
+      "scenario": "changed-save",
+      "status": 200,
+      "elapsedMs": 3761.2999999523163
+    },
+    {
+      "scenario": "changed-save",
+      "status": 200,
+      "elapsedMs": 3157.0999999046326
+    },
+    {
+      "scenario": "changed-save",
+      "status": 200,
+      "elapsedMs": 3380
+    },
+    {
+      "scenario": "changed-save",
+      "status": 200,
+      "elapsedMs": 3425.100000143051
+    },
+    {
+      "scenario": "changed-save",
+      "status": 200,
+      "elapsedMs": 3411.7999999523163
+    },
+    {
+      "scenario": "changed-save",
+      "status": 200,
+      "elapsedMs": 3191.5
+    },
+    {
+      "scenario": "changed-save",
+      "status": 200,
+      "elapsedMs": 4713.399999856949
+    },
+    {
+      "scenario": "changed-save",
+      "status": 200,
+      "elapsedMs": 3381.2999999523163
+    },
+    {
+      "scenario": "unchanged-save",
+      "status": 200,
+      "elapsedMs": 1604.6999998092651
+    },
+    {
+      "scenario": "unchanged-save",
+      "status": 200,
+      "elapsedMs": 2010.7000000476837
+    },
+    {
+      "scenario": "unchanged-save",
+      "status": 200,
+      "elapsedMs": 1831.5999999046326
+    },
+    {
+      "scenario": "unchanged-save",
+      "status": 200,
+      "elapsedMs": 1693.1000001430511
+    },
+    {
+      "scenario": "unchanged-save",
+      "status": 200,
+      "elapsedMs": 1697.2000000476837
+    },
+    {
+      "scenario": "unchanged-save",
+      "status": 200,
+      "elapsedMs": 1658.8999998569489
+    },
+    {
+      "scenario": "unchanged-save",
+      "status": 200,
+      "elapsedMs": 1722.9000000953674
+    },
+    {
+      "scenario": "unchanged-save",
+      "status": 200,
+      "elapsedMs": 1712
+    },
+    {
+      "scenario": "unchanged-save",
+      "status": 200,
+      "elapsedMs": 1919.7999999523163
+    },
+    {
+      "scenario": "unchanged-save",
+      "status": 200,
+      "elapsedMs": 1754.5
+    },
+    {
+      "scenario": "entries-repeat",
+      "status": 200,
+      "elapsedMs": 6964.699999809265
+    },
+    {
+      "scenario": "entries-repeat",
+      "status": 200,
+      "elapsedMs": 2
+    },
+    {
+      "scenario": "entries-repeat",
+      "status": 200,
+      "elapsedMs": 3.799999952316284
+    },
+    {
+      "scenario": "entries-repeat",
+      "status": 200,
+      "elapsedMs": 4.199999809265137
+    },
+    {
+      "scenario": "entries-repeat",
+      "status": 200,
+      "elapsedMs": 4
+    },
+    {
+      "scenario": "entries-repeat",
+      "status": 200,
+      "elapsedMs": 3.799999952316284
+    },
+    {
+      "scenario": "entries-repeat",
+      "status": 200,
+      "elapsedMs": 3.4000000953674316
+    },
+    {
+      "scenario": "entries-repeat",
+      "status": 200,
+      "elapsedMs": 8.700000047683716
+    },
+    {
+      "scenario": "entries-repeat",
+      "status": 200,
+      "elapsedMs": 4.200000047683716
+    },
+    {
+      "scenario": "entries-repeat",
+      "status": 200,
+      "elapsedMs": 4.1000001430511475
+    },
+    {
+      "scenario": "calendar-repeat",
+      "status": 200,
+      "elapsedMs": 2.799999952316284
+    },
+    {
+      "scenario": "calendar-repeat",
+      "status": 200,
+      "elapsedMs": 4.799999952316284
+    },
+    {
+      "scenario": "calendar-repeat",
+      "status": 200,
+      "elapsedMs": 2
+    },
+    {
+      "scenario": "calendar-repeat",
+      "status": 200,
+      "elapsedMs": 4.299999952316284
+    },
+    {
+      "scenario": "calendar-repeat",
+      "status": 200,
+      "elapsedMs": 4.6000001430511475
+    },
+    {
+      "scenario": "calendar-repeat",
+      "status": 200,
+      "elapsedMs": 7.8999998569488525
+    },
+    {
+      "scenario": "calendar-repeat",
+      "status": 200,
+      "elapsedMs": 4.599999904632568
+    },
+    {
+      "scenario": "calendar-repeat",
+      "status": 200,
+      "elapsedMs": 4.200000047683716
+    },
+    {
+      "scenario": "calendar-repeat",
+      "status": 200,
+      "elapsedMs": 5.200000047683716
+    },
+    {
+      "scenario": "calendar-repeat",
+      "status": 200,
+      "elapsedMs": 3.700000047683716
+    },
+    {
+      "scenario": "entries-after-save",
+      "status": 200,
+      "elapsedMs": 6765.800000190735
+    },
+    {
+      "scenario": "entries-after-save",
+      "status": 200,
+      "elapsedMs": 6638.799999952316
+    },
+    {
+      "scenario": "entries-after-save",
+      "status": 200,
+      "elapsedMs": 6742.899999856949
+    },
+    {
+      "scenario": "entries-after-save",
+      "status": 200,
+      "elapsedMs": 6584.900000095367
+    },
+    {
+      "scenario": "entries-after-save",
+      "status": 200,
+      "elapsedMs": 6334.099999904633
+    },
+    {
+      "scenario": "entries-after-save",
+      "status": 200,
+      "elapsedMs": 6561.5
+    },
+    {
+      "scenario": "entries-after-save",
+      "status": 200,
+      "elapsedMs": 6706.800000190735
+    },
+    {
+      "scenario": "entries-after-save",
+      "status": 200,
+      "elapsedMs": 6764.700000047684
+    },
+    {
+      "scenario": "entries-after-save",
+      "status": 200,
+      "elapsedMs": 7012.899999856949
+    },
+    {
+      "scenario": "entries-after-save",
+      "status": 200,
+      "elapsedMs": 6499.5
+    }
+  ],
+  "summary": {
+    "open": {
+      "n": 10,
+      "medianMs": 2205.9500000476837,
+      "minMs": 2060.5999999046326,
+      "maxMs": 2873.899999856949
+    },
+    "changed-save": {
+      "n": 10,
+      "medianMs": 3385.4499999284744,
+      "minMs": 3157.0999999046326,
+      "maxMs": 4713.399999856949
+    },
+    "unchanged-save": {
+      "n": 10,
+      "medianMs": 1717.4500000476837,
+      "minMs": 1604.6999998092651,
+      "maxMs": 2010.7000000476837
+    },
+    "entries-repeat": {
+      "n": 10,
+      "medianMs": 4.050000071525574,
+      "minMs": 2,
+      "maxMs": 6964.699999809265
+    },
+    "calendar-repeat": {
+      "n": 10,
+      "medianMs": 4.449999928474426,
+      "minMs": 2,
+      "maxMs": 7.8999998569488525
+    },
+    "entries-after-save": {
+      "n": 10,
+      "medianMs": 6672.800000071526,
+      "minMs": 6334.099999904633,
+      "maxMs": 7012.899999856949
+    }
+  }
+}

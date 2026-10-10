@@ -114,7 +114,7 @@ func TestCacheWrapsListYear(t *testing.T) {
 	}
 }
 
-func TestCacheInvalidatesOnPut(t *testing.T) {
+func TestCacheRetainsExistingMembershipOnPut(t *testing.T) {
 	base := newFakeStore()
 	base.years = []int{2026}
 	base.entries[2026] = []journal.EntryMeta{{Date: civil.Date{Year: 2026, Month: 9, Day: 20}, ModifiedTime: time.Now()}}
@@ -132,8 +132,8 @@ func TestCacheInvalidatesOnPut(t *testing.T) {
 	if _, err := store.ListYear(context.Background(), 2026); err != nil {
 		t.Fatalf("ListYear() after Put error: %v", err)
 	}
-	if base.calls != 3 {
-		t.Fatalf("expected invalidation to force a fresh ListYear fetch after Put, got calls=%d", base.calls)
+	if base.calls != 2 {
+		t.Fatalf("expected existing membership to remain cached after Put, got calls=%d", base.calls)
 	}
 }
 
@@ -276,7 +276,7 @@ func TestInvalidationEpochRejectsOldFillAfterAccountChurn(t *testing.T) {
 	key := cacheKey{account: "original", kind: "years"}
 	_, epoch, _ := c.get(key)
 	for range 1000 {
-		c.invalidate("another")
+		c.invalidateDate("another", civil.Date{Year: 2026, Month: 1, Day: 1}, true)
 	}
 	c.set(key, []int{2026}, epoch)
 	if _, _, ok := c.get(key); ok {

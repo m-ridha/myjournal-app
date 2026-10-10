@@ -1,0 +1,23 @@
+File: google.test
+Type: alloc_space
+Time: 2026-10-10 09:58:40 WIB
+Showing nodes accounting for 2257MB, 98.09% of 2300.85MB total
+Dropped 168 nodes (cum <= 11.50MB)
+      flat  flat%   sum%        cum   cum%
+    2256MB 98.05% 98.05%     2256MB 98.05%  google.golang.org/api/internal/gensupport.NewMediaBuffer (inline)
+    0.50MB 0.022% 98.07%  2271.03MB 98.70%  github/mridha/myjournal-app/internal/provider/google.(*Store).Put
+    0.50MB 0.022% 98.09%    15.18MB  0.66%  github/mridha/myjournal-app/internal/provider/google.(*fakeDrive).ServeHTTP
+         0     0% 98.09%   340.02MB 14.78%  github/mridha/myjournal-app/internal/cachestore.(*Store).Put
+         0     0% 98.09%   340.02MB 14.78%  github/mridha/myjournal-app/internal/journal.(*Service).Save
+         0     0% 98.09%    15.18MB  0.66%  github/mridha/myjournal-app/internal/provider/google.(*benchmarkRequests).handler.1
+         0     0% 98.09%  2271.03MB 98.70%  github/mridha/myjournal-app/internal/provider/google.BenchmarkDriveBaseline.func1
+         0     0% 98.09%     1920MB 83.45%  google.golang.org/api/drive/v3.(*FilesCreateCall).Media (inline)
+         0     0% 98.09%      336MB 14.60%  google.golang.org/api/drive/v3.(*FilesUpdateCall).Media (inline)
+         0     0% 98.09%     2256MB 98.05%  google.golang.org/api/internal/gensupport.NewInfoFromMedia
+         0     0% 98.09%     2256MB 98.05%  google.golang.org/api/internal/gensupport.PrepareUpload
+         0     0% 98.09%    18.18MB  0.79%  net/http.(*conn).serve
+         0     0% 98.09%    15.18MB  0.66%  net/http.HandlerFunc.ServeHTTP
+         0     0% 98.09%    15.18MB  0.66%  net/http.serverHandler.ServeHTTP
+         0     0% 98.09%  1288.52MB 56.00%  testing.(*B).launch
+         0     0% 98.09%   982.50MB 42.70%  testing.(*B).run1.func1
+         0     0% 98.09%  2271.53MB 98.73%  testing.(*B).runN

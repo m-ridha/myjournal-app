@@ -18,3 +18,11 @@ Hidden/page-hide flushing uses fetch keepalive as a best effort. It cannot promi
 No new API, dependencies, offline queue, cross-tab synchronization, or server session storage is needed. A fresh tab and a recovered draft retain existing recovery semantics. A page restored from browser back/forward cache can process outstanding responses/timers normally; the same version and dirty guards apply.
 
 The decision enables local autosave only while Google registration remains disabled. Before enabling autosave against Google storage, measure synthetic changed/unchanged saves and revision behavior as required by the Phase 1 S5 fallback. Drive revision history is not a recovery guarantee. A per-editor in-flight guard does not make Drive's checksum check/update atomic across clients.
+
+## Manual retry after an uncertain save (2026-10-10)
+
+An explicit Save after a non-conflict failed save first performs a fresh, no-store GET. If its valid entry text exactly matches the retry snapshot, use that observed text/version as acknowledgement without another PUT. Later typing stays dirty and backed up against the observed version. A valid absent entry can acknowledge an empty snapshot without creating a file. This verifies current content, not the historical outcome of the earlier request.
+
+If saved text differs, submit the retry snapshot using its original base version; never silently rebase from the verification read. Normal conflict controls still apply. Failed, malformed or unauthorized verification makes no PUT, retains the draft/version and leaves autosave paused. Sign-out during verification prevents a later write. Only explicit retry performs this extra read; initial saves, ordinary autosave and explicit conflict-resolution fetches retain their existing flow. Reload already reconciles matching drafts through its initial GET. Acknowledged trash and successful explicit conflict resolution clear pending save-verification state.
+
+This is best-effort reconciliation of an uncertain response, not atomic compare-and-swap or proof that another writer cannot change content immediately after a read. External Drive writers and multiple application instances remain subject to ADR 005's production gate. No retry loop or unconditional upload is introduced.

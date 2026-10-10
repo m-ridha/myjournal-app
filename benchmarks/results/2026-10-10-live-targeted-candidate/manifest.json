@@ -1,0 +1,15 @@
+{
+  "source": "user pasted targeted probe result after restart instructions",
+  "fixture_date": "2020-01-04",
+  "scenarios": [
+    "changed-save",
+    "entries-repeat",
+    "entries-after-save"
+  ],
+  "cleanup": "reported verified by successful probe",
+  "running_build": "restart requested; exact running source/build not independently verified",
+  "cache_drive_counts": "unverified/not instrumented live",
+  "browser_network": "not recorded for this run",
+  "comparison_limitations": "different dates, sequential exploratory runs; original runs may overlap; no randomized paired sessions or reliable p95",
+  "failed_previous_fixture": "January 3 untouched by this probe"
+}

@@ -2,16 +2,17 @@ package local
 
 import (
 	"context"
-	"github/mridha/myjournal-app/internal/config"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
+	"cloud.google.com/go/civil"
+
+	"github/mridha/myjournal-app/internal/config"
 	"github/mridha/myjournal-app/internal/journal"
 	"github/mridha/myjournal-app/internal/journal/storetest"
-
-	"cloud.google.com/go/civil"
+	"github/mridha/myjournal-app/internal/testutil"
 )
 
 func TestLocalStorePutAndGet(t *testing.T) {
@@ -43,17 +44,13 @@ func TestLocalStorePutAndGet(t *testing.T) {
 func TestLocalStoreRejectsFutureDateViaService(t *testing.T) {
 	dir := t.TempDir()
 	store := NewStore(dir)
-	service := journal.NewService(store, fixedClock{now: time.Date(2026, 9, 21, 12, 0, 0, 0, time.UTC)})
+	service := journal.NewService(store, testutil.StubClock{Time: time.Date(2026, 9, 21, 12, 0, 0, 0, time.UTC)})
 
 	_, err := service.Save(context.Background(), civil.Date{Year: 2026, Month: 9, Day: 22}, "future", "")
 	if err != journal.ErrFutureDate {
 		t.Fatalf("Save() error = %v, want %v", err, journal.ErrFutureDate)
 	}
 }
-
-type fixedClock struct{ now time.Time }
-
-func (c fixedClock) Now() time.Time { return c.now }
 
 func TestLocalStoreContract(t *testing.T) {
 	storetest.Run(t, func(t *testing.T) journal.Store {

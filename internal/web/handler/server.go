@@ -53,7 +53,7 @@ func (s *Server) writeServiceError(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, ErrUnauthenticated), errors.Is(err, journal.ErrAuthRequired):
 		status, key = http.StatusUnauthorized, "errors.unauthorized"
-	case errors.Is(err, journal.ErrUnavailable):
+	case errors.Is(err, journal.ErrUnavailable), errors.Is(err, context.DeadlineExceeded):
 		status, key = http.StatusServiceUnavailable, "errors.entryUnavailable"
 	case errors.Is(err, journal.ErrNotFound):
 		status, key = http.StatusNotFound, "errors.entryUnavailable"

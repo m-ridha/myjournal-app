@@ -4,6 +4,8 @@ import (
 	"encoding/base64"
 	"os"
 	"testing"
+
+	"github/mridha/myjournal-app/internal/testutil"
 )
 
 func setConfigEnvironment(t *testing.T) {
@@ -25,7 +27,7 @@ func setConfigEnvironment(t *testing.T) {
 
 func validConfig() Config {
 	return Config{
-		BaseURL:    "http://localhost:3030",
+		BaseURL:    testutil.LocalBaseURL,
 		Port:       3030,
 		LogLevel:   "info",
 		SessionKey: base64.StdEncoding.EncodeToString(make([]byte, 32)),

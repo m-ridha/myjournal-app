@@ -51,8 +51,9 @@ const (
 // Store uses private app properties for folders; names are presentation only.
 // Mutation locks coordinate this process, not external Drive clients or replicas.
 type Store struct {
-	service *drive.Service
-	lock    func(context.Context) (func(), error)
+	service   *drive.Service
+	lock      func(context.Context) (func(), error)
+	discovery *operationDiscovery
 }
 
 func (p *Provider) Store(ctx context.Context, c provider.Connection) (journal.Store, error) {
@@ -63,6 +64,7 @@ func (p *Provider) Store(ctx context.Context, c provider.Connection) (journal.St
 	ctx = context.WithValue(ctx, oauth2.HTTPClient, p.client)
 	client := oauth2.NewClient(ctx, tokenSource{p: p, ctx: ctx, refresh: stored.Refresh})
 	client.Timeout = requestTimeout
+	client.Transport = timingTransport{next: client.Transport}
 	service, err := drive.NewService(ctx, option.WithHTTPClient(client))
 	if err != nil {
 		return nil, journal.ErrUnavailable
@@ -100,7 +102,7 @@ func older(a, b *drive.File) bool {
 	return a.Id < b.Id
 }
 
-func (s *Store) list(ctx context.Context, q string) ([]*drive.File, error) {
+func (s *Store) listFresh(ctx context.Context, q string) ([]*drive.File, error) {
 	var result []*drive.File
 	token := ""
 	seen := map[string]bool{}
@@ -163,6 +165,7 @@ func (s *Store) folder(ctx context.Context, role, root, year, parent, name strin
 	}
 	// Never blindly retry an ambiguous create. A subsequent user retry re-queries tags.
 	file, err := s.service.Files.Create(metadata).Fields(fileFields).Context(ctx).Do()
+	s.clearDiscovery()
 	if err != nil {
 		return nil, mapError(err)
 	}
@@ -303,6 +306,7 @@ func (s *Store) Get(ctx context.Context, date journal.Date) (journal.Entry, erro
 }
 
 func (s *Store) Put(ctx context.Context, date journal.Date, text string, base journal.Version) (journal.Entry, error) {
+	defer s.clearDiscovery()
 	if !date.IsValid() || date.Year < 1 || date.Year > 9999 {
 		return journal.Entry{}, journal.ErrInvalidDate
 	}
@@ -350,7 +354,9 @@ func (s *Store) Put(ctx context.Context, date journal.Date, text string, base jo
 		if checksum([]byte(text)) == file.Md5Checksum {
 			return journal.Entry{Date: date, Text: text, Version: base, Exists: true}, nil
 		}
-		call := s.service.Files.Update(file.Id, &drive.File{}).Media(strings.NewReader(text), googleapi.ContentType("text/plain; charset=utf-8")).Fields(fileFields).Context(ctx)
+		// Entries are capped at 1 MiB; stream one request instead of allocating the SDK
+		// default 16 MiB chunk. Ambiguous uploads remain non-retryable.
+		call := s.service.Files.Update(file.Id, &drive.File{}).Media(strings.NewReader(text), googleapi.ContentType("text/plain; charset=utf-8"), googleapi.ChunkSize(0)).Fields(fileFields).Context(ctx)
 		if etag := file.Header.Get("ETag"); etag != "" {
 			call.Header().Set("If-Match", etag)
 		}
@@ -360,7 +366,7 @@ func (s *Store) Put(ctx context.Context, date journal.Date, text string, base jo
 		if folderErr != nil {
 			return journal.Entry{}, folderErr
 		}
-		file, err = s.service.Files.Create(&drive.File{Name: date.String() + ".txt", MimeType: textMIME, Parents: []string{folder.Id}, AppProperties: map[string]string{propertyApp: appTag, propertyRole: roleEntry}}).Media(strings.NewReader(text), googleapi.ContentType("text/plain; charset=utf-8")).Fields(fileFields).Context(ctx).Do()
+		file, err = s.service.Files.Create(&drive.File{Name: date.String() + ".txt", MimeType: textMIME, Parents: []string{folder.Id}, AppProperties: map[string]string{propertyApp: appTag, propertyRole: roleEntry}}).Media(strings.NewReader(text), googleapi.ContentType("text/plain; charset=utf-8"), googleapi.ChunkSize(0)).Fields(fileFields).Context(ctx).Do()
 	}
 	if err != nil {
 		return journal.Entry{}, mapError(err)
@@ -372,6 +378,7 @@ func (s *Store) Put(ctx context.Context, date journal.Date, text string, base jo
 }
 
 func (s *Store) Trash(ctx context.Context, date journal.Date) error {
+	defer s.clearDiscovery()
 	unlock, err := s.lock(ctx)
 	if err != nil {
 		return err

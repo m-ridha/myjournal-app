@@ -7,11 +7,9 @@ import (
 	"time"
 
 	"cloud.google.com/go/civil"
+
+	"github/mridha/myjournal-app/internal/testutil"
 )
-
-type dummyClock struct{ now time.Time }
-
-func (c dummyClock) Now() time.Time { return c.now }
 
 type inMemStore struct {
 	entries          map[Date]Entry
@@ -93,7 +91,7 @@ func TestEntryPath(t *testing.T) {
 
 func TestServiceSaveRejectsFutureDate(t *testing.T) {
 	store := newInMemStore()
-	clk := dummyClock{now: time.Date(2026, 9, 21, 12, 0, 0, 0, time.UTC)}
+	clk := testutil.StubClock{Time: time.Date(2026, 9, 21, 12, 0, 0, 0, time.UTC)}
 	svc := NewService(store, clk)
 
 	future := civil.Date{Year: 2026, Month: 9, Day: 22}
@@ -105,7 +103,7 @@ func TestServiceSaveRejectsFutureDate(t *testing.T) {
 
 func TestServiceSaveNormalizesText(t *testing.T) {
 	store := newInMemStore()
-	clk := dummyClock{now: time.Date(2026, 9, 21, 12, 0, 0, 0, time.UTC)}
+	clk := testutil.StubClock{Time: time.Date(2026, 9, 21, 12, 0, 0, 0, time.UTC)}
 	svc := NewService(store, clk)
 
 	date := civil.Date{Year: 2026, Month: 9, Day: 21}
@@ -123,7 +121,7 @@ func TestServicePageLoadsOnlyRequestedPreviews(t *testing.T) {
 	store.entries[Date{Year: 2026, Month: 9, Day: 21}] = Entry{Date: Date{Year: 2026, Month: 9, Day: 21}, Text: "newest", Exists: true}
 	store.entries[Date{Year: 2026, Month: 9, Day: 20}] = Entry{Date: Date{Year: 2026, Month: 9, Day: 20}, Text: "next", Exists: true}
 	store.entries[Date{Year: 2025, Month: 12, Day: 31}] = Entry{Date: Date{Year: 2025, Month: 12, Day: 31}, Text: "older", Exists: true}
-	service := NewService(store, dummyClock{now: time.Date(2026, 9, 21, 12, 0, 0, 0, time.UTC)})
+	service := NewService(store, testutil.StubClock{Time: time.Date(2026, 9, 21, 12, 0, 0, 0, time.UTC)})
 
 	page, err := service.Page(context.Background(), 1, 1)
 	if err != nil {
@@ -144,7 +142,7 @@ func TestServiceMonthUsesYearIndexInsteadOfPerDayReads(t *testing.T) {
 	store := newInMemStore()
 	entryDate := Date{Year: 2026, Month: 9, Day: 21}
 	store.entries[entryDate] = Entry{Date: entryDate, Text: "today", Exists: true}
-	service := NewService(store, dummyClock{now: time.Date(2026, 9, 21, 12, 0, 0, 0, time.UTC)})
+	service := NewService(store, testutil.StubClock{Time: time.Date(2026, 9, 21, 12, 0, 0, 0, time.UTC)})
 
 	month, err := service.Month(context.Background(), 2026, time.September)
 	if err != nil {
@@ -165,7 +163,7 @@ func TestServiceMonthUsesYearIndexInsteadOfPerDayReads(t *testing.T) {
 func TestPaginationRejectsUnsafeBounds(t *testing.T) {
 	for _, pair := range [][2]int{{0, 20}, {-1, 20}, {MaxPage + 1, 20}, {int(^uint(0) >> 1), 100}, {1, 0}, {1, -1}, {1, MaxPageSize + 1}} {
 		store := newInMemStore()
-		_, err := NewService(store, dummyClock{}).Page(context.Background(), pair[0], pair[1])
+		_, err := NewService(store, testutil.StubClock{}).Page(context.Background(), pair[0], pair[1])
 		if err != ErrInvalidPagination {
 			t.Fatalf("Page(%d,%d): %v", pair[0], pair[1], err)
 		}
@@ -184,7 +182,7 @@ func TestPaginationAcrossYearsAndEmptyPage(t *testing.T) {
 		}
 		store.entries[date] = Entry{Date: date, Text: value}
 	}
-	service := NewService(store, dummyClock{})
+	service := NewService(store, testutil.StubClock{})
 	page, err := service.Page(context.Background(), 2, 2)
 	if err != nil {
 		t.Fatal(err)

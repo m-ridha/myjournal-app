@@ -1,0 +1,7 @@
+{
+  "source": "User-pasted browser result and attached application debug logs",
+  "sanitization": "Retain only numeric timings/status and bounded request categories/outcomes; exclude hostnames, request IDs, URLs and raw attachment.",
+  "grouping": "Upstream records grouped by following outer request completion; first PUT is untimed fixture creation and excluded. Ten subsequent PUTs matched in sequence to browser samples.",
+  "limitations": "Sequential idle-window attribution, no request-level correlation or independent build identity. OAuth time may be included; body timing includes consumer time. No inference about January 3 failure cause.",
+  "cleanup": "User result reports cleanupVerified=true; January 3 untouched"
+}

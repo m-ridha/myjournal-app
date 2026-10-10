@@ -18,13 +18,14 @@ import (
 	"github/mridha/myjournal-app/internal/provider"
 	"github/mridha/myjournal-app/internal/provider/local"
 	"github/mridha/myjournal-app/internal/session"
+	"github/mridha/myjournal-app/internal/testutil"
 	"github/mridha/myjournal-app/internal/web/api"
 
 	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 func TestSaveAndGetEntryRoundTrip(t *testing.T) {
-	registry := provider.NewRegistry(local.New("http://localhost:3030", t.TempDir()))
+	registry := provider.NewRegistry(local.New(testutil.LocalBaseURL, t.TempDir()))
 	h := New(config.Config{SessionKey: "test-key"}, registry, localServiceFactory(registry), testCatalog(t), clock.System{})
 	date := openapi_types.Date{Time: time.Date(2026, 9, 21, 0, 0, 0, 0, time.UTC)}
 
@@ -67,7 +68,7 @@ func TestSaveAndGetEntryRoundTrip(t *testing.T) {
 }
 
 func TestGetEntryRequiresSession(t *testing.T) {
-	registry := provider.NewRegistry(local.New("http://localhost:3030", t.TempDir()))
+	registry := provider.NewRegistry(local.New(testutil.LocalBaseURL, t.TempDir()))
 	h := New(config.Config{SessionKey: "test-key"}, registry, localServiceFactory(registry), testCatalog(t), clock.System{})
 	date := openapi_types.Date{Time: time.Date(2026, 9, 21, 0, 0, 0, 0, time.UTC)}
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/entries/2026-09-21", nil)
@@ -79,7 +80,7 @@ func TestGetEntryRequiresSession(t *testing.T) {
 }
 
 func TestSaveInvalidJSONUsesLocaleMessage(t *testing.T) {
-	registry := provider.NewRegistry(local.New("http://localhost:3030", t.TempDir()))
+	registry := provider.NewRegistry(local.New(testutil.LocalBaseURL, t.TempDir()))
 	h := New(config.Config{SessionKey: "test-key"}, registry, localServiceFactory(registry), testCatalog(t), clock.System{})
 	date := openapi_types.Date{Time: time.Date(2026, 9, 21, 0, 0, 0, 0, time.UTC)}
 	req := httptest.NewRequest(http.MethodPut, "/api/v1/entries/2026-09-21", strings.NewReader("{invalid"))
@@ -93,7 +94,7 @@ func TestSaveInvalidJSONUsesLocaleMessage(t *testing.T) {
 }
 
 func TestPreviewTextUsesFirstMeaningfulLine(t *testing.T) {
-	registry := provider.NewRegistry(local.New("http://localhost:3030", t.TempDir()))
+	registry := provider.NewRegistry(local.New(testutil.LocalBaseURL, t.TempDir()))
 	h := New(config.Config{SessionKey: "test-key"}, registry, localServiceFactory(registry), testCatalog(t), clock.System{})
 	date := openapi_types.Date{Time: time.Date(2026, 9, 22, 0, 0, 0, 0, time.UTC)}
 
@@ -161,7 +162,7 @@ func testCatalog(t *testing.T) i18n.Catalog {
 }
 
 func TestListRejectsOutOfRangePagination(t *testing.T) {
-	registry := provider.NewRegistry(local.New("http://localhost:3030", t.TempDir()))
+	registry := provider.NewRegistry(local.New(testutil.LocalBaseURL, t.TempDir()))
 	server := New(config.Config{SessionKey: "test-key"}, registry, localServiceFactory(registry), testCatalog(t), clock.System{})
 	for _, pair := range [][2]int{{0, 20}, {journal.MaxPage + 1, 20}, {1, 101}, {1, -1}} {
 		page, size := pair[0], pair[1]
@@ -176,7 +177,7 @@ func TestListRejectsOutOfRangePagination(t *testing.T) {
 }
 
 func TestSaveRejectsMalformedUnicodeAndOversizedEnvelope(t *testing.T) {
-	registry := provider.NewRegistry(local.New("http://localhost:3030", t.TempDir()))
+	registry := provider.NewRegistry(local.New(testutil.LocalBaseURL, t.TempDir()))
 	h := New(config.Config{SessionKey: "test-key"}, registry, localServiceFactory(registry), testCatalog(t), clock.System{})
 	date := openapi_types.Date{Time: time.Date(2026, 9, 21, 0, 0, 0, 0, time.UTC)}
 	for _, tc := range []struct {

@@ -5,10 +5,12 @@ import (
 	"errors"
 	"testing"
 	"time"
+
+	"github/mridha/myjournal-app/internal/testutil"
 )
 
 func TestServiceRejectsInvalidDates(t *testing.T) {
-	s := NewService(newInMemStore(), dummyClock{now: time.Date(2026, 10, 10, 0, 0, 0, 0, time.UTC)})
+	s := NewService(newInMemStore(), testutil.StubClock{Time: time.Date(2026, 10, 10, 0, 0, 0, 0, time.UTC)})
 	for _, d := range []Date{{}, {Year: 2020, Month: 13, Day: 1}, {Year: 2020, Month: 2, Day: 30}} {
 		if _, err := s.Save(context.Background(), d, "test", ""); !errors.Is(err, ErrInvalidDate) {
 			t.Errorf("Save(%v): %v", d, err)

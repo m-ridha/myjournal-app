@@ -1,0 +1,26 @@
+{
+  "base_commit": "0c7c5cca86080724c869d9e4e7b76b28730b4ed3",
+  "working_tree": "benchmark instrumentation uncommitted; existing AGENTS.md edit preserved",
+  "go": "go1.27.1",
+  "os": "darwin",
+  "arch": "arm64",
+  "cpu": "Apple M4",
+  "google_api_version": "v0.298.0",
+  "command": "go test ./internal/provider/google -run '^$' -bench '^BenchmarkDriveBaseline$' -benchmem -benchtime=20x -count=6",
+  "fixture_entries": 30,
+  "fixture_year": 2020,
+  "fixture_text_bytes": 1920,
+  "fixture_sha256": "5435e7d12971259a9ee1fbe1fb0f549c04bf67be22a93c5a645bd8597a6772c7",
+  "page_size": 20,
+  "fake_listing_page_size": 1000,
+  "cache_ttl_seconds": 120,
+  "cache_capacity": 2048,
+  "preview_workers": 4,
+  "concurrency": "one operation at a time; four preview workers",
+  "oauth": "excluded",
+  "network": "local httptest HTTP server only; no artificial delay",
+  "source_sha256": {
+    "internal/provider/google/benchmark_test.go": "2637d6e5435d333662bdb3c820a7ebcf1965d00d7c0f0aa429faf9411e42db3c",
+    "internal/provider/google/store_test.go": "6443a1e115a38f41333b7fb8c2485da2c3a7fedc551271f10f86aed9e7f59fba"
+  }
+}
