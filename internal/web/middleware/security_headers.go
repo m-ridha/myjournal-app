@@ -18,3 +18,13 @@ func SecurityHeaders(next http.Handler) http.Handler {
 		next.ServeHTTP(w, r)
 	})
 }
+
+// StrictTransportSecurity requires HTTPS for this host for one year.
+// Register it only for a configured HTTPS origin, including behind a TLS proxy.
+// It deliberately does not opt subdomains into HSTS or request browser preloading.
+func StrictTransportSecurity(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Strict-Transport-Security", "max-age=31536000")
+		next.ServeHTTP(w, r)
+	})
+}

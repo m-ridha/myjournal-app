@@ -1,6 +1,6 @@
 # Google production enablement gates
 
-Status: not ready. Localhost integration is implemented; the acceptance build now permits HTTPS/Secure-cookie registration, but deployment and public acceptance remain pending. This document separates live acceptance from deployment and policy decisions. No unchecked item is implied by earlier spike or mocked-test success.
+Status: not ready for release readiness. The Railway acceptance build is deployed. Public sign-in, synthetic Unicode save/reload, session continuity after a reported service restart, human-inspected session-cookie attributes and synthetic trash cleanup passed on 2026-10-10. Remaining public and release checks below are still open. This document separates live acceptance from deployment and policy decisions. No unchecked item is implied by earlier spike or mocked-test success.
 
 ## Next live session
 
@@ -56,7 +56,7 @@ Railway selected on 2026-10-10. See [preparation constraints](railway-preparatio
 
 ## Public HTTPS acceptance sequence
 
-Requested by the user on 2026-10-10. Public acceptance has not started: the Railway origin is known, runtime configuration is not yet confirmed and the acceptance build is not yet deployed.
+Requested by the user on 2026-10-10. Public acceptance is in progress on Railway; runtime configuration and deployment are human-confirmed. See PROGRESS.md and findings.md for observations and limitations.
 
 1. Use https://myjournal-ink.up.railway.app as the Railway HTTPS origin and confirm single-service configuration, stable SESSION_KEY, Google secrets, Secure cookies, no local provider and disabled branch auto-deploys. Do not send secret values to the agent. Source changes must reach a reviewed remote commit before Railway can build them.
 2. Resolve bootstrap explicitly: prepare/review an HTTPS-only production registration change, retaining the localhost-only test-mode restriction and rejecting insecure production cookies. Use the Google Console app's existing test-user restriction for controlled acceptance; do not publish the Console app merely to run tests. Keep RAILWAY_RELEASE_READY unset. A separately authorized manual bootstrap deployment is needed before public checks can run; the release readiness flag is not a startup bypass.
@@ -66,4 +66,12 @@ Requested by the user on 2026-10-10. Public acceptance has not started: the Rail
 6. Restart/redeploy with the same SESSION_KEY, read a saved synthetic entry and verify refresh/session continuity. Test failed-save/reconnect draft preservation and conflict controls without navigating away from unacknowledged text. Reuse accepted localhost evidence where deployment does not change the behavior; record public smoke coverage precisely.
 7. Clean up only synthetic fixtures, confirm Blank page after trash, record build/browser/origin and results without identifiers or content. Review remaining UI/privacy/performance launch decisions, then remove the acceptance-only restriction if appropriate and acknowledge release readiness. Public checks do not by themselves publish the Google Console app.
 
-Public origin supplied by the user: https://myjournal-ink.up.railway.app. Initial GET /healthz returned HTTP 404 on 2026-10-10; HTTPS/OAuth acceptance has not passed.
+Public origin: https://myjournal-ink.up.railway.app. Health subsequently returned 200 after initial availability/configuration failures. Public sign-in, Unicode save/reload, post-restart authenticated read and synthetic fixture cleanup passed. Human inspected mj_session as Secure/HttpOnly/SameSite=Lax/Path=/ with approximately 30-day expiry. The February 23 fixture was trashed and reload showed Blank page.
+
+Public list/calendar and ordinary sign-out/protected-route redirect smoke checks also passed. The user reported successful public Disconnect followed by same-account sign-in with explicit Drive permission, returning to the dated editor; provider revocation and file preservation were not independently inspected in that sequence. Remaining acceptance includes missing HSTS on observed responses, broader infrastructure query-log/export retention review, and the applicable Console/release/rollback and launch decisions. Visible application logs omit the dummy callback query marker; this does not establish infrastructure-wide non-retention. Keep RAILWAY_RELEASE_READY unset until applicable gates are closed.
+
+## Restricted test-user release decision (2026-10-10)
+
+The user accepted automated releases for existing Google test users, including seven-day refresh-token expiry and measured save-latency/revision-retention limitations (ADR 016). Console publishing is not required for this restricted audience and is not claimed complete. The user reports no Railway log drain is enabled and callback HTTP logs omit query strings; application logs were already inspected. This closes the configured external-drain review, without claiming undocumented platform-internal non-retention.
+
+Before enabling the repository readiness variable, deploy the reviewed HSTS/configuration changes and verify their public headers, then complete the known-good deployment rollback/session smoke and restore the current build. The first published-release workflow must subsequently verify exact deployment SUCCESS and health. Do not label this as unrestricted production readiness.

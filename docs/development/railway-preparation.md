@@ -1,6 +1,6 @@
 # Railway preparation
 
-Selected public origin: https://myjournal-ink.up.railway.app. Hosting configuration is preparation; no deployment or public OAuth success is claimed. Initial GET /healthz returned HTTP 404 on 2026-10-10.
+Selected public origin: https://myjournal-ink.up.railway.app. The acceptance build is deployed. Public sign-in, synthetic save/reload/trash, post-restart read, list/calendar and sign-out have recorded evidence; Disconnect/reconnect is human-reported. See google-production-gates.md for remaining release conditions.
 
 ## Service setup
 
@@ -23,7 +23,7 @@ Review Railway plan, trial/credit expiry, usage limits and spend controls direct
 
 Disable GitHub branch autodeploys in Railway; use the existing service with CLI uploads. No tag-push deployment is configured. GitHub publishes a non-prerelease Release with stable vX.Y.Z (no leading zeros), checks out that tag and verifies main ancestry, then reruns required checks. CLI @railway/cli 5.64.2 is pinned.
 
-In GitHub's production environment configure secret RAILWAY_TOKEN (project/environment-scoped deployment token), and variables RAILWAY_PROJECT_ID, RAILWAY_SERVICE_ID and RAILWAY_ENVIRONMENT_ID. Set repository variable RAILWAY_RELEASE_READY=true only after production acceptance; keep it unset for now. Restrict release/tag creation and token access.
+Configure secrets RAILWAY_TOKEN (project/environment-scoped deployment token) and RAILWAY_PROJECT_ID, and production-environment variables RAILWAY_SERVICE_ID and RAILWAY_ENVIRONMENT_ID. Repository secrets are supported; prefer production-environment secrets to restrict credential availability to that environment. Set repository variable RAILWAY_RELEASE_READY=true only after production acceptance; keep it unset for now. Restrict release/tag creation and token access.
 
 The workflow uploads a git archive of the checked-out release commit rather than the working tree or branch head. Docker's build allowlist further limits image inputs. Git archive contains all tracked files: keep secrets, local data and private planning files untracked. Do not commit private files merely because Docker ignores them.
 
@@ -35,7 +35,7 @@ Do not retry an ambiguous upload blindly: it may already be deploying. Workflow 
 
 Use Railway's rollback to a known-good deployment only after confirming its source/version and retaining environment/secrets. Verify SUCCESS, public /healthz and an existing entry/session afterward. Rollback does not undo Drive writes and retains overlap risk. If rollback is unavailable, upload the known-good source commit through the same controlled mechanism; do not redeploy latest branch head as an assumed rollback.
 
-Pending: Docker build/smoke (local daemon unavailable), authenticated Railway CLI/deployment test, public logging/privacy review, acceptance-build deployment and public OAuth/session/recovery acceptance. The workflow remains gated and no cloud credentials were accessed.
+Pending: local Docker build/smoke (daemon unavailable), release-triggered Railway CLI deployment verification, rollback smoke, HSTS deployment verification, infrastructure logging/privacy review, and applicable Google Console/launch decisions. Public acceptance observations are recorded in findings.md; they do not prove the release workflow. The workflow remains gated and no cloud credentials were accessed.
 
 References reviewed 2026-10-10:
 
@@ -43,3 +43,16 @@ References reviewed 2026-10-10:
 - [Deployment statuses](https://docs.railway.com/cli/deployment)
 - [Config as code](https://docs.railway.com/config-as-code/reference)
 - [Project tokens and CI](https://docs.railway.com/cli)
+
+## Final readiness handoff
+
+Before setting the repository variable RAILWAY_RELEASE_READY=true:
+
+1. Merge the reviewed HSTS/workflow configuration changes into main and deploy that exact commit through the controlled bootstrap path. Verify /healthz returns 200 and HTTPS responses include Strict-Transport-Security: max-age=31536000. Keep one replica, branch autodeploys disabled and SESSION_KEY unchanged.
+2. Confirm callback queries are absent from Railway HTTP/application logs and configured exports. Record which surfaces were checked and whether exports are enabled; dashboard observations cannot prove undocumented internal provider retention.
+3. Choose the release audience explicitly. Google Console Testing restricts access to test users and normally expires this app's refresh tokens after seven days despite the 30-day session cookie. Publishing/verification is a separate human-managed process; never describe Testing as an unrestricted public launch.
+4. Confirm homepage/privacy/callback configuration and any applicable Console verification. Record the scoped acceptance of measured save latency and revision-retention limitations; do not promise unmeasured retention.
+5. Exercise Railway rollback to a known-good source deployment with the same secrets. Confirm health and a saved synthetic entry/session, restore the acceptance build, verify HSTS again and clean up the fixture. Rollback does not revert Drive content.
+6. Confirm production environment IDs/secrets and intended tag commit, then set the repository readiness variable. Publish a stable vX.Y.Z GitHub Release from main. Inspect the first workflow run: code checks, exact deployment ID SUCCESS and public health must all pass. This first run validates release automation; it is not evidence available before running it. If it fails ambiguously, inspect Railway before retrying and unset readiness while investigating.
+
+The readiness flag authorizes future published releases to deploy; it does not publish Google Console settings or create a release by itself.
