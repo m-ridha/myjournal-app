@@ -1,6 +1,6 @@
 # Google production enablement gates
 
-Status: activation prerequisites met for restricted test-user releases (2026-10-10); first release-workflow execution remains unverified. The Railway acceptance build is deployed. Public sign-in, synthetic Unicode save/reload, session continuity after a reported service restart, human-inspected session-cookie attributes and synthetic trash cleanup passed on 2026-10-10. Remaining public and release checks below are still open. This document separates live acceptance from deployment and policy decisions. No unchecked item is implied by earlier spike or mocked-test success.
+Status: ready with known limitations for restricted test-user releases. First automated release v0.1.0 passed on 2026-10-10; Google Console remains Testing. The Railway acceptance build is deployed. Public sign-in, synthetic Unicode save/reload, session continuity after a reported service restart, human-inspected session-cookie attributes and synthetic trash cleanup passed on 2026-10-10. Remaining public and release checks below are still open. This document separates live acceptance from deployment and policy decisions. No unchecked item is implied by earlier spike or mocked-test success.
 
 ## Next live session
 
@@ -81,3 +81,7 @@ Before enabling the repository readiness variable, deploy the reviewed HSTS/conf
 Human confirmed rollback to the known-good PR #15 deployment preserved health and authenticated entry access, then restored latest code. Independent checks afterward returned health/Privacy/Help 200 with one-year HSTS. Together with the preceding restricted-audience, logging, security and public OAuth evidence, the repository RAILWAY_RELEASE_READY variable may now be enabled for restricted test-user releases. Its remote value has not been accessed or changed. Earlier pending statements above describe the acceptance sequence; this section records their deployment/rollback closure. This does not claim Google Console production publication or a successful release-triggered deployment.
 
 A minor authenticated Privacy/Help header bug has a local regression fix; it does not affect authentication, journal access or rollback evidence. Include it in a reviewed release source commit and verify after deployment.
+
+## First release verified (2026-10-10)
+
+Published v0.1.0 successfully ran tag/main validation, release checks, Railway deployment-ID polling and health verification ([workflow job](https://github.com/mridha-work/myjournal-app/actions/runs/38057735570/job/114229543859)). Independent public health/HSTS checks passed, and authenticated Chrome Privacy/Help show Settings. The preceding pending first-run/header deployment statements are now closed. The accepted restricted audience, token expiry, latency/revision and overlap/concurrency limitations remain in force; unrestricted Google publication is not claimed.
