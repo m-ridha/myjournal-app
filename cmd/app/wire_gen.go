@@ -19,6 +19,7 @@ import (
 	"github/mridha/myjournal-app/internal/session"
 	"github/mridha/myjournal-app/internal/web"
 	"github/mridha/myjournal-app/internal/web/handler"
+	"log"
 	"log/slog"
 	"net/http"
 	"os"
@@ -141,6 +142,7 @@ func newHTTPServer(cfg config.Config, handler2 http.Handler) *http.Server {
 	return &http.Server{
 		Addr:              fmt.Sprintf(":%d", cfg.Port),
 		Handler:           handler2,
+		ErrorLog:          log.New(serverLogWriter{}, "", 0),
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       15 * time.Second,
 		WriteTimeout:      35 * time.Second,

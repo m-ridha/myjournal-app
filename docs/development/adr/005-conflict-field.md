@@ -9,3 +9,7 @@ This selects the field, not an atomic write protocol. A metadata comparison befo
 The Drive adapter now serializes mutations across request-scoped stores using bounded account lock stripes, compares md5Checksum immediately before updating, suppresses unchanged uploads, and verifies the acknowledged upload checksum. Missing checksums fail closed. Reads also compare downloaded bytes with the listed checksum so a concurrent content change cannot produce a falsely paired body/version.
 
 If Drive metadata supplies an ETag header, the adapter forwards If-Match and maps 412 to a conflict. A synthetic test proves forwarding and rejection with a mocked server; it does not establish Drive v3 conditional media-upload support. External writers can still race the read/upload gap when no verified precondition is available. New-file creation also lacks an external atomic uniqueness guarantee. GOOGLE_TEST_MODE allows only controlled localhost validation; production remains blocked pending a verified concurrency policy. No complete stale-write guarantee is claimed from these process locks/checksum comparisons.
+
+## Restricted launch policy (2026-10-10)
+
+The user accepted a first release with one active app process, no simultaneous external editing, and documented residual lost-update risk (ADR 016). This supersedes requiring atomic external-writer protection before that restricted release, while leaving the technical limitations above unchanged. Production registration still requires the remaining live and release gates.
