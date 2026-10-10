@@ -59,6 +59,19 @@ function setup({ draft = null, initial = response('server'), storageThrows = fal
 }
 
 async function run() {
+  for (const exists of [false, true]) {
+    const blank = setup({initial:{ok:true, status:200, json:async()=>({text:'', version:exists ? 'v1' : '', exists})}});
+    await tick();
+    const expected = exists ? 'editor.saved' : 'editor.blank';
+    assert(blank.status.textContent === expected, 'initial empty status reflects file existence');
+    blank.input('temporary draft');
+    assert(blank.status.textContent === 'editor.unsaved', 'typing into an empty entry is unsaved');
+    blank.input('');
+    assert(blank.status.textContent === expected, 'erasing draft restores status according to file existence');
+    await blank.advance(5000);
+    assert(blank.calls.length === 1 && !blank.values.has(key), 'reverted empty draft does not write or retain a backup');
+  }
+
   let f = setup({ draft: { text: 'recovered', baseVersion: 'old', versionKnown: true } }); await tick();
   assert(f.text.value === 'recovered' && f.status.textContent === 'editor.conflict', 'server text must not replace draft');
   let warned = false; f.winEvents.beforeunload({ preventDefault() { warned = true; } }); assert(warned, 'restored draft must be dirty');
