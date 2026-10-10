@@ -254,6 +254,7 @@ Next: remaining live Google checks (especially Settings Disconnect, omitted-refr
 
 ## Production Google acceptance preparation (2026-10-10)
 
+- [x] Prepare [production gates](google-production-gates.md), with synthetic-only Disconnect, reconnect, empty-year recreation, revision and uncertain-save checks.
 - [x] Recheck official Drive update/performance guidance; no atomic conditional media-update guarantee established.
 - [x] Settings Disconnect/reconnect: user confirmed sign-out, missing Drive consent was correctly rejected (grant/401), explicit consent succeeded, and agent reload verified saved synthetic file preservation.
 - [x] Integrated disposable-year recreation: absent read did not recreate folder; save recreated it and survived reload. Both synthetic 2019-02-20 files trashed through Drive; editor absence verified; empty replacement year retained.
@@ -284,3 +285,22 @@ No live pass or production readiness is claimed from this preparation.
 
 - [x] Review app startup/server logging; sanitize net/http diagnostic fallback, regenerate Wire and verify secret-omission regression. Fresh make fmt lint test passes.
 - [ ] Select deployment target and verify production HTTPS, Google Console setup, non-overlapping rollout and infrastructure logging/privacy.
+
+## Railway release preparation (2026-10-10)
+
+- [x] User selected Railway at https://myjournal-ink.up.railway.app; retain ADR 016 residual overlap/lost-update policy.
+- [x] Retain published GitHub Release trigger for stable vX.Y.Z tags; tag pushes alone do not deploy.
+- [x] Prepare Docker config, pinned CLI source upload, deployment-ID polling and public health verification; see [Railway preparation](railway-preparation.md).
+- [ ] Container smoke/build, actual Railway deployment and platform logging/privacy acceptance.
+- [ ] Review HTTPS-only Google registration enablement and perform public OAuth checks; current guard is still localhost-only. Initial public /healthz returned 404.
+- [x] Fresh format/lint/application tests, seven architecture probes, both workflow actionlint checks and three deployment-polling regressions passed. Railway schema validation tooling unavailable locally; authenticated deployment remains pending.
+
+- [x] User confirmed Railway runtime variables and exact Google callback are configured (human report).
+- [ ] Railway startup/public acceptance: fresh GET /healthz returned 502; generic startup diagnostic requested. No OAuth or cookie acceptance claimed.
+
+## Railway Google startup correction (2026-10-10)
+
+- [x] User supplied startup diagnostic confirming the old Google live-acceptance guard prevents Railway startup on current main.
+- [x] Prepare non-test Google registration requiring an HTTPS origin without credentials/path/query/fragment and COOKIE_SECURE=true; retain localhost-only test mode. Regenerate Wire and add startup-policy regressions.
+- [x] Fresh make generate-wire and make fmt lint test passed; lint reports 0 issues.
+- [ ] Review/publish/deploy acceptance build, verify public health and logging privacy, then perform OAuth acceptance. Release readiness remains unset; local changes are not deployed.

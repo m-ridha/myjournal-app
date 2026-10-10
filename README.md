@@ -12,7 +12,7 @@ The implemented local development flow includes:
 - the branded 404 page is connected to the app
 - save status transitions are visible and styled
 - previews use the first meaningful line after trimming leading blank space
-- the local provider is used for day-to-day development; Google OAuth and Drive integration are available only in explicit localhost test mode; production remains gated on live acceptance
+- the local provider is used for day-to-day development; Google OAuth and Drive support localhost test mode and HTTPS/Secure-cookie acceptance deployments; automated production releases remain gated on live acceptance
 
 ## Quick start
 
@@ -49,3 +49,7 @@ The project is organized into an application shell, core domain packages, and ad
 ## Google integration testing
 
 See [Google live checks](docs/development/google-live-checks.md) for the localhost-only opt-in, Console callback, and integrated acceptance sequence. Keep `GOOGLE_TEST_MODE=false` for normal local development. This switch cannot enable Google on a production hostname.
+
+## Railway releases
+
+[Railway preparation](docs/development/railway-preparation.md) documents configuration, privacy, rollback and remaining acceptance. Published non-prerelease GitHub Releases tagged `vX.Y.Z` deploy their checked-out source using a pinned Railway CLI. Deployment completion and public health are checked. Google requires HTTPS and Secure cookies outside localhost test mode; release automation remains gated until public acceptance passes.

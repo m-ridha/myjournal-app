@@ -51,6 +51,9 @@ jobs:
       - name: Run JavaScript and Go tests
         run: make test
 
+      - name: Test release deployment handling
+        run: python3 -B -m unittest discover -s scripts -p test_deploy_railway.py
+
       # These probes temporarily add forbidden imports; do not run in parallel.
       - name: Verify architecture boundaries
         run: make test-architecture
