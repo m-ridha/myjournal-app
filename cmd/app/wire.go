@@ -19,6 +19,7 @@ import (
 	"github/mridha/myjournal-app/internal/config"
 	"github/mridha/myjournal-app/internal/journal"
 	"github/mridha/myjournal-app/internal/provider"
+	googleProvider "github/mridha/myjournal-app/internal/provider/google"
 	localProvider "github/mridha/myjournal-app/internal/provider/local"
 	"github/mridha/myjournal-app/internal/session"
 	"github/mridha/myjournal-app/internal/web"
@@ -82,9 +83,7 @@ func newLogger(cfg config.Config) *slog.Logger {
 }
 
 func newProviderRegistry(cfg config.Config) (*provider.Registry, error) {
-	selected := strings.FieldsFunc(cfg.Providers, func(r rune) bool {
-		return r == ',' || r == ' ' || r == ';'
-	})
+	selected := cfg.ProviderIDs()
 	if len(selected) == 0 {
 		return nil, fmt.Errorf("PROVIDERS must contain at least one provider")
 	}
@@ -93,17 +92,31 @@ func newProviderRegistry(cfg config.Config) (*provider.Registry, error) {
 	seen := make(map[string]struct{}, len(selected))
 	for _, name := range selected {
 		switch name = strings.TrimSpace(name); name {
-		case "local":
+		case provider.LocalID:
 			if _, ok := seen[name]; ok {
 				return nil, fmt.Errorf("PROVIDERS contains duplicate provider %q", name)
 			}
-			if err := localProvider.ValidateBaseURL(cfg.BaseURL); err != nil {
+			if err := config.ValidateLoopbackURL(cfg.BaseURL); err != nil {
 				return nil, err
 			}
 			providers = append(providers, localProvider.New(cfg.BaseURL, cfg.LocalDataDir))
 			seen[name] = struct{}{}
-		case "google":
-			return nil, fmt.Errorf("Google provider is not implemented; do not enable it")
+		case provider.GoogleID:
+			if _, ok := seen[name]; ok {
+				return nil, fmt.Errorf("PROVIDERS contains duplicate provider %q", name)
+			}
+			if !cfg.GoogleTestMode {
+				return nil, fmt.Errorf("Google is awaiting live acceptance; use GOOGLE_TEST_MODE=true only for localhost integration testing")
+			}
+			if err := config.ValidateLoopbackURL(cfg.BaseURL); err != nil {
+				return nil, fmt.Errorf("Google test mode requires localhost: %w", err)
+			}
+			gc := googleProvider.Config{ClientID: cfg.GoogleClientID, ClientSecret: cfg.GoogleClientSecret, BaseURL: cfg.BaseURL}
+			if gc.ClientID == "" || gc.ClientSecret == "" {
+				return nil, fmt.Errorf("Google OAuth client configuration is missing")
+			}
+			providers = append(providers, googleProvider.New(gc))
+			seen[name] = struct{}{}
 		case "":
 			return nil, fmt.Errorf("PROVIDERS contains an empty provider name")
 		default:

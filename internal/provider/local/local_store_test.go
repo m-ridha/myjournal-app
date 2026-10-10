@@ -14,7 +14,7 @@ import (
 
 func TestStoreSaveAndGet(t *testing.T) {
 	root := t.TempDir()
-	store, err := New(root).Store(context.Background(), providerConnection())
+	store, err := New("http://localhost:3030", root).Store(context.Background(), providerConnection())
 	if err != nil {
 		t.Fatalf("Store() unexpected error: %v", err)
 	}
@@ -48,7 +48,7 @@ func TestStoreSaveAndGet(t *testing.T) {
 
 func TestStoreListYearsAndYear(t *testing.T) {
 	root := t.TempDir()
-	store, err := New(root).Store(context.Background(), providerConnection())
+	store, err := New("http://localhost:3030", root).Store(context.Background(), providerConnection())
 	if err != nil {
 		t.Fatalf("Store() unexpected error: %v", err)
 	}

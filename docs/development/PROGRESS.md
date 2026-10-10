@@ -73,7 +73,7 @@ Validation result: `make fmt lint test` passed successfully in the current works
 - [x] Private pages redirect without a valid session; entry APIs reject missing or invalid sessions
 - [x] Services are constructed from the decoded session provider/account rather than a fixed local connection
 - [x] Startup rejects invalid environment values, malformed session keys, unknown providers, and non-loopback local mode
-- [x] Google provider selection is rejected until its OAuth and Drive implementations are complete
+- [x] Production Google provider selection is rejected pending live acceptance; GOOGLE_TEST_MODE permits localhost-only integrated testing (2026-10-10)
 - [x] Fix draft recovery, snapshot-based save acknowledgement, dirty tracking, empty-edit backup, failed-save retry, and guarded storage access; add account-scoped drafts and explicit legacy recovery (2026-10-08)
 - [x] Wire Settings sign-out with account-scoped/legacy draft cleanup and cross-tab notification; account scope excludes labels and credentials
 - [x] User confirmed Failed logout recovery browser checklist works (2026-10-09); commit/push to PR remains user-managed
@@ -108,6 +108,8 @@ Validation result: `make fmt lint test` passed successfully in the current works
 - [x] Verify and fix depguard path matching with seven temporary forbidden-import probes; add make test-architecture and explicit clock wiring boundary (2026-10-09)
 - [x] Follow device theme until explicit selection, tolerate blocked/invalid theme storage, add reduced-motion support and localized navigation/calendar status semantics; focused Chrome keyboard/reflow checks pass (2026-10-09)
 - [x] Adopt JSON API and vanilla JavaScript; exclude HTMX by user decision, record ADR 014, and preserve migration research as historical documentation (2026-10-09)
+- [x] Fix dark Disconnect contrast and calendar group naming; add optional repeatable accessibility QA with 18 passing scans, arrow contrast measurements, and keyboard reachability/focus checks (2026-10-10)
+- [x] Compare Monochrome source with current UI and local history; document visual inspiration rather than a copied theme port in ADR 004, preserving comparison limitations and separate icon-source follow-up (2026-10-10)
 - [ ] Remaining Phase 2/3 security/API/UI acceptance gates remain open
 
 ## Restructuring addendum
@@ -130,9 +132,9 @@ Validation result: `make fmt lint test` passed successfully in the current works
 - Preserve the user-selected module declaration from `go.mod`; module renaming is not authorized.
 - Live Google consent and the S1 first-consent/refresh/claim checks are complete for the test account.
 - Full Google Drive provider behavior remains human-assisted until the real OAuth and Drive validation steps are run.
-- S2 folder behavior checks passed for the test account (human-reported 2026-10-08); production Google storage remains unimplemented.
+- S2 folder behavior checks passed for the test account (human-reported 2026-10-08); the integrated Drive adapter now has mocked contract coverage; live app acceptance remains open.
 - Phase 1 evidence/fallbacks and the user go decision are recorded, including S3 single-process concurrency. Phase 4 remains gated on Phase 2/3 acceptance and validated Google implementation; cross-instance folder convergence, revision/latency measurements, and production OAuth checks remain explicit follow-ups.
-- Session age, unsafe-request cross-origin protection, save-envelope bounds, and query-free request logging are implemented. HTTP timeout/draining and CSP baseline are implemented; Covered CSP flows pass in Chrome/native Safari, with Safari full startup-console history unverified. Safe editor autosave/page-hide is implemented with explicit recovery review and best-effort navigation limits (ADR 013); Google OAuth state/PKCE persistence remains incomplete. Reported browser time-zone checks passed; physical-phone testing is waived for this stage.
+- Session age, unsafe-request cross-origin protection, save-envelope bounds, and query-free request logging are implemented. HTTP timeout/draining and CSP baseline are implemented; Covered CSP flows pass in Chrome/native Safari, with Safari full startup-console history unverified. Safe editor autosave/page-hide is implemented with explicit recovery review and best-effort navigation limits (ADR 013); OAuth browser handoff now persists state/PKCE/nonce in a separate ten-minute encrypted cookie and validates callbacks before provider exchange (2026-10-10); code exchange/claim validation, refresh lifecycle, revocation, and Drive storage now have automated coverage and a localhost-only integration test switch. Live Google acceptance and external-writer race policy remain open. Reported browser time-zone checks passed; physical-phone testing is waived for this stage.
 
 ## Notes
 
@@ -157,4 +159,33 @@ OpenAPI base contract added: the API definition now lives in `docs/api/openapi.y
 
 ## Pull request automation
 
-- [x] Add PR creation/update checks for formatting drift, lint, all JavaScript/Go tests, and sequential architecture probes; validate workflow locally (2026-10-09). Hosted execution remains unverified until pushed.
+- [x] Add PR creation/update checks for formatting drift, lint, all JavaScript/Go tests, and sequential architecture probes; validate workflow locally (2026-10-09). First hosted run passed all steps (run 37961548230, inspected 2026-10-09).
+
+
+## Google integration implementation (2026-10-10)
+
+- [x] Code exchange with PKCE, Google signature/audience/issuer/expiry/nonce checks, required Drive grant, verified email, and same-account reconnect binding
+- [x] Compact versioned encrypted-cookie credentials; preserve omitted refresh tokens for the same account; bounded access-token cache and refresh/revocation error handling
+- [x] Drive Store methods with shared account lock stripes, tagged/rename-stable folder discovery, write-only recreation, deterministic duplicate preservation, complete pagination, bounded previews/read retries, checksum versions, and trash
+- [x] Explicit localhost-only GOOGLE_TEST_MODE and existing-folder Settings link; normal production guard retained
+- [x] Homepage offers only configured sign-in providers; live Chrome Google button navigation and local/Google/both regression checks passed (2026-10-10)
+- [x] Shared mocked Drive contracts, per-request concurrent creation, signed synthetic identity checks, credential/revocation/failure regressions
+- [x] Human confirmed existing Console callback, Drive API, and test-user prerequisites (configuration not independently inspected)
+- [x] Partial integrated Chrome smoke: user sign-in, synthetic Unicode save/reload, previews/calendar, stale-tab conflict/recovery, Keep both, Settings folder link, and acknowledged trash/removal (2026-10-10)
+- [x] Integrated Keep mine and Load the other version (cancel/confirm); non-forced-consent reconnect and subsequent Drive read (2026-10-10; omitted refresh token not independently observed)
+- [x] User-assisted same-key restart followed by observed signed-in Drive reload; October 2 synthetic fixture trashed and absence verified (2026-10-10)
+- [x] External Drive Manage versions upload detected by stale-save conflict; local draft retained and Keep both retrieved external text (2026-10-10; check/upload race still open)
+- [x] User-revoked Google connection retained both draft versions; fresh reconnect, original-tab Save (200), reload, and synthetic cleanup passed (2026-10-10; first callback rejection remains unexplained)
+- [ ] Remaining integrated live sign-in/refresh/storage/reconnect/conflict checks: [Google live checklist](google-live-checks.md)
+- [ ] Record real changed/unchanged save revision measurements and cold/warm latency; synthetic probe provided
+- [ ] Resolve external-writer/checksum-upload race and multi-instance policy before production enabling
+
+Partial live Google smoke success is recorded in findings; full integrated acceptance and production readiness remain open. Earlier spike evidence remains valid for its recorded scope.
+
+
+## Go review follow-up (2026-10-10)
+
+- [x] Review Go style and clean architecture; record prioritized findings and fresh checks in [Go code review](go-code-review.md)
+- [x] Address cache/date/path/logger issues, shared provider constants, explicit configuration, shared session policy, Settings/rendering/cancellation handling, safe auth diagnostics, and batched Drive previews; record conventions in AGENTS.md
+- [x] Verify refactor with make fmt lint test, all seven architecture probes, go vet ./..., and go test -race -short ./... (2026-10-10)
+- [ ] Optional local bounded-prefix previews remain deferred; production Google concurrency/release gates are unchanged

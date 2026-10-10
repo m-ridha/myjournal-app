@@ -18,6 +18,7 @@
   "landing.kicker": "Private journaling in your own Drive",
   "landing.openToday": "Open today",
   "landing.settings": "Settings",
+  "landing.connectGoogle": "Continue with Google",
   "landing.connectLocal": "Continue with Local Dev",
   "landing.driveHelp": "Why this needs Drive access",
   "landing.feature.quiet.title": "Quiet by design",
@@ -97,6 +98,8 @@
   "entries.open": "Open entry",
   "settings.kicker": "Account",
   "settings.title": "Settings",
+  "settings.folderUnavailable": "The journal folder is unavailable. Reconnect if access was revoked.",
+  "settings.retry": "Retry",
   "settings.account": "Account",
   "settings.journalFolder": "Journal folder",
   "settings.appearance": "Appearance",
@@ -140,5 +143,6 @@
   "errors.session": "Your session could not be created. Please try again.",
   "errors.crossOrigin": "This request was blocked. Open the app directly and try again.",
   "errors.requestTooLarge": "This save request is too large (maximum 1 MiB). Your text has not been saved.",
+  "errors.invalidDate": "Choose a valid journal date.",
   "errors.invalidText": "Entry text must be valid UTF-8."
 }

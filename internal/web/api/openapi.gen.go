@@ -49,6 +49,24 @@ func (e CompleteProviderLoginParamsProvider) Valid() bool {
 	}
 }
 
+// Defines values for StartProviderLoginParamsForceConsent.
+const (
+	N0 StartProviderLoginParamsForceConsent = 0
+	N1 StartProviderLoginParamsForceConsent = 1
+)
+
+// Valid indicates whether the value is a known member of the StartProviderLoginParamsForceConsent enum.
+func (e StartProviderLoginParamsForceConsent) Valid() bool {
+	switch e {
+	case N0:
+		return true
+	case N1:
+		return true
+	default:
+		return false
+	}
+}
+
 // Defines values for StartProviderLoginParamsProvider.
 const (
 	StartProviderLoginParamsProviderGoogle StartProviderLoginParamsProvider = "google"
@@ -184,6 +202,15 @@ type CompleteProviderLoginParams struct {
 // CompleteProviderLoginParamsProvider defines parameters for CompleteProviderLogin.
 type CompleteProviderLoginParamsProvider string
 
+// StartProviderLoginParams defines parameters for StartProviderLogin.
+type StartProviderLoginParams struct {
+	// ForceConsent Set to 1 to explicitly request consent again; first Google login also requests consent.
+	ForceConsent *StartProviderLoginParamsForceConsent `form:"force_consent,omitempty" json:"force_consent,omitempty"`
+}
+
+// StartProviderLoginParamsForceConsent defines parameters for StartProviderLogin.
+type StartProviderLoginParamsForceConsent int
+
 // StartProviderLoginParamsProvider defines parameters for StartProviderLogin.
 type StartProviderLoginParamsProvider string
 
@@ -208,7 +235,7 @@ type ServerInterface interface {
 	CompleteProviderLogin(w http.ResponseWriter, r *http.Request, provider CompleteProviderLoginParamsProvider, params CompleteProviderLoginParams)
 	// StartProviderLogin Start provider login flow
 	// (GET /api/v1/auth/{provider}/login)
-	StartProviderLogin(w http.ResponseWriter, r *http.Request, provider StartProviderLoginParamsProvider)
+	StartProviderLogin(w http.ResponseWriter, r *http.Request, provider StartProviderLoginParamsProvider, params StartProviderLoginParams)
 	// GetCalendar Get a calendar view for a month
 	// (GET /api/v1/calendar)
 	GetCalendar(w http.ResponseWriter, r *http.Request, params GetCalendarParams)
@@ -250,7 +277,7 @@ func (_ Unimplemented) CompleteProviderLogin(w http.ResponseWriter, r *http.Requ
 
 // StartProviderLogin Start provider login flow
 // (GET /api/v1/auth/{provider}/login)
-func (_ Unimplemented) StartProviderLogin(w http.ResponseWriter, r *http.Request, provider StartProviderLoginParamsProvider) {
+func (_ Unimplemented) StartProviderLogin(w http.ResponseWriter, r *http.Request, provider StartProviderLoginParamsProvider, params StartProviderLoginParams) {
 	w.WriteHeader(http.StatusNotImplemented)
 }
 
@@ -387,8 +414,24 @@ func (siw *ServerInterfaceWrapper) StartProviderLogin(w http.ResponseWriter, r *
 		return
 	}
 
+	// Parameter object where we will unmarshal all parameters from the context
+	var params StartProviderLoginParams
+
+	// ------------- Optional query parameter "force_consent" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "force_consent", r.URL.Query(), &params.ForceConsent, runtime.BindQueryParameterOptions{Type: "integer", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "force_consent"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "force_consent", Err: err})
+		}
+		return
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.StartProviderLogin(w, r, provider)
+		siw.Handler.StartProviderLogin(w, r, provider, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {

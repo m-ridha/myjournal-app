@@ -3,31 +3,39 @@ package config
 import (
 	"encoding/base64"
 	"fmt"
+	"net"
 	"net/url"
 	"os"
 	"strconv"
 	"strings"
+
+	"github/mridha/myjournal-app/internal/provider"
 )
 
 // Config contains the application-level settings used by the server at startup.
 type Config struct {
-	BaseURL      string
-	Port         int
-	LogLevel     string
-	SessionKey   string
-	CookieSecure bool
-	Providers    string
-	LocalDataDir string
+	BaseURL            string
+	Port               int
+	LogLevel           string
+	SessionKey         string
+	CookieSecure       bool
+	Providers          string
+	LocalDataDir       string
+	GoogleTestMode     bool
+	GoogleClientID     string
+	GoogleClientSecret string
 }
 
 func Load() (Config, error) {
 	cfg := Config{
-		BaseURL:      "http://localhost:3030",
-		Port:         3030,
-		LogLevel:     "info",
-		CookieSecure: false,
-		Providers:    "local",
-		LocalDataDir: "./.devdata",
+		GoogleClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
+		GoogleClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
+		BaseURL:            "http://localhost:3030",
+		Port:               3030,
+		LogLevel:           "info",
+		CookieSecure:       false,
+		Providers:          provider.LocalID,
+		LocalDataDir:       "./.devdata",
 	}
 
 	if v, ok := os.LookupEnv("APP_BASE_URL"); ok {
@@ -59,6 +67,13 @@ func Load() (Config, error) {
 	if v, ok := os.LookupEnv("LOCAL_DATA_DIR"); ok {
 		cfg.LocalDataDir = v
 	}
+	if v, ok := os.LookupEnv("GOOGLE_TEST_MODE"); ok {
+		enabled, err := strconv.ParseBool(v)
+		if err != nil {
+			return Config{}, fmt.Errorf("GOOGLE_TEST_MODE must be true or false")
+		}
+		cfg.GoogleTestMode = enabled
+	}
 	return cfg, nil
 }
 
@@ -82,16 +97,43 @@ func (c Config) Validate() error {
 	if err != nil || len(key) != 32 {
 		return fmt.Errorf("SESSION_KEY must be base64 encoding of exactly 32 random bytes")
 	}
-	providers := strings.FieldsFunc(c.Providers, func(r rune) bool { return r == ',' || r == ' ' || r == ';' })
+	providers := c.ProviderIDs()
 	if len(providers) == 0 {
 		return fmt.Errorf("PROVIDERS is required")
 	}
+	seen := make(map[string]bool)
 	for _, name := range providers {
+		if seen[name] {
+			return fmt.Errorf("PROVIDERS contains duplicate provider %q", name)
+		}
+		seen[name] = true
 		switch strings.TrimSpace(name) {
-		case "local", "google":
+		case provider.LocalID, provider.GoogleID:
 		default:
 			return fmt.Errorf("PROVIDERS contains an unsupported provider")
 		}
 	}
 	return nil
+}
+
+// ProviderIDs parses the configured provider list consistently at startup.
+func (c Config) ProviderIDs() []string {
+	return strings.FieldsFunc(c.Providers, func(r rune) bool { return r == ',' || r == ' ' || r == ';' })
+}
+
+// ValidateLoopbackURL restricts development-only providers to exact loopback hosts.
+func ValidateLoopbackURL(raw string) error {
+	parsed, err := url.Parse(raw)
+	if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Hostname() == "" || parsed.User != nil || parsed.RawQuery != "" || parsed.Fragment != "" || (parsed.Path != "" && parsed.Path != "/") {
+		return fmt.Errorf("requires an absolute localhost APP_BASE_URL")
+	}
+	host := strings.TrimSuffix(strings.ToLower(parsed.Hostname()), ".")
+	if host == "localhost" {
+		return nil
+	}
+	ip := net.ParseIP(host)
+	if ip != nil && ip.IsLoopback() {
+		return nil
+	}
+	return fmt.Errorf("requires an absolute localhost APP_BASE_URL")
 }

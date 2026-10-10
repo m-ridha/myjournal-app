@@ -2,12 +2,9 @@ package local
 
 import (
 	"context"
-	"fmt"
-	"net"
-	"net/url"
-	"os"
 	"strings"
 
+	"github/mridha/myjournal-app/internal/config"
 	"github/mridha/myjournal-app/internal/journal"
 	"github/mridha/myjournal-app/internal/provider"
 )
@@ -18,63 +15,25 @@ type Provider struct {
 	dataDir string
 }
 
-func New(values ...string) *Provider {
-	p := &Provider{}
-	switch len(values) {
-	case 0:
-		p.baseURL = "http://localhost:3030"
-	case 1:
-		if strings.HasPrefix(values[0], "http://") || strings.HasPrefix(values[0], "https://") {
-			p.baseURL = values[0]
-		} else {
-			p.dataDir = values[0]
-		}
-	default:
-		p.baseURL = values[0]
-		p.dataDir = values[1]
-	}
-	if p.baseURL == "" {
-		p.baseURL = "http://localhost:3030"
-	}
-	if p.dataDir == "" {
-		p.dataDir = os.Getenv("LOCAL_DATA_DIR")
-	}
-	if p.dataDir == "" {
-		p.dataDir = "./.devdata"
-	}
-	return p
+// New constructs the development adapter from explicit startup configuration.
+func New(baseURL, dataDir string) *Provider {
+	return &Provider{baseURL: baseURL, dataDir: dataDir}
 }
 
-func (p *Provider) ID() string { return "local" }
+func (p *Provider) ID() string { return provider.LocalID }
 
 func (p *Provider) Name() string { return "Local dev account" }
 
-func (p *Provider) Begin(_ context.Context, _ string) (string, error) {
-	if err := ValidateBaseURL(p.baseURL); err != nil {
+func (p *Provider) Begin(_ context.Context, _ provider.LoginRequest) (string, error) {
+	if err := config.ValidateLoopbackURL(p.baseURL); err != nil {
 		return "", err
 	}
 	return strings.TrimRight(p.baseURL, "/") + "/api/v1/auth/local/callback", nil
 }
 
-func ValidateBaseURL(raw string) error {
-	parsed, err := url.Parse(raw)
-	if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Hostname() == "" || parsed.User != nil || parsed.RawQuery != "" || parsed.Fragment != "" || (parsed.Path != "" && parsed.Path != "/") {
-		return fmt.Errorf("local provider requires an absolute localhost APP_BASE_URL")
-	}
-	host := strings.TrimSuffix(strings.ToLower(parsed.Hostname()), ".")
-	if host == "localhost" {
-		return nil
-	}
-	ip := net.ParseIP(host)
-	if ip != nil && ip.IsLoopback() {
-		return nil
-	}
-	return fmt.Errorf("local provider requires an absolute localhost APP_BASE_URL")
-}
-
-func (p *Provider) Complete(_ context.Context, _ string) (provider.Connection, error) {
+func (p *Provider) Complete(_ context.Context, _ provider.LoginCallback) (provider.Connection, error) {
 	return provider.Connection{
-		ProviderID:   "local",
+		ProviderID:   provider.LocalID,
 		AccountID:    "dev",
 		AccountEmail: "dev@localhost",
 		Credentials:  "local-dev-user",
@@ -88,3 +47,5 @@ func (p *Provider) Store(_ context.Context, _ provider.Connection) (journal.Stor
 func (p *Provider) Revoke(_ context.Context, _ provider.Connection) error {
 	return nil
 }
+
+var _ provider.Provider = (*Provider)(nil)

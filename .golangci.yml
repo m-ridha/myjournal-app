@@ -14,7 +14,12 @@ linters:
     - errcheck
     - ineffassign
     - depguard
+    - revive
   settings:
+    revive:
+      enable-all-rules: false
+      rules:
+        - name: if-return
     depguard:
       rules:
         core:

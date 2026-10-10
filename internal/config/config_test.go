@@ -8,7 +8,7 @@ import (
 
 func setConfigEnvironment(t *testing.T) {
 	t.Helper()
-	for _, key := range []string{"APP_BASE_URL", "PORT", "LOG_LEVEL", "SESSION_KEY", "COOKIE_SECURE", "PROVIDERS", "LOCAL_DATA_DIR"} {
+	for _, key := range []string{"APP_BASE_URL", "PORT", "LOG_LEVEL", "SESSION_KEY", "COOKIE_SECURE", "PROVIDERS", "LOCAL_DATA_DIR", "GOOGLE_TEST_MODE"} {
 		previous, existed := os.LookupEnv(key)
 		if err := os.Unsetenv(key); err != nil {
 			t.Fatalf("Unsetenv(%s) error = %v", key, err)
@@ -97,5 +97,18 @@ func TestLoadRejectsInvalidEnvironmentValues(t *testing.T) {
 				t.Fatal("Load() error = nil, want error")
 			}
 		})
+	}
+}
+
+func TestGoogleTestModeConfiguration(t *testing.T) {
+	setConfigEnvironment(t)
+	t.Setenv("GOOGLE_TEST_MODE", "true")
+	cfg, err := Load()
+	if err != nil || !cfg.GoogleTestMode {
+		t.Fatal("test mode not loaded")
+	}
+	t.Setenv("GOOGLE_TEST_MODE", "invalid")
+	if _, err := Load(); err == nil {
+		t.Fatal("invalid test mode accepted")
 	}
 }

@@ -10,6 +10,7 @@ import (
 	"github/mridha/myjournal-app/internal/clock"
 	"github/mridha/myjournal-app/internal/config"
 	"github/mridha/myjournal-app/internal/provider"
+	googleProvider "github/mridha/myjournal-app/internal/provider/google"
 	localProvider "github/mridha/myjournal-app/internal/provider/local"
 	"github/mridha/myjournal-app/internal/session"
 )
@@ -19,7 +20,7 @@ type mockClock struct{ now time.Time }
 func (m mockClock) Now() time.Time { return m.now }
 
 func TestLocalLoginRedirect(t *testing.T) {
-	registry := provider.NewRegistry(localProvider.New("http://localhost:3030"))
+	registry := provider.NewRegistry(localProvider.New("http://localhost:3030", ""))
 	h := NewRouter(config.Config{BaseURL: "http://localhost:3030", SessionKey: "0123456789abcdef0123456789abcdef"}, registry, clock.System{}, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/local/login", nil)
@@ -35,7 +36,7 @@ func TestLocalLoginRedirect(t *testing.T) {
 }
 
 func TestLocalCallbackCreatesSessionCookie(t *testing.T) {
-	registry := provider.NewRegistry(localProvider.New("http://localhost:3030"))
+	registry := provider.NewRegistry(localProvider.New("http://localhost:3030", ""))
 	h := NewRouter(config.Config{BaseURL: "http://localhost:3030", SessionKey: "0123456789abcdef0123456789abcdef"}, registry, clock.System{}, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/auth/local/callback", nil)
@@ -52,7 +53,7 @@ func TestLocalCallbackCreatesSessionCookie(t *testing.T) {
 
 func TestLandingPageRendersTemplate(t *testing.T) {
 	cfg := config.Config{BaseURL: "http://localhost:3030", SessionKey: "0123456789abcdef0123456789abcdef"}
-	h := NewRouter(cfg, provider.NewRegistry(localProvider.New("http://localhost:3030")), clock.System{}, nil)
+	h := NewRouter(cfg, provider.NewRegistry(localProvider.New("http://localhost:3030", "")), clock.System{}, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	res := httptest.NewRecorder()
@@ -71,7 +72,7 @@ func TestLandingPageRendersTemplate(t *testing.T) {
 
 func TestPrivatePagesRedirectWithoutSession(t *testing.T) {
 	cfg := config.Config{BaseURL: "http://localhost:3030", SessionKey: "0123456789abcdef0123456789abcdef"}
-	h := NewRouter(cfg, provider.NewRegistry(localProvider.New("http://localhost:3030")), clock.System{}, nil)
+	h := NewRouter(cfg, provider.NewRegistry(localProvider.New("http://localhost:3030", "")), clock.System{}, nil)
 	for _, path := range []string{"/entries", "/entries/today", "/entries/2026-09-20", "/calendar", "/settings"} {
 		t.Run(path, func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -86,7 +87,7 @@ func TestPrivatePagesRedirectWithoutSession(t *testing.T) {
 
 func TestPrivacyPageRendersTemplate(t *testing.T) {
 	cfg := config.Config{BaseURL: "http://localhost:3030", SessionKey: "0123456789abcdef0123456789abcdef"}
-	h := NewRouter(cfg, provider.NewRegistry(localProvider.New("http://localhost:3030")), clock.System{}, nil)
+	h := NewRouter(cfg, provider.NewRegistry(localProvider.New("http://localhost:3030", "")), clock.System{}, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/privacy", nil)
 	res := httptest.NewRecorder()
@@ -102,7 +103,7 @@ func TestPrivacyPageRendersTemplate(t *testing.T) {
 
 func TestEntriesPageRendersTemplate(t *testing.T) {
 	cfg := config.Config{BaseURL: "http://localhost:3030", SessionKey: "0123456789abcdef0123456789abcdef"}
-	h := NewRouter(cfg, provider.NewRegistry(localProvider.New("http://localhost:3030")), clock.System{}, nil)
+	h := NewRouter(cfg, provider.NewRegistry(localProvider.New("http://localhost:3030", "")), clock.System{}, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/entries", nil)
 	addLocalSessionCookie(t, req, cfg.SessionKey)
@@ -119,7 +120,7 @@ func TestEntriesPageRendersTemplate(t *testing.T) {
 
 func TestCalendarPageRendersTemplate(t *testing.T) {
 	cfg := config.Config{BaseURL: "http://localhost:3030", SessionKey: "0123456789abcdef0123456789abcdef"}
-	h := NewRouter(cfg, provider.NewRegistry(localProvider.New("http://localhost:3030")), clock.System{}, nil)
+	h := NewRouter(cfg, provider.NewRegistry(localProvider.New("http://localhost:3030", "")), clock.System{}, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/calendar", nil)
 	addLocalSessionCookie(t, req, cfg.SessionKey)
@@ -136,7 +137,7 @@ func TestCalendarPageRendersTemplate(t *testing.T) {
 
 func TestDateEntryPageRendersTemplate(t *testing.T) {
 	cfg := config.Config{BaseURL: "http://localhost:3030", SessionKey: "0123456789abcdef0123456789abcdef"}
-	h := NewRouter(cfg, provider.NewRegistry(localProvider.New("http://localhost:3030")), clock.System{}, nil)
+	h := NewRouter(cfg, provider.NewRegistry(localProvider.New("http://localhost:3030", "")), clock.System{}, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/entries/2026-09-20", nil)
 	addLocalSessionCookie(t, req, cfg.SessionKey)
@@ -153,7 +154,7 @@ func TestDateEntryPageRendersTemplate(t *testing.T) {
 
 func TestFutureDateEntryPageIsRejected(t *testing.T) {
 	cfg := config.Config{BaseURL: "http://localhost:3030", SessionKey: "0123456789abcdef0123456789abcdef"}
-	h := NewRouter(cfg, provider.NewRegistry(localProvider.New("http://localhost:3030")), mockClock{now: time.Date(2026, 9, 21, 12, 0, 0, 0, time.UTC)}, nil)
+	h := NewRouter(cfg, provider.NewRegistry(localProvider.New("http://localhost:3030", "")), mockClock{now: time.Date(2026, 9, 21, 12, 0, 0, 0, time.UTC)}, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/entries/2026-09-22", nil)
 	addLocalSessionCookie(t, req, cfg.SessionKey, time.Date(2026, 9, 21, 0, 0, 0, 0, time.UTC))
@@ -170,7 +171,7 @@ func TestFutureDateEntryPageIsRejected(t *testing.T) {
 
 func TestNotFoundPageRendersTemplate(t *testing.T) {
 	cfg := config.Config{BaseURL: "http://localhost:3030", SessionKey: "0123456789abcdef0123456789abcdef"}
-	h := NewRouter(cfg, provider.NewRegistry(localProvider.New("http://localhost:3030")), clock.System{}, nil)
+	h := NewRouter(cfg, provider.NewRegistry(localProvider.New("http://localhost:3030", "")), clock.System{}, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/definitely-missing", nil)
 	res := httptest.NewRecorder()
@@ -186,7 +187,7 @@ func TestNotFoundPageRendersTemplate(t *testing.T) {
 
 func TestSettingsPageRendersTemplate(t *testing.T) {
 	cfg := config.Config{BaseURL: "http://localhost:3030", SessionKey: "0123456789abcdef0123456789abcdef"}
-	h := NewRouter(cfg, provider.NewRegistry(localProvider.New("http://localhost:3030")), clock.System{}, nil)
+	h := NewRouter(cfg, provider.NewRegistry(localProvider.New("http://localhost:3030", "")), clock.System{}, nil)
 
 	req := httptest.NewRequest(http.MethodGet, "/settings", nil)
 	addLocalSessionCookie(t, req, cfg.SessionKey)
@@ -248,7 +249,7 @@ func addLocalSessionCookie(t *testing.T, req *http.Request, secret string, issue
 
 func TestEntryPagesUseRequestTimeZone(t *testing.T) {
 	cfg := config.Config{BaseURL: "http://localhost:3030", SessionKey: "0123456789abcdef0123456789abcdef"}
-	router := NewRouter(cfg, provider.NewRegistry(localProvider.New(cfg.BaseURL)), mockClock{now: time.Date(2026, 10, 7, 19, 0, 0, 0, time.UTC)}, nil)
+	router := NewRouter(cfg, provider.NewRegistry(localProvider.New(cfg.BaseURL, "")), mockClock{now: time.Date(2026, 10, 7, 19, 0, 0, 0, time.UTC)}, nil)
 	for _, tc := range []struct {
 		path, zone string
 		status     int
@@ -271,6 +272,37 @@ func TestEntryPagesUseRequestTimeZone(t *testing.T) {
 			}
 			if tc.date != "" && (!strings.Contains(res.Body.String(), `data-entry-date="`+tc.date+`"`) || !strings.Contains(res.Body.String(), `data-today="`+tc.date+`"`)) {
 				t.Fatal("editor date and today disagree with request timezone")
+			}
+		})
+	}
+}
+
+func TestLandingOffersOnlyRegisteredProviders(t *testing.T) {
+	local := localProvider.New("http://localhost:3030", "")
+	google := googleProvider.New(googleProvider.Config{ClientID: "test-client", ClientSecret: "test-secret", BaseURL: "http://localhost:3030"})
+	for _, tc := range []struct {
+		name          string
+		providers     []provider.Provider
+		local, google bool
+	}{
+		{"local", []provider.Provider{local}, true, false},
+		{"google", []provider.Provider{google}, false, true},
+		{"both", []provider.Provider{local, google}, true, true},
+		{"none", nil, false, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			h := NewRouter(config.Config{SessionKey: "test-key"}, provider.NewRegistry(tc.providers...), mockClock{now: time.Date(2026, 10, 10, 0, 0, 0, 0, time.UTC)}, nil)
+			response := httptest.NewRecorder()
+			h.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/", nil))
+			body := response.Body.String()
+			if got := strings.Contains(body, `href="/api/v1/auth/local/login"`); got != tc.local {
+				t.Errorf("local login offered=%v want=%v", got, tc.local)
+			}
+			if got := strings.Contains(body, `href="/api/v1/auth/google/login"`); got != tc.google {
+				t.Errorf("Google login offered=%v want=%v", got, tc.google)
+			}
+			if tc.google && !strings.Contains(body, ">Continue with Google</a>") {
+				t.Error("missing localized Google button")
 			}
 		})
 	}

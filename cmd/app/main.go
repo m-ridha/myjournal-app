@@ -33,6 +33,8 @@ func run() error {
 		return err
 	}
 	defer cleanup()
+	// Request middleware and failure paths share the configured logging policy.
+	slog.SetDefault(app.Logger)
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
 	listener, err := net.Listen("tcp", app.Server.Addr)
