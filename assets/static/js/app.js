@@ -419,7 +419,7 @@
       if (!loaded) unverifiedDraft = true;
       persistDraft();
       setSaveState(saving ? 'saving' : '');
-      notice(t(saving ? 'editor.saving' : isDirty() ? 'editor.unsaved' : 'editor.saved') + (autosavePaused && !conflicted ? t('editor.autosavePaused') : ''));
+      notice(t(saving ? 'editor.saving' : isDirty() ? 'editor.unsaved' : (exists ? 'editor.saved' : 'editor.blank')) + (autosavePaused && !conflicted ? t('editor.autosavePaused') : ''));
       scheduleAutosave();
     });
     saveBtn.addEventListener('click', () => saveEntry());

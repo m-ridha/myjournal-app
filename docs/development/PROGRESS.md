@@ -237,3 +237,8 @@ Partial live Google smoke success is recorded in findings; full integrated accep
 Performance plan status refreshed (2026-10-10): focused iteration complete; private plan labels the original proposal as historical, records completed measurements/changes, and separates optional controlled-session evidence and deferred experiments from production gates.
 
 - [x] Review and adopt dependency-free shared test origin fixtures with standard Go naming; retain independent contract/boundary literals and production/test separation.
+
+## Empty-entry status correction (2026-10-10)
+
+- [x] Returning an unsaved new entry to empty text restores Blank page; an existing empty file retains Saved.
+- [x] Regression reproduces the original failure and verifies no autosave PUT or retained backup after reverting; make fmt lint test passes.
