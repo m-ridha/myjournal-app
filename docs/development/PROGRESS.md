@@ -369,3 +369,7 @@ Privacy/Help header fix validation: fresh make fmt lint test passed with zero li
 ## Progress checkbox reconciliation (2026-10-10)
 
 Reviewed every unchecked item against later findings, public acceptance and v0.1.0 workflow evidence. Closed superseded activation blockers without claiming atomic writes, controlled cold/warm benchmarks, unrestricted Google publication, local Docker smoke or full accessibility certification. Optional bounded-prefix previews are labeled deferred rather than a release blocker. The remaining unchecked umbrella is full UI acceptance as detailed above. This is a documentation audit; no new runtime tests were run.
+
+- [x] Review README/AGENTS against current code, workflow and release evidence: document v0.1.0 restricted test-user status, HSTS, Railway variables, remaining UI checks and public-page Settings behavior; remove mandatory generation from fresh-checkout quick start. Local links and git diff --check pass; documentation-only, no new runtime tests.
+
+- [x] README follow-up by user decision: retain make generate in quick start with prerequisites/diff review; keep evolving status in PROGRESS/findings and durable feature/setup/release instructions in README.
