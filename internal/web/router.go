@@ -125,10 +125,12 @@ func NewRouter(cfg config.Config, registry *provider.Registry, clk journal.Clock
 		renderPage(w, pageData{TitleKey: "settings.title", SignedIn: true, Page: "settings", AccountName: current.AccountEmail, DraftScope: draftScope(current), FolderName: localeCatalog.Text("app.name"), FolderURL: folderURL, FolderUnavailable: folderErr != nil})
 	})
 	r.Get("/privacy", func(w http.ResponseWriter, r *http.Request) {
-		renderPage(w, pageData{TitleKey: "privacy.title", DescriptionKey: "privacy.description", Page: "privacy"})
+		_, err := currentSession(r, cfg.SessionKey, registry, clk.Now())
+		renderPage(w, pageData{TitleKey: "privacy.title", DescriptionKey: "privacy.description", SignedIn: err == nil, Page: "privacy"})
 	})
 	r.Get("/help", func(w http.ResponseWriter, r *http.Request) {
-		renderPage(w, pageData{TitleKey: "help.title", DescriptionKey: "help.description", Page: "help"})
+		_, err := currentSession(r, cfg.SessionKey, registry, clk.Now())
+		renderPage(w, pageData{TitleKey: "help.title", DescriptionKey: "help.description", SignedIn: err == nil, Page: "help"})
 	})
 	r.MethodNotAllowed(func(w http.ResponseWriter, req *http.Request) {
 		// Match against the registered routes, using separate contexts so probing

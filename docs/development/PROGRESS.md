@@ -347,3 +347,12 @@ No live pass or production readiness is claimed from this preparation.
 - [x] User accepted restricted test-user automated releases with Google Testing expiry and measured latency/revision-retention limitations; recorded in ADR 016.
 - [x] User confirmed Railway log drains are not enabled. HTTP/application query-free observations cover configured visible logging; internal platform retention is not claimed.
 - [ ] Remaining activation prerequisites: reviewed HSTS/workflow changes deployed and publicly checked, known-good rollback/session smoke and restoration; readiness variable remains unset.
+
+- [x] Public deployed HSTS verified (2026-10-10): /healthz and landing 200, static script 200, unsigned settings API 401 and missing route 404 all include Strict-Transport-Security: max-age=31536000 and CSP. Private/non-static responses retain no-store.
+- [ ] Final activation prerequisite: known-good Railway rollback/session smoke, restoration of current deployment and health/HSTS recheck.
+
+- [x] Railway rollback/session smoke (human reported): rolled back to PR #15 deployment; health and an existing entry worked without signing in again. User then redeployed latest commit. Independent /healthz, /privacy and /help returned 200 with one-year HSTS after restoration.
+- [x] Restricted test-user activation prerequisites now have recorded evidence. Repository RAILWAY_RELEASE_READY may be set to true; its remote value has not been inspected or changed. First published-release workflow remains the end-to-end automation check.
+- [ ] Minor header regression: Privacy/Help omitted Settings for valid sessions. Local fix uses existing session validation; invalid/expired/missing sessions retain public access without the gear. Deployment pending.
+
+Privacy/Help header fix validation: fresh make fmt lint test passed with zero lint issues, all five JavaScript suites and all Go packages; git diff --check passed.

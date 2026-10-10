@@ -329,3 +329,47 @@ func TestAPIPanicReturnsGenericEnvelope(t *testing.T) {
 		t.Fatalf("GET panicking API = (%d, %v, %q), want generic JSON 500", res.Code, body, res.Header().Get("Content-Type"))
 	}
 }
+
+func TestPublicPagesSettingsLinkFollowsSession(t *testing.T) {
+	now := time.Date(2026, 10, 10, 12, 0, 0, 0, time.UTC)
+	cfg := config.Config{BaseURL: testutil.LocalBaseURL, SessionKey: "public-page-test-key"}
+	registry := provider.NewRegistry(localProvider.New(cfg.BaseURL, ""))
+	router := NewRouter(cfg, registry, testutil.StubClock{Time: now}, nil)
+	for _, tc := range []struct {
+		name         string
+		issuedAt     time.Time
+		invalid      bool
+		wantSettings bool
+	}{
+		{name: "signed out"},
+		{name: "valid session", issuedAt: now, wantSettings: true},
+		{name: "expired session", issuedAt: now.Add(-session.Lifetime)},
+		{name: "invalid cookie", invalid: true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			for _, path := range []string{"/privacy", "/help"} {
+				req := httptest.NewRequest(http.MethodGet, path, nil)
+				if !tc.issuedAt.IsZero() {
+					encoded, err := session.Encode(cfg.SessionKey, session.Session{
+						Connection: provider.Connection{ProviderID: provider.LocalID, AccountID: "dev"},
+						IssuedAt:   tc.issuedAt,
+					})
+					if err != nil {
+						t.Fatal(err)
+					}
+					req.AddCookie(&http.Cookie{Name: session.CookieName, Value: encoded})
+				} else if tc.invalid {
+					req.AddCookie(&http.Cookie{Name: session.CookieName, Value: "invalid"})
+				}
+				res := httptest.NewRecorder()
+				router.ServeHTTP(res, req)
+				if res.Code != http.StatusOK {
+					t.Fatalf("%s status = %d", path, res.Code)
+				}
+				if got := strings.Contains(res.Body.String(), `href="/settings"`); got != tc.wantSettings {
+					t.Errorf("%s Settings link = %v, want %v", path, got, tc.wantSettings)
+				}
+			}
+		})
+	}
+}
