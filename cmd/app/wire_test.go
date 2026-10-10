@@ -75,3 +75,34 @@ func TestGoogleIntegrationModeIsLocalOnly(t *testing.T) {
 		t.Fatal("duplicate Google accepted")
 	}
 }
+
+func TestGoogleHTTPSRegistration(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		origin string
+		secure bool
+		wantOK bool
+	}{
+		{"secure origin", "https://journal.example.com", true, true},
+		{"insecure transport", "http://journal.example.com", true, false},
+		{"insecure cookies", "https://journal.example.com", false, false},
+		{"credentials", "https://user@journal.example.com", true, false},
+		{"query", "https://journal.example.com?unexpected=1", true, false},
+		{"fragment", "https://journal.example.com#unexpected", true, false},
+		{"path", "https://journal.example.com/journal", true, false},
+		{"missing host", "https://", true, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := config.Config{BaseURL: tc.origin, CookieSecure: tc.secure, Providers: "google", GoogleClientID: "test-client", GoogleClientSecret: "test-secret"}
+			registry, err := newProviderRegistry(cfg)
+			if (err == nil) != tc.wantOK {
+				t.Fatalf("newProviderRegistry(origin=%q, secure=%t) error=%v, want success=%t", tc.origin, tc.secure, err, tc.wantOK)
+			}
+			if tc.wantOK {
+				if _, ok := registry.Get("google"); !ok {
+					t.Fatal("newProviderRegistry(HTTPS) did not register Google")
+				}
+			}
+		})
+	}
+}

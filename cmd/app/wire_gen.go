@@ -22,6 +22,7 @@ import (
 	"log"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -117,11 +118,18 @@ func newProviderRegistry(cfg config.Config) (*provider.Registry, error) {
 			if _, ok := seen[name]; ok {
 				return nil, fmt.Errorf("PROVIDERS contains duplicate provider %q", name)
 			}
-			if !cfg.GoogleTestMode {
-				return nil, fmt.Errorf("Google is awaiting live acceptance; use GOOGLE_TEST_MODE=true only for localhost integration testing")
-			}
-			if err := config.ValidateLoopbackURL(cfg.BaseURL); err != nil {
-				return nil, fmt.Errorf("Google test mode requires localhost: %w", err)
+			if cfg.GoogleTestMode {
+				if err := config.ValidateLoopbackURL(cfg.BaseURL); err != nil {
+					return nil, fmt.Errorf("Google test mode requires localhost: %w", err)
+				}
+			} else {
+				origin, err := url.Parse(cfg.BaseURL)
+				if err != nil || origin.Scheme != "https" || origin.Hostname() == "" || origin.User != nil || origin.Path != "" || origin.RawQuery != "" || origin.ForceQuery || origin.Fragment != "" {
+					return nil, fmt.Errorf("Google requires an HTTPS origin without credentials, path, query or fragment")
+				}
+				if !cfg.CookieSecure {
+					return nil, fmt.Errorf("Google HTTPS deployment requires COOKIE_SECURE=true")
+				}
 			}
 			gc := google.Config{ClientID: cfg.GoogleClientID, ClientSecret: cfg.GoogleClientSecret, BaseURL: cfg.BaseURL}
 			if gc.ClientID == "" || gc.ClientSecret == "" {

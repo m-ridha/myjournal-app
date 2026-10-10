@@ -1,0 +1,68 @@
+name: Release to Railway
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: railway-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    # Explicit readiness gate until production OAuth and infrastructure privacy pass.
+    if: ${{ !github.event.release.prerelease && vars.RAILWAY_RELEASE_READY == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    environment: production
+    permissions:
+      contents: read
+    env:
+      RELEASE_TAG: ${{ github.event.release.tag_name }}
+    steps:
+      - name: Validate stable release tag
+        shell: bash
+        run: |
+          [[ "$RELEASE_TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || {
+            echo 'Expected stable release tag vX.Y.Z'; exit 1;
+          }
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.release.tag_name }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Verify release is from main
+        run: git merge-base --is-ancestor HEAD origin/main
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+          package-manager-cache: false
+      - uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.14.0
+          install-only: true
+      - name: Validate release code
+        run: |
+          python3 -B -m unittest discover -s scripts -p test_deploy_railway.py
+          make fmt lint test
+          git diff --exit-code -- '*.go'
+          make test-architecture
+          go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 ./...
+      - name: Install pinned Railway CLI
+        run: npm install --global @railway/cli@5.64.2
+      - name: Deploy release source and verify health
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_SERVICE_ID: ${{ vars.RAILWAY_SERVICE_ID }}
+          RAILWAY_ENVIRONMENT_ID: ${{ vars.RAILWAY_ENVIRONMENT_ID }}
+          RAILWAY_PROJECT_ID: ${{ vars.RAILWAY_PROJECT_ID }}
+        run: |
+          source_dir=$(mktemp -d)
+          git archive HEAD | tar -x -C "$source_dir"
+          python3 scripts/deploy-railway.py "$source_dir" "$(git rev-parse HEAD)"

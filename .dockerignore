@@ -1,0 +1,12 @@
+# Allow only build inputs; credentials, local journals and private plans stay out.
+**
+!go.mod
+!go.sum
+!cmd/
+!cmd/**
+!internal/
+!internal/**
+!assets/
+!assets/**
+!Dockerfile
+!.dockerignore
