@@ -1,6 +1,6 @@
 # Google production enablement gates
 
-Status: not ready for release readiness. The Railway acceptance build is deployed. Public sign-in, synthetic Unicode save/reload, session continuity after a reported service restart, human-inspected session-cookie attributes and synthetic trash cleanup passed on 2026-10-10. Remaining public and release checks below are still open. This document separates live acceptance from deployment and policy decisions. No unchecked item is implied by earlier spike or mocked-test success.
+Status: activation prerequisites met for restricted test-user releases (2026-10-10); first release-workflow execution remains unverified. The Railway acceptance build is deployed. Public sign-in, synthetic Unicode save/reload, session continuity after a reported service restart, human-inspected session-cookie attributes and synthetic trash cleanup passed on 2026-10-10. Remaining public and release checks below are still open. This document separates live acceptance from deployment and policy decisions. No unchecked item is implied by earlier spike or mocked-test success.
 
 ## Next live session
 
@@ -75,3 +75,9 @@ Public list/calendar and ordinary sign-out/protected-route redirect smoke checks
 The user accepted automated releases for existing Google test users, including seven-day refresh-token expiry and measured save-latency/revision-retention limitations (ADR 016). Console publishing is not required for this restricted audience and is not claimed complete. The user reports no Railway log drain is enabled and callback HTTP logs omit query strings; application logs were already inspected. This closes the configured external-drain review, without claiming undocumented platform-internal non-retention.
 
 Before enabling the repository readiness variable, deploy the reviewed HSTS/configuration changes and verify their public headers, then complete the known-good deployment rollback/session smoke and restore the current build. The first published-release workflow must subsequently verify exact deployment SUCCESS and health. Do not label this as unrestricted production readiness.
+
+## Activation evidence completed (2026-10-10)
+
+Human confirmed rollback to the known-good PR #15 deployment preserved health and authenticated entry access, then restored latest code. Independent checks afterward returned health/Privacy/Help 200 with one-year HSTS. Together with the preceding restricted-audience, logging, security and public OAuth evidence, the repository RAILWAY_RELEASE_READY variable may now be enabled for restricted test-user releases. Its remote value has not been accessed or changed. Earlier pending statements above describe the acceptance sequence; this section records their deployment/rollback closure. This does not claim Google Console production publication or a successful release-triggered deployment.
+
+A minor authenticated Privacy/Help header bug has a local regression fix; it does not affect authentication, journal access or rollback evidence. Include it in a reviewed release source commit and verify after deployment.
