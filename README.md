@@ -7,7 +7,7 @@ A Go-based plain-text journal app. Contributor instructions are in [AGENTS.md](A
 The implemented local development flow includes:
 
 - app shell and router are in place
-- date-specific entry pages use `/entries/YYYY-MM-DD`; API routes are versioned under `/api/v1`
+- date-specific entry pages use `/entries/YYYY-MM-DD`; API routes are versioned under `/api/v{version_number}`
 - future dates are rejected
 - the branded 404 page is connected to the app
 - save status transitions are visible and styled
@@ -28,9 +28,7 @@ Then visit <http://localhost:3030/healthz>.
 ## Development
 
 ```bash
-make fmt
-make lint
-make test
+make fmt lint test
 ```
 
 `make test` runs the editor interaction regressions and `go test ./...`. The JavaScript checks use Node.js when available, or the built-in JavaScriptCore shell on macOS; no npm packages are required. Run only those checks with `make test-js`. Manual browser acceptance steps are in `docs/development/editor-recovery-checks.md`.

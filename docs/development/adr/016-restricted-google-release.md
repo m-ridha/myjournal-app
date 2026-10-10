@@ -24,6 +24,10 @@ Simultaneous external Drive edits are unsupported: an edit between checksum comp
 
 Hosting choice: Railway at https://myjournal-ink.up.railway.app. Published GitHub Releases with stable vX.Y.Z tags remain the deployment trigger. See [Railway preparation](../railway-preparation.md).
 
+## Initial release audience and launch limitations
+
+On 2026-10-10 the user selected restricted test-user releases while Google Console remains in Testing, accepting the associated seven-day refresh-token expiry and the measured save-latency/revision-retention limitations. The 30-day app cookie does not extend Google's token lifetime. This is not an unrestricted public launch, a passed latency target, or a guarantee of Drive revision retention. Publishing the Console app remains a separate human-managed decision.
+
 ## Future change
 
 Supporting simultaneous external edits or multiple app instances requires a separately reviewed protocol and evidence, including updates, trash and create uniqueness. Optional If-Match forwarding remains unverified against actual Drive and cannot be advertised as atomic protection. See ADR 005 for the existing checksum/version choice.

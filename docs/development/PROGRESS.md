@@ -304,3 +304,46 @@ No live pass or production readiness is claimed from this preparation.
 - [x] Prepare non-test Google registration requiring an HTTPS origin without credentials/path/query/fragment and COOKIE_SECURE=true; retain localhost-only test mode. Regenerate Wire and add startup-policy regressions.
 - [x] Fresh make generate-wire and make fmt lint test passed; lint reports 0 issues.
 - [ ] Review/publish/deploy acceptance build, verify public health and logging privacy, then perform OAuth acceptance. Release readiness remains unset; local changes are not deployed.
+
+## Public Railway HTTPS checks (2026-10-10)
+
+- [x] Public /healthz, landing and Privacy return 200; unsigned entry API returns 401. CSP, no-store, no-referrer, nosniff and DENY framing headers observed.
+- [x] Login returns 302 and ten-minute transaction cookie with Secure/HttpOnly/SameSite=Lax; invalid dummy callback returns 401; cross-origin PUT without session returns 403. No real Google callback or session values recorded.
+- [x] Chrome public landing shows Continue with Google.
+- [ ] HSTS header absent on observed public responses; production header gate remains open.
+- [ ] Human Railway dummy-query log/export review pending; real consent, authenticated cookie, refresh/restart and entry smoke checks not yet performed.
+
+- [x] Human-supplied application logs show the dummy callback path without query marker; broader platform/export retention remains unverified.
+- [ ] Browser Continue with Google reached Railway 502; no real consent occurred. Recover hosting availability before retrying public OAuth acceptance.
+
+- [x] Public availability recovered: fresh health GET 200 and login 302.
+- [ ] Google authorization displays 401 invalid_client (OAuth client was not found); human verification of deployed GOOGLE_CLIENT_ID requested. No consent/callback acceptance yet.
+
+- [x] User reports corrected client ID deployed; fresh browser login reaches Google account chooser without invalid_client. Human sign-in/Drive consent pending.
+
+- [x] Public authenticated smoke: human completed Google consent; Chrome saved disposable 2019-02-23 with Unicode text, then reload returned identical text with Saved (not Draft restored).
+- [ ] Public restart/session-refresh check and synthetic fixture cleanup remain pending; authenticated cookie attributes require browser inspection.
+
+- [x] Railway restart acceptance: user reported service restarted with unchanged configuration; Chrome reload remained signed in and returned the exact synthetic 2019-02-23 text with Saved.
+- [x] Human inspected mj_session: Secure, HttpOnly, SameSite=Lax, Path=/, expiry 2026-11-09 (approximately 30 days).
+- [ ] Synthetic 2019-02-23 cleanup attempted; Chrome exposed trash confirmation, then automation timed out during confirmation. Cleanup outcome remains unverified.
+
+- [x] Public synthetic fixture cleanup: user confirmed trash and reload of 2019-02-23 shows Blank page.
+
+- [x] Railway public navigation smoke: calendar rendered October 2026 with 42 grid cells; entries loaded Page 1 without retry feedback. Ordinary Sign out returned the Google-login landing; subsequent protected entry navigation redirected to /.
+
+- [x] Railway public Disconnect/reconnect (human reported): acceptance tab closed; user performed Disconnect in another Chrome tab, signed in again with the same account and explicitly granted Drive access, returning to the dated editor. Provider revocation was not independently inspected.
+
+## Final Railway release readiness (2026-10-10)
+
+- [x] Human confirmed Google Console remains Testing, one Railway replica, and branch autodeploys disabled.
+- [x] Human reports callback HTTP logs show request IDs without query strings; export/internal retention remains a separately bounded claim.
+- [x] Approved HSTS policy implemented from configured HTTPS origin, ignoring forwarded headers; one-year host-only policy, no preload/subdomains. Regression first failed against missing header, then make fmt lint test passed with zero lint issues.
+- [x] Release workflow now reads RAILWAY_PROJECT_ID from secrets, matching the reported repository setup; service/environment IDs remain production-environment variables.
+- [ ] Deploy and verify HSTS publicly; perform rollback smoke; confirm log/export surfaces and Console/restricted-audience launch decisions before setting readiness. First published-release workflow remains an end-to-end verification step.
+
+- [x] Fresh make test-architecture passed all seven forbidden-import probes after HSTS changes; git diff --check passed.
+
+- [x] User accepted restricted test-user automated releases with Google Testing expiry and measured latency/revision-retention limitations; recorded in ADR 016.
+- [x] User confirmed Railway log drains are not enabled. HTTP/application query-free observations cover configured visible logging; internal platform retention is not claimed.
+- [ ] Remaining activation prerequisites: reviewed HSTS/workflow changes deployed and publicly checked, known-good rollback/session smoke and restoration; readiness variable remains unset.

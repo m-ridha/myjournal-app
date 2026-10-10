@@ -127,3 +127,29 @@ func TestSecurityHeadersAndExternalScripts(t *testing.T) {
 		t.Fatal("cross-origin rejection missing headers")
 	}
 }
+
+func TestHSTSFollowsConfiguredOrigin(t *testing.T) {
+	for _, tc := range []struct {
+		name           string
+		baseURL        string
+		forwardedProto string
+		want           string
+	}{
+		{name: "https behind proxy", baseURL: "https://journal.example", forwardedProto: "http", want: "max-age=31536000"},
+		{name: "localhost ignores forwarded https", baseURL: testutil.LocalBaseURL, forwardedProto: "https"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := config.Config{BaseURL: tc.baseURL, SessionKey: "test-key"}
+			router := NewRouter(cfg, provider.NewRegistry(), testutil.StubClock{Time: time.Now()}, nil)
+			for _, path := range []string{"/", "/missing", "/api/v1/settings", "/static/js/theme-init.js"} {
+				req := httptest.NewRequest(http.MethodGet, path, nil)
+				req.Header.Set("X-Forwarded-Proto", tc.forwardedProto)
+				res := httptest.NewRecorder()
+				router.ServeHTTP(res, req)
+				if got := res.Header().Get("Strict-Transport-Security"); got != tc.want {
+					t.Errorf("%s HSTS = %q, want %q", path, got, tc.want)
+				}
+			}
+		})
+	}
+}

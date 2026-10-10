@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"io/fs"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -28,6 +29,10 @@ func NewRouter(cfg config.Config, registry *provider.Registry, clk journal.Clock
 
 	r := chi.NewRouter()
 	r.Use(webMiddleware.SecurityHeaders)
+	// Trust startup configuration rather than client-supplied proxy headers.
+	if origin, err := url.Parse(cfg.BaseURL); err == nil && origin.Scheme == "https" {
+		r.Use(webMiddleware.StrictTransportSecurity)
+	}
 	r.Use(middleware.RequestID)
 	r.Use(webMiddleware.RequestLog)
 	r.Use(webMiddleware.Recoverer(func(w http.ResponseWriter, r *http.Request) {
