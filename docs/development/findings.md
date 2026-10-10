@@ -194,7 +194,6 @@
 - Startup refuses the Google provider while OAuth and Drive storage remain stubs, instead of allowing placeholder credentials to appear successful.
 - Session expiration and key rotation remain open; `IssuedAt` is required but no maximum session age is enforced yet.
 
-
 ## Browser date consistency (2026-10-08)
 
 Implemented ADR 010: browser IANA preference resolves once per request, with UTC fallback. Pages, calendar defaults/markers, and future-date checks now share that location. Entry reads and deletes reject future dates before storage access, as saves already do; the API contract documents the actual 400 text response. Regenerated OpenAPI with installed oapi-codegen v2.8.0; generated Go output was unchanged.
@@ -207,18 +206,13 @@ Human-reported check (2026-10-08): `/entries/today` immediately became `/entries
 
 Manual follow-up: run local mode with `make run`; inspect `mj_tz` in Chrome and Safari, verify correction when the browser timezone changes, and check current-day navigation. Default-route canonicalization, past-date reload, and the today calendar marker have passed in the user-tested browser. Selected-date preservation was accepted by the user based on the observed date-specific PUT request; automated tests cover the midnight crossing. A loaded page retains its initial today snapshot until navigation/reload. Configurable week start remains pending.
 
-
 Human-reported midnight check (2026-10-09): at 00:00 WIB (Asia/Jakarta), the entry date became `2026-10-09` and the calendar marked October 9 as the current day. Browser/version and navigation method were not specified. This confirms the observed current-day selection and calendar marker at local midnight; the user subsequently accepted selected-date preservation based on the observed `PUT /api/v1/entries/2026-10-09` request. The request targets the selected record date. An already-open prior-day save across midnight is covered by automated domain tests; the reported API observation does not independently demonstrate that particular live scenario.
-
 
 Human-reported browser/layout checks (2026-10-09): Safari testing and simulated mobile screen-size changes looked good. Exact scenarios and browser version were not specified in this report. This records Safari and responsive-layout observations; actual phone-browser testing was subsequently skipped by user decision (see below). Time-zone correction was subsequently confirmed as recorded below.
 
-
 Human-reported time-zone correction (2026-10-09): after the stale-cookie test, the user confirmed that the timezone cookie corrects itself and `/entries/today` selects the correct date for `Asia/Jakarta`. Browser/version was not specified for this check. This completes the reported manual cookie-correction and local-today checks; actual phone-browser testing was subsequently skipped by user decision; configurable calendar week start remains pending.
 
-
 Acceptance decision (2026-10-09): the user chose to skip actual phone-browser testing and accept browser developer-mode device-toolbar testing for this stage. This records a waived device check, not evidence of a physical phone run.
-
 
 ## Week-start deferral and pagination bounds (2026-10-09)
 
@@ -227,7 +221,6 @@ The user explicitly shelved configurable calendar week start as a nice-to-have f
 Pagination previously allocated all dates up to the requested offset and multiplied unchecked page values. The service now accepts pages 1–10000 and sizes 1–100, validating before storage access. It skips offset entries and retains at most size+1 dates to detect the next page. API defaults remain page 1/size 20; explicitly invalid ranges return localized HTTP 400 instead of silently defaulting. The API contract records those bounds and responses. Year metadata still comes from the provider's year index; this change bounds retained page dates, not provider index allocations or total scan time.
 
 Verification: `make generate-openapi`, `make fmt lint test`, and `git diff --check` passed. Lint reported 0 issues; editor/timezone JavaScript regressions and all Go tests passed. New tests cover maximum-int and invalid ranges, cross-year ordering, an empty high page without preview reads, and API 400 mapping. Generated Go output was unchanged. Full API error-contract alignment, atomic local writes, and session/security lifecycle work remain separate acceptance tasks.
-
 
 ## User editor-recovery acceptance report (2026-10-09)
 
@@ -239,16 +232,13 @@ Check 10 partially passed: Save was disabled during GET, but the user observed t
 
 `make fmt lint test` passed (0 lint issues; all JavaScript regressions and Go tests). A reconnect action on 401 is a reasonable future auth flow, provided drafts are preserved and account identity is rechecked; no automatic Google redirect was added while production Google remains disabled.
 
-
 ## Recovery checks 7 and 9 passed (2026-10-09)
 
 Human-reported check 9: the synthetic legacy backup produced Review older draft; cancel preserved server text; confirm restored the synthetic text as unsaved; reload recovered it with Draft restored. This verifies the reported explicit legacy recovery and subsequent scoped-backup restoration. Legacy-key removal was not separately reported.
 
 Human-reported check 7 with draft writes blocked and cookies enabled: editing displayed Unsaved changes plus the unavailable-backup warning; online Save succeeded. An offline save displayed Save failed plus the same warning, without claiming a local backup. Reload lost the unsaved edit, as expected when the backup write failed. The warning accurately instructs the user to keep the page open or copy the text. Browser/version was unspecified. Both checks are accepted; check 10 was subsequently confirmed as recorded below.
 
-
 Human-reported check 10 retest (2026-10-09): the initial-load lock works normally. After loading finishes, typing remains enabled during a slow save; after acknowledgement, newer text correctly shows Unsaved changes. This accepts the reported initial-load lock and in-flight save interaction. Browser/version was unspecified. The failure/retry branch is covered by automated tests but was not separately reported in this retest. The focused recovery checks are accepted for the reported scenarios; Appearance controls, full conflict actions, and same-date tab draft isolation remain separate work.
-
 
 ## Conflict actions, tab drafts, and Settings navigation (2026-10-09)
 
@@ -266,9 +256,7 @@ Settings header link refinement (2026-10-09): replaced the visible Settings labe
 
 Gear geometry refinement (2026-10-09): replaced the uneven outline with six identical radial tooth profiles repeated at 60-degree intervals around (12,12). Inner/outer radii and center ring are concentric; existing currentColor and header styling are retained.
 
-
 SVG asset extraction (2026-10-09): the HTML scan found three inline icons, all in base.html (sun, moon, gear). Moved their unchanged geometry to assets/static/svgs. Templates now use decorative spans, and CSS masks render the standalone SVGs using currentColor, preserving light/dark colors and theme icon visibility. Existing embedding includes the directory automatically. Button/link accessible labels remain on their controls.
-
 
 ## Conflict/tab-backup browser acceptance (2026-10-09)
 
@@ -285,7 +273,6 @@ The user reported all eight checks in the Conflict actions and independent tab b
 
 These are human-reported results; browser/version was not specified in this report. They accept the focused conflict/tab-isolation/Settings checks, not the remaining security/API/provider acceptance backlog. Actual physical-phone testing remains waived by user decision.
 
-
 ## PR #3 review: failed logout backup loss (2026-10-09)
 
 Reviewed the submitted review and discussion thread `discussion_r4226317173` against head `9757a2c`. One unresolved P2 finding was present and is valid: cleanup/broadcast occurred before POST logout, so a rejected/failed request could erase backups and mark other editors signed out despite no confirmed logout. The review summary reported an independent 503 reproduction; this session verified the ordering in the code and added targeted regressions.
@@ -296,9 +283,7 @@ Regression coverage includes pending logout, 503/network failures, restored-edit
 
 Verification of the review fix: `make fmt lint test` passed with 0 lint issues, both JavaScript suites, and all Go tests. `git diff --check` passed. These are local automated checks; the user subsequently confirmed the failed-logout browser checklist works, as recorded below.
 
-
 Human-reported failed-logout acceptance (2026-10-09): the user tested the Failed logout recovery (PR #3 follow-up) checklist and confirmed it works. Browser/version and optional HTTP 503 interception details were not specified; those branches remain supported by automated regressions. The user will commit the changes to the PR. No commit, push, or remote review-thread resolution was performed by the assistant.
-
 
 ## Self-contained contributor guide (2026-10-09)
 
@@ -308,7 +293,6 @@ The guide documents failed-logout ordering, tab-scoped backup/migration behavior
 
 Verification: checked the guide’s referenced repository paths, confirmed no private-file references remain, and checked both tracked edits and the untracked AGENTS.md for whitespace errors. Documentation-only; no runtime tests were rerun.
 
-
 ## PR #4 onboarding review follow-up (2026-10-09)
 
 Both nonblocking review comments were valid improvements. README still directed contributors to an unavailable private guide; it now links root AGENTS.md and tracked progress/phase requirements. Its route and Google-status summaries were also aligned with the existing code.
@@ -316,7 +300,6 @@ Both nonblocking review comments were valid improvements. README still directed 
 Shortened the always-loaded guide by removing repeated experiment history and detailed phase lists, putting stack/setup/check commands near the top, and retaining critical architecture/product/privacy constraints, user deferrals, text-safety/date/logout invariants, and the current storage priority. The detailed acceptance requirements are preserved in docs/development/phase-acceptance.md; experiment evidence remains in the existing findings/Phase 1 review/ADRs. Repository onboarding still requires no private planning files. No arbitrary line-count validity rule was adopted, and no runtime behavior was changed.
 
 Verification: AGENTS.md reduced from 3,497 words/170 lines to 1,790 words/109 lines. Checked relative links in the guide, README, and phase checklist; all resolve locally and contain no private-file paths. Checked retained critical decisions and whitespace, including the new checklist. Documentation-only; no runtime tests rerun and no commit/push/review-thread resolution performed.
-
 
 ## Local storage mutation safety (2026-10-09)
 
@@ -327,7 +310,6 @@ Put and Trash now share one bounded process-wide mutex, keeping the version chec
 Saves stage a private (0600) temporary file in the destination directory, write/sync/close it, then rename it over the entry. Readers see a complete old or new file. Pre-rename failures preserve the original and clean up the staged file. This is atomic replacement, not a claim of power-loss durability: the directory is not fsynced, and process termination may leave an unreferenced temporary file. Trash reserves a unique date-prefixed destination, preserving prior copies, including legacy date-only trash files.
 
 New regressions cover twelve simultaneous stale-version saves using separate stores (exactly one succeeds), an already-open reader retaining the old complete contents after replacement, injected rename failure preserving the original and removing staging files, repeated trash/recreation preserving all copies, and canceled mutations preserving content. Verification: `make fmt lint test` passed (0 lint issues, both JavaScript suites, all Go tests); `go test -race ./internal/provider/local` passed. No browser acceptance or live Google behavior is claimed. UTF-8 validation/previews and the other Phase 2/3 gates remain open.
-
 
 ## UTF-8 and initial session/request protections (2026-10-09)
 
@@ -345,7 +327,6 @@ Automated coverage includes Unicode/LF preservation, leading blanks beyond the p
 
 Verification after the final changes: `make fmt lint test` passed with 0 lint issues, both JavaScript suites, and all Go tests. `go test -race ./internal/journal ./internal/provider/local ./internal/cachestore ./internal/session ./internal/web/...` passed. `git diff --check` passed. No commit or push was performed.
 
-
 ## PR #5 review: explain permanent save-size rejection (2026-10-09)
 
 Checked the review and sole unresolved inline comment, [discussion_r4227283422](https://github.com/mridha-work/myjournal-app/pull/5#discussion_r4227283422), against the current editor. The P2 finding is valid: the server's new 413 response was mapped to generic Save failed, hiding the permanent request-size limit. Text/backups were retained, but retrying the unchanged request could not succeed.
@@ -353,7 +334,6 @@ Checked the review and sole unresolved inline comment, [discussion_r4227283422](
 The shared save path now maps 413 to a dedicated locale message stating the 1 MiB request limit and advising copying the full text somewhere safe before shortening and saving again. This also covers saves initiated by Keep mine. Existing draft persistence, base-version handling, unsaved status, and control re-enabling are retained; the UI does not render arbitrary server error bodies.
 
 Editor regressions cover 413 during pending-save edits, retained latest text/base version/backup, leave warning, reload recovery, successful save after shortening, and truthful warning when browser backup is unavailable. `make fmt lint test` passed with 0 lint issues, both JavaScript suites, and all Go tests. `git diff --check` passed. No new human browser result is claimed; the optional browser check is in editor-recovery-checks.md. The fix remains local: no commit, push, review reply, or thread resolution performed.
-
 
 ## HTTP lifecycle and CSP baseline (2026-10-09)
 
@@ -366,7 +346,6 @@ Moved the existing pre-CSS theme initializer unchanged in behavior to embedded t
 Browser enforcement/theme/editor/calendar acceptance remains pending; existing JavaScript suites do not simulate CSP enforcement. No live Google behavior or full Phase 2/3 completion is claimed. API contract alignment is the next implementation priority. No commit, push, or PR update was performed.
 
 Verification: `make generate-wire` succeeded; inspected the generated diff (timeouts plus the generator-preserved tzdata import). `make fmt lint test` passed with 0 lint issues, both JavaScript suites, and all Go tests. `go test -race ./cmd/app ./internal/web/...` passed. `git diff --check` passed; template scan found no remaining inline scripts, inline styles, or inline click/load/change handlers.
-
 
 ## Live CSP/browser QA (2026-10-09)
 
@@ -448,7 +427,7 @@ Focused Web App QA & Release Copilot checks used `go build -o /tmp/myjournal-cal
 
 ## Architecture enforcement and focused UI acceptance (2026-10-09)
 
-Formatted, compile-valid forbidden imports in core, web, and local provider all incorrectly passed golangci-lint. Initial unformatted/cyclic probes were discarded as inconclusive. Depguard matches full source paths; the old relative patterns did not match, and **/*.go also failed to cover files directly in each selected directory. Corrected patterns to **/internal/<area>/**.go and verified both direct and nested packages. Driving-side _test.go files are exempt so existing integration tests may compose concrete adapters. Added the missing concrete clock deny. make test-architecture now checks seven violations (HTTP core, nested HTTP core, web/local, handler/clock, session/cache, local/web API, Google/web API), requires a depguard diagnostic for the selected file/import, and removes canaries on exit. It failed before the corrected patterns and passes afterward. Run separately from concurrent builds/lint because it temporarily mutates source files.
+Formatted, compile-valid forbidden imports in core, web, and local provider all incorrectly passed golangci-lint. Initial unformatted/cyclic probes were discarded as inconclusive. Depguard matches full source paths; the old relative patterns did not match, and **/*.go also failed to cover files directly in each selected directory. Corrected patterns to `**/internal/<area>/**.go` and verified both direct and nested packages. Driving-side _test.go files are exempt so existing integration tests may compose concrete adapters. Added the missing concrete clock deny. make test-architecture now checks seven violations (HTTP core, nested HTTP core, web/local, handler/clock, session/cache, local/web API, Google/web API), requires a depguard diagnostic for the selected file/import, and removes canaries on exit. It failed before the corrected patterns and passes afterward. Run separately from concurrent builds/lint because it temporarily mutates source files.
 
 Theme detection previously wrote mj-theme on first visit, converting automatic selection into a permanent preference. A new regression reproduced that failure. The bootstrap now ignores invalid storage values and still applies device preference when storage access fails. The interactive script follows device changes until an explicit toggle and persists only that choice, preserving existing valid stored values. Existing stored automatic and explicit values cannot be distinguished, so they are both respected rather than deleting preferences. Added reduced-motion CSS, localized the main-navigation label, and made calendar month feedback a polite live status. Settings Appearance remains removed.
 
@@ -524,7 +503,6 @@ A new route regression first failed for Google-only/both/empty registries, then 
 
 Native Chrome inspection became available on retry. Confirmed the visible Continue with Google homepage control and followed it to Google's sign-in page without provider-unavailable or redirect-uri-mismatch feedback. OAuth/account UI state was filtered before tool output; no query values, account claims, cookies, or credentials were printed. Stopped before authentication/consent and did not modify journal entries. This validates the sign-in entry point, not the full integrated Google flow. Changes remain local/uncommitted; previous work is preserved.
 
-
 ## Integrated Google browser smoke test (2026-10-10)
 
 The user completed Google sign-in and explicitly authorized synthetic entry creation, edits, and trash. Native Chrome on localhost:3030 loaded a signed-in past-date editor. Verified 2026-10-01 was empty before writing; existing journal text was not changed. Manual saves acknowledged with Saved, and reload preserved pasted multiline Unicode (accented Latin, Japanese, and emoji). Entries displayed the synthetic preview; October Calendar marked the date as having an entry and disabled future dates. Settings loaded the Google connection, Disconnect control, and existing Drive folder link. The folder link's destination was present; its Drive contents were not independently inspected.
@@ -537,13 +515,11 @@ Automation initially encountered concurrent browser interaction. An initial past
 
 This is partial live acceptance, not production enablement. Still pending: cookie inspection, restart/refresh and omitted-refresh reconnect, cancellation/grant rejection, integrated folder rename/move/recreation, the other conflict actions and external Drive writers, revocation/reconnect, Settings Disconnect, failed-network recovery, exact Drive UTF-8/LF body inspection, revision/latency measurements, and the external-writer/multi-instance concurrency policy. Existing automated and spike results do not substitute for these integrated checks.
 
-
 ## Integrated Google conflict and reconnect follow-up (2026-10-10)
 
 Used an initially empty 2026-10-02 with synthetic text only. Two tabs loaded the same base; after a newer save, the stale save was rejected. Keep mine fetched the latest version and acknowledged Saved while retaining the local fixture. The other tab then reproduced another stale-save conflict. Load the other version + Cancel preserved its local draft; confirming replacement loaded the latest saved fixture and showed Saved. No network trace was collected, so the no-PUT property of that action remains supported by existing tests rather than this UI observation. Together with the earlier Keep both run, all three controls now have integrated live UI coverage.
 
 Opening /api/v1/auth/google/login without forced consent returned directly to a signed-in editor; a subsequent read of the fixture succeeded. This proves reconnect and subsequent Drive access, but the OAuth response was deliberately not inspected: omitted-refresh-token preservation is not independently proven by this run. Requested a human-assisted restart with the same configuration/key to test fresh token acquisition without terminating the user's listener. The fixture remains saved pending that check and cleanup.
-
 
 ## Integrated Google restart and fixture cleanup (2026-10-10)
 
@@ -551,13 +527,11 @@ The user reported restarting with the same key/configuration. The first automati
 
 Confirmed trash of the 2026-10-02 synthetic fixture acknowledged Entry moved to trash. Reload showed Blank page with the fixture absent. Existing journal entries were untouched. Both synthetic dates used in these smoke runs are now absent from the active journal; their recoverable Drive trash was not purged. No runtime code changed.
 
-
 ## Integrated external Drive revision conflict (2026-10-10)
 
 Native setValue succeeded where automated typing/paste did not. Verified 2026-10-03 was blank, entered a synthetic fixture, saved it, and located the app-created file through Settings's Drive folder link. Drive Manage versions uploaded a generated 54-byte UTF-8/LF synthetic replacement to the existing file; upload finished and a new current version appeared. Returning to the unchanged editor showed the original saved fixture. A verified local edit followed by Save was rejected with the conflict message and local text retained. Keep both fetched the external replacement and combined it with the local draft as Unsaved changes. This verifies detection of an external edit completed before the save check; it does not establish atomic protection against a writer racing between checksum comparison and upload.
 
 Left the combined synthetic draft unsaved for revocation recovery. Asked the user to remove the Google third-party connection and restart with the same key/configuration before retrying Save, to avoid a cached access token hiding revocation. The October 3 file and unsaved draft remain pending that check and cleanup. No existing journal text was changed; no permanent deletion or permission expansion occurred.
-
 
 ## Integrated revoked-access draft preservation (2026-10-10)
 
@@ -565,16 +539,13 @@ The user reported removing the Google third-party connection and running the app
 
 Opened the app's forced-consent reconnect route in a separate tab and observed Google sign-in. Handed account authentication/consent to the user. Post-reconnect Save and October 3 cleanup remain pending.
 
-
 ### Reconnect rejection under investigation
 
 The user reported the generic Sign-in could not be completed callback response after reconnect consent. This is a failed live reconnect, not a passing recovery check. Source inspection shows the same message covers pending transaction/callback rejection and provider authentication/claim/grant/account rejection, so the cause is not established. Asked whether Drive permission was enabled and whether completion occurred within the ten-minute flow lifetime without another login or restart/key change. Started a fresh forced-consent transaction in the reconnect tab; the original synthetic draft remains pending recovery and cleanup. No callback parameters, credentials, or cookie values were collected.
 
-
 ### Fresh reconnect succeeds; save acknowledgement pending
 
 The user confirmed enabling Drive permission and completing the failed attempt within ten minutes, then reported a fresh attempt succeeded. Observed the signed-in editor and returned to the original October 3 tab: both synthetic draft versions remained with the prior sign-in-required message. Manual Save entered Saving… but repeated observations, including switching tabs and back, did not show acknowledgement or failure. Health remained 200. Do not count post-reconnect save as passed or delete the fixture until its outcome is established. Asked for human confirmation of the visible status and the query-free PUT status/duration from the app terminal. The first callback failure remains unexplained; expiry or missing consent is not established.
-
 
 ### Revocation/reconnect recovery confirmed and cleaned up
 
@@ -582,21 +553,17 @@ The user observed Saved and supplied the query-free PUT log: status 200, duratio
 
 Confirmed Move to trash acknowledged Entry moved to trash. Reload showed Blank page, no synthetic fixture, and no trash control. This completes the live sequence: external Drive revision → stale-save conflict → retained combined draft → user revocation/restart → sign-in-required failed save with retained text → fresh same-account reconnect → successful original-tab save → reload → recoverable trash cleanup. The initial reconnect callback rejection remains unexplained and recorded; the successful retry does not establish its cause. No existing journal entries were changed or permanent trash deletion performed. No runtime code changed during these checks.
 
-
 ## Google integration PR verification (2026-10-10)
 
 Prepared feat/google-drive-integration with accumulated OAuth/Drive implementation, accessibility/provenance work, and integrated live evidence. Fresh make fmt lint test passed (0 lint issues, four JavaScript suites, all Go packages); make test-architecture passed all seven probes separately with cleanup. Fresh go vet ./... and go test -race -short ./... passed. git diff --check passed. Updated phase acceptance to distinguish partial live Google success from remaining release gates. Private agents/ files and .env are excluded; .env.example documents the localhost-only test switch. Production registration remains guarded.
-
 
 ## Go style and architecture audit (2026-10-10)
 
 Recorded the Gophers-guided audit in [go-code-review.md](go-code-review.md). Fresh lint (0 issues), vet, race/short tests, and all seven architecture probes passed. Temporary synthetic probes reproduced invalid-date acceptance, month-13 acceptance, and failure of a year-0123 path round trip; probes and temporary data were removed. Source review also found unbounded cache generation bookkeeping, logger/config/session duplication, Settings error suppression, and rendering/cancellation improvements. No runtime implementation, live account action, commit, or push was performed for this review.
 
-
 ## Go review implementation (2026-10-10)
 
 Implemented the approved review follow-up and recorded durable style/boundary conventions in AGENTS.md. See [review follow-up](go-code-review.md#implementation-follow-up--2026-10-10) for scope, regression coverage, and remaining limitations. Wire was regenerated from the composition source; generated OpenAPI was unchanged. Fresh make fmt lint test passed with zero lint issues, all four JavaScript regression suites, and all Go packages. All seven make test-architecture probes passed separately and cleaned up. Fresh go vet ./... and go test -race -short ./... passed; git diff --check passed. These are automated refactor checks, not renewed live Google acceptance. No commit, push, browser/account operation, or agents/ change was performed.
-
 
 ## Initial performance measurements (2026-10-10)
 
@@ -606,16 +573,13 @@ Changed saves allocate ~17.04 MB/op, compared with ~106 KB for unchanged saves. 
 
 Fresh make fmt lint test passed (zero lint issues, five JavaScript suites, all Go packages). Eight benchmark scenarios passed a race-detector smoke with one iteration each. All seven architecture probes passed separately with cleanup; git diff --check passed. Chrome app availability was observed, but the browser automation read-only scope cannot execute the authenticated timing probe or access Performance entries. Live timing collection was handed to the user without exporting session material; no live entries were created by automation. Existing AGENTS.md semantic-format edit is preserved.
 
-
 ## Live exploratory performance result (2026-10-10)
 
 User supplied a successful browser probe with sixty HTTP-200 timed requests and cleanupVerified=true. Independently recomputed medians: open 2.270 s; changed save 3.333 s; unchanged save 1.815 s; repeated Entries 4.55 ms (first sample 7.074 s); repeated Calendar 4.95 ms; Entries after changed save 7.078 s, excluding the preceding save. All ten post-save browsing samples took 6.601–7.842 seconds. This supports invalidation/repopulation as a user-visible bottleneck, consistent with synthetic counts, but live request/cache/retry attribution remains uninstrumented. Calendar was measured after Entries had populated indexes. Upload allocation is a separate proven local issue, not a demonstrated cause of live latency. No optimization applied.
 
 Raw attachment reports January 1; accompanying user message reports January 2. Stored the sanitized raw result unchanged and flagged the discrepancy in its manifest; requested clarification without another run. The user also reported subsequent January 1 preflight refusals (zero samples), demonstrating no overwrite. Historical cleanup success does not establish that date's current state or the cause of any retained fixture. No additional account mutation or cleanup was attempted. See [performance results](performance-benchmark.md#live-exploratory-results--2026-10-10). Documentation/data changes only; git diff --check passed.
 
-
 The user subsequently confirmed the attachment was the object displayed after the January 2 invocation. Its raw date remains January 1. The probe returns its date argument directly; no cause for the discrepancy is established. Both reports are retained in the manifest without relabeling samples or inferring current fixture state. Timing conclusions remain exploratory and unchanged.
-
 
 ## Partial benchmark failure and safe diagnostics (2026-10-10)
 
@@ -623,9 +587,7 @@ New attachment labels January 2 and corroborates earlier timings (post-save brow
 
 January 3 stopped after ten successful opens, nine successful changed saves, then HTTP 500 at 21.743 s. Retained all twenty measured samples including the failure; cleanupVerified=false and upload outcome unknown. No account mutation/cleanup or automated retry was attempted. The external-client timeout is a hypothesis, not a proven live cause. Requested safe terminal duration and public error message. A separate wrapped-deadline regression reproduced HTTP 500 fallthrough; changed classification to existing HTTP 503 unavailable response. Probe now reports dated scenario progress and rejects overlapping invocations; tests cover guard release after setup failure. Fresh make fmt lint test passes, with zero lint issues and five JavaScript suites. No performance optimization applied.
 
-
 January 3 response follow-up: user supplied HTTP 500 with the generic JSON message “Something went wrong. Please try again.” and response Date 2026-10-10 03:11:02 UTC (10:11:02 WIB). This matches the handler fallback envelope, but supplies no backend error category or terminal duration. The accompanying JavaScript stack identifies the request/save call site only. Deadline fallthrough remains a reproduced code defect and a plausible explanation for this run, not a confirmed live root cause. Copied request headers, payload, and base version were not persisted; only sanitized response metadata was added to the failed-run manifest. No request was replayed or fixture changed.
-
 
 ## Measured performance candidates (2026-10-10)
 
@@ -635,9 +597,7 @@ Targeted invalidation retains unrelated snapshots without extending expiry, drop
 
 Fresh make fmt lint test passes (zero lint issues, five JavaScript suites, all Go packages), all seven architecture canaries pass separately, and go vet passes. The browser probe now supports selected scenarios with safety/selection regressions. Requested a same-config app restart and targeted live result; the January 3 fixture remains untouched, and no new live fixture was created by automation. Private plan updated locally; no commit or push.
 
-
 Final verification after independent year-list membership refinement: fresh go test -race -short ./... passes for all packages, as do go vet ./..., make fmt lint test, and seven separate architecture probes. Final candidate source hashes include production boundaries, fake transport/fixtures, benchmark harness and regression tests. Targeted live comparison remains pending; no live speedup is claimed.
-
 
 ## Targeted live candidate comparison (2026-10-10)
 
@@ -651,11 +611,9 @@ Source/synthetic evidence still shows five upstream calls for changed saves; liv
 
 Fresh verification: make fmt lint test passed with zero lint issues, five JavaScript suites and all Go packages; go test -race ./internal/provider/google and git diff --check passed.
 
-
 ## January 3 read-only inspection follow-up — 2026-10-10
 
 The user ran the browser inspection helper and reported exists=true, stableAcrossReads=true, matchesLastAttempt=true, matchesPreviousAcknowledged=false, matchesInitialFixture=false, cleanupPerformed=false. The [sanitized flags](../../benchmarks/results/2026-10-10-live-jan03-failed/inspection.json) establish that the exact final attempted B content is currently present across two fresh reads despite the earlier HTTP 500. This supports treating the failed response as an ambiguous acknowledgement rather than proof that the write was rejected. It does not establish historical commit timing or identify the failing backend operation; the original timeout hypothesis remains unconfirmed. No retry, save or cleanup was performed. Live debug timing collection remains pending.
-
 
 ## Live save timing breakdown — January 5 fixture (2026-10-10)
 
@@ -673,7 +631,6 @@ Sample four's 4.479 s server duration includes a 2.757 s upload. Sample ten's 4.
 
 Decision: do not optimize local CPU, increase timeouts, remove the fresh conflict check or add automatic write retries from this evidence. Upload allocation changes improved memory rather than eliminating upstream upload latency. Further latency work would need a separately reviewed discovery-request reduction or bounded hint-cache experiment preserving external rename/move/trash/duplicate behavior and fresh pre-upload validation. Persistent hints remain deferred; no new caching policy is implemented here. First retain this baseline and address ambiguous-write recovery/concurrency acceptance before expanding caching. Exact build identity and per-request correlation remain unavailable; sequential idle-window grouping is the attribution assumption.
 
-
 User decision: discontinue January 3 root-cause investigation. Existing evidence remains recorded; this is a deferral, not a confirmed fix or cleanup authorization. Continue with general ambiguous-save recovery and external-writer concurrency acceptance.
 
 ## Explicit retry reconciles uncertain saves (2026-10-10)
@@ -684,7 +641,6 @@ New dependency-free editor regressions failed before implementation and pass aft
 
 Fresh verification for uncertain-save retry: make fmt lint test passes with zero lint issues, all five JavaScript suites and all Go packages. git diff --check passes. No commit or push performed.
 
-
 ## Uncertain-save local browser validation (2026-10-10)
 
 Agent-driven Chrome/macOS QA against localhost:3030 with local provider passed the recovery checklist using a disposable February 20, 2020 entry. Verified lost acknowledgement preserves text/backup and pauses retry; matching retry trace PUT→GET has no duplicate upload; newer retry trace PUT→GET→PUT conflicts rather than silently rebasing. Held verification keeps typing enabled and later input Unsaved changes, with subsequent save success. Rejected verification GET retains backup without a PUT; explicit retry recovers. Separate-tab sign-out during held GET prevents late PUT/backup recreation. Restored native fetch and local login, trashed the disposable fixture through confirmation, and reloaded to Blank page. January 3 remains untouched.
@@ -692,7 +648,6 @@ Agent-driven Chrome/macOS QA against localhost:3030 with local provider passed t
 Evidence is recorded in editor-recovery-checks.md. Network failure/delay were scoped DevTools fetch injections, not a browser-wide Offline toggle. Exact Chrome version was not captured; Safari and Google are not covered. An unsuccessful initial probe-paste attempt is excluded. No product code changes or new runtime test run were needed for this QA evidence update; git diff --check passes. Workflow used the Web App QA & Release Copilot skill.
 
 Performance plan maintenance (2026-10-10): refreshed stale opening/completion checkboxes in the private plan and tracked implementation plan. Preserved original proposal as historical, recorded actual evidence limits, and removed January 3 investigation as active work. Private agents files remain outside commit scope. Documentation-only update; git diff --check passes.
-
 
 ## Shared test fixture review (2026-10-10)
 
@@ -734,11 +689,9 @@ User ran the existing revision probe on initially absent synthetic date 2019-02-
 
 Agent inspected Drive Manage versions after completion: Current version plus numbered Versions 1–49, totaling 50 displayed versions. No coalescing was observed in this single run. This is a point-in-time observation, not a revision-retention guarantee; Drive warns temporary versions can be removed automatically. There was no pre-existing fixture/version baseline. Unchanged stage and cleanup remain pending; user asked to run the unchanged stage once before the next inspection.
 
-
 Unchanged revision stage interrupted (2026-10-10): user supplied a PUT for synthetic 2019-02-21 returning HTTP 500 after 1.496 seconds. No completed probe result or failing iteration was available, so the 50 unchanged-save gate remains open. Cause and whether any preceding requests succeeded are unestablished; retain the fixture and do not infer version changes from this failure. The automation-created Privacy tab was not retained across the previous turn, which may explain its closure independently of the API failure. Request only sanitized upstream category/status/outcome timings before retrying.
 
 Follow-up sanitized timings locate the failed unchanged PUT before mutation: two Drive list requests completed with HTTP 200, then a third list ended with status=0/outcome=transport_error after approximately 412 ms; the app returned HTTP 500 after 1.496 seconds. The preceding unchanged PUT was acknowledged with HTTP 200 after 1.922 seconds. There is no upload in the supplied failed-request sequence. This supports a pre-upload discovery transport failure, not an ambiguous write acknowledgement. The underlying transport error (for example cancellation versus network failure) is not exposed by these timings and remains unknown. Unknown transport errors are intentionally not blindly retried. A fresh unchanged-only probe may proceed after the previous probe has stopped, retaining the changed-stage fixture and rechecking its expected content.
-
 
 ### Live unchanged-save revisions (2026-10-10)
 
@@ -748,7 +701,7 @@ Revision fixture cleanup (2026-10-10): user confirmed trashing synthetic 2019-02
 
 ### Dependency vulnerability baseline (2026-10-10)
 
-Ran `go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 ./...` using Go 1.27.1. Scan failed (scanner exit status 3, surfaced by go run as exit 1), reporting 12 reachable standard-library advisories, fixed in Go 1.27.2; some also identify golang.org/x/net v0.58.0 with fixes in v0.60.0. Additional imported-package/module findings require review. Reachability is scanner evidence, not proof each advisory is exploitable in this deployment. Production gate remains open. The declared Go version is preserved pending the explicit project-version decision; CI already reads go.mod. Official example: https://pkg.go.dev/vuln/GO-2026-6617.
+Ran `go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 ./...` using Go 1.27.1. Scan failed (scanner exit status 3, surfaced by go run as exit 1), reporting 12 reachable standard-library advisories, fixed in Go 1.27.2; some also identify golang.org/x/net v0.58.0 with fixes in v0.60.0. Additional imported-package/module findings require review. Reachability is scanner evidence, not proof each advisory is exploitable in this deployment. Production gate remains open. The declared Go version is preserved pending the explicit project-version decision; CI already reads go.mod. Official example: <https://pkg.go.dev/vuln/GO-2026-6617>.
 
 Live refresh capability after sign-in/restart (2026-10-10): user completed app Google login without forced consent using the same account, restarted with unchanged key/configuration, and confirmed existing entries 2026-10-08 and 2020-01-03 loaded. This establishes working persisted refresh capability after that flow, but does not prove Google omitted a refresh token in its OAuth response; no token values were inspected or exported.
 
@@ -776,7 +729,7 @@ Replaced chi default Recoverer with focused web middleware logging only a generi
 
 Static follow-up found http.Server.ErrorLog unset, allowing net/http to print raw diagnostic/panic values and peer addresses outside router recovery. Added a generic server log writer which discards supplied diagnostic bytes and emits only HTTP server error through the configured slog default. Wired ErrorLog in wire.go and regenerated wire_gen.go; inspected generated changes. A regression injects synthetic sensitive diagnostic data and verifies only the generic event is emitted. The tradeoff is intentionally reduced low-level diagnostic detail. Startup review found configuration validation returns fixed messages without credential values; startup logs use validated base URL, port and provider IDs, while listener/shutdown errors remain operational errors. Embedded template/locale initialization can panic on build-owned assets, not runtime journal content. Request logs intentionally retain query-free paths (including entry dates), status/duration and request IDs; Google logs retain bounded categories. No production log sink/proxy retention audit was performed. Fresh make fmt lint test passes; git diff --check passes.
 
-Railway preparation (2026-10-10): user selected https://myjournal-ink.up.railway.app. Published GitHub Releases remain the trigger. Prepared pinned CLI upload from an exact git archive, deployment-ID status polling and public health verification. No actual deployment is claimed. Initial public GET /healthz returned 404; Google composition-root registration remains localhost-only and public acceptance is pending.
+Railway preparation (2026-10-10): user selected <https://myjournal-ink.up.railway.app>. Published GitHub Releases remain the trigger. Prepared pinned CLI upload from an exact git archive, deployment-ID status polling and public health verification. No actual deployment is claimed. Initial public GET /healthz returned 404; Google composition-root registration remains localhost-only and public acceptance is pending.
 
 Railway preparation validation: fresh make fmt lint test passed (0 lint issues), all seven architecture probes passed, actionlint passed both workflows, three offline deployment-status regressions passed and git diff --check passed. Official Railway JSON schema was downloaded, but local jsonschema tooling was unavailable; schema validation and authenticated deployment remain pending.
 
@@ -825,3 +778,21 @@ Progress reconciliation (2026-10-10): audited all 21 unchecked PROGRESS.md rows 
 README/AGENTS reconciliation (2026-10-10): compared docs with committed generators/Makefile, Google startup policy, HSTS middleware, release workflow and tracked v0.1.0 evidence. Updated stale pending-release language and development-only feature summary, documented restricted audience/accepted limitations and current ID/token placement, retained open full UI acceptance, and clarified fresh checkouts use committed generated files. Public-page Settings and Google Disconnect evidence now match current behavior. Local links and git diff --check pass; runtime tests were not rerun for documentation-only changes. No commit/push performed.
 
 README scope decision (2026-10-10): user requested restoring make generate despite committed generated files and keeping current development status out of README. Restored generation with tool prerequisites and generated-diff review, replaced dated status with durable features/usage constraints, removed first-release history from release instructions, and recorded the convention in AGENTS. This supersedes the preceding quick-start recommendation.
+
+## Markdown formatting checks (2026-10-10)
+
+Checked all 42 tracked Markdown files with markdownlint-cli2 v0.23.2
+(markdownlint v0.41.1). Fixed bare URLs, redundant blank lines, table formatting
+and an unescaped path example. The repository configuration preserves existing
+long-line prose by disabling MD013; all other default rules remain enabled.
+Private `agents/` files are excluded. Tooling ran from a temporary directory,
+without adding a project npm dependency or installing a skill.
+
+## Duplicate entries loading message (2026-10-10)
+
+The Entries template supplied a list placeholder while JavaScript populated a
+separate live status with the same message. Moved initial loading feedback into
+that existing status region and left the list empty until data arrives. Added
+rendered-template and pending-fetch regression coverage. `make fmt lint test`
+passed (0 lint issues, all browser suites and Go tests). `git diff --check` and
+Markdown lint passed. No deployed browser check was performed.

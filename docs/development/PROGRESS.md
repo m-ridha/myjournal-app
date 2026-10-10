@@ -162,7 +162,6 @@ OpenAPI base contract added: the API definition now lives in `docs/api/openapi.y
 
 - [x] Add PR creation/update checks for formatting drift, lint, all JavaScript/Go tests, and sequential architecture probes; validate workflow locally (2026-10-09). First hosted run passed all steps (run 37961548230, inspected 2026-10-09).
 
-
 ## Google integration implementation (2026-10-10)
 
 - [x] Code exchange with PKCE, Google signature/audience/issuer/expiry/nonce checks, required Drive grant, verified email, and same-account reconnect binding
@@ -183,14 +182,12 @@ OpenAPI base contract added: the API definition now lives in `docs/api/openapi.y
 
 The later live Google and Railway sections record completed restricted-release acceptance. Exhaustive provider reliability and unrestricted production publication are not claimed; earlier spike evidence retains its original scope.
 
-
 ## Go review follow-up (2026-10-10)
 
 - [x] Review Go style and clean architecture; record prioritized findings and fresh checks in [Go code review](go-code-review.md)
 - [x] Address cache/date/path/logger issues, shared provider constants, explicit configuration, shared session policy, Settings/rendering/cancellation handling, safe auth diagnostics, and batched Drive previews; record conventions in AGENTS.md
 - [x] Verify refactor with make fmt lint test, all seven architecture probes, go vet ./..., and go test -race -short ./... (2026-10-10)
 - Deferred: Optional local bounded-prefix previews remain deferred, not an unfinished release prerequisite.
-
 
 ## Performance baseline (2026-10-10)
 
@@ -204,7 +201,6 @@ The later live Google and Railway sections record completed restricted-release a
 - [x] Retain January 2 successful results and January 3 partial failure; keep failed sample and unknown write outcome explicit
 - [x] Add probe progress/single-running guard and reproduce/fix deadline errors falling through to HTTP 500 (now existing 503 unavailable response)
 - Deferred by user: January 3 error-category investigation. Read-only fixture inspection is complete; retain the fixture without cleanup.
-
 
 ## Performance candidates (2026-10-10)
 
@@ -289,7 +285,7 @@ This section records scoped live observations; later Railway acceptance establis
 
 ## Railway release preparation (2026-10-10)
 
-- [x] User selected Railway at https://myjournal-ink.up.railway.app; retain ADR 016 residual overlap/lost-update policy.
+- [x] User selected Railway at <https://myjournal-ink.up.railway.app>; retain ADR 016 residual overlap/lost-update policy.
 - [x] Retain published GitHub Release trigger for stable vX.Y.Z tags; tag pushes alone do not deploy.
 - [x] Prepare Docker config, pinned CLI source upload, deployment-ID polling and public health verification; see [Railway preparation](railway-preparation.md).
 - [x] Railway container build/deployment and restricted-release logging review completed through public acceptance and v0.1.0. Local Docker smoke was unavailable; internal provider retention is not claimed.
@@ -373,3 +369,16 @@ Reviewed every unchecked item against later findings, public acceptance and v0.1
 - [x] Review README/AGENTS against current code, workflow and release evidence: document v0.1.0 restricted test-user status, HSTS, Railway variables, remaining UI checks and public-page Settings behavior; remove mandatory generation from fresh-checkout quick start. Local links and git diff --check pass; documentation-only, no new runtime tests.
 
 - [x] README follow-up by user decision: retain make generate in quick start with prerequisites/diff review; keep evolving status in PROGRESS/findings and durable feature/setup/release instructions in README.
+
+## Markdown formatting (2026-10-10)
+
+- [x] Lint all 42 tracked Markdown files with markdownlint-cli2; fix formatting
+  warnings and add repeatable configuration excluding private `agents/` files.
+  Preserve long-line prose (MD013 disabled) and enable other default checks.
+  Markdown lint and `git diff --check` pass; no runtime code changed.
+
+## Entries loading feedback (2026-10-10)
+
+- [x] Use one shared live status for initial HTML and pending entries requests;
+  remove the duplicate list placeholder. Template and delayed-fetch regressions
+  pass, along with `make fmt lint test` and `git diff --check`.

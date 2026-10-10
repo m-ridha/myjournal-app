@@ -1,6 +1,6 @@
 # Railway preparation
 
-Selected public origin: https://myjournal-ink.up.railway.app. The acceptance build is deployed. Public sign-in, synthetic save/reload/trash, post-restart read, list/calendar and sign-out have recorded evidence; Disconnect/reconnect is human-reported. See google-production-gates.md for remaining release conditions.
+Selected public origin: <https://myjournal-ink.up.railway.app>. The acceptance build is deployed. Public sign-in, synthetic save/reload/trash, post-restart read, list/calendar and sign-out have recorded evidence; Disconnect/reconnect is human-reported. See google-production-gates.md for remaining release conditions.
 
 ## Service setup
 
@@ -8,12 +8,12 @@ Use one Railway service, one replica in one region, no extra writer service and 
 
 Configure Railway variables:
 
-- APP_BASE_URL=https://myjournal-ink.up.railway.app
+- `APP_BASE_URL=https://myjournal-ink.up.railway.app`
 - PROVIDERS=google, COOKIE_SECURE=true, GOOGLE_TEST_MODE=false, LOG_LEVEL=info
 - SESSION_KEY: stable base64-encoded 32 random bytes
 - GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET: existing Google Web OAuth client
 
-Supply secrets through Railway variables, never Git, Docker build arguments or chat. Keep SESSION_KEY stable across restart/rollback. Google Console callback is exactly https://myjournal-ink.up.railway.app/api/v1/auth/google/callback; preserve the four approved scopes. Keep the Console app/test-user restriction during controlled acceptance.
+Supply secrets through Railway variables, never Git, Docker build arguments or chat. Keep SESSION_KEY stable across restart/rollback. Google Console callback is exactly <https://myjournal-ink.up.railway.app/api/v1/auth/google/callback>; preserve the four approved scopes. Keep the Console app/test-user restriction during controlled acceptance.
 
 The acceptance build permits non-test Google registration only for an HTTPS origin with COOKIE_SECURE=true. Test mode remains loopback-only. Deploy the reviewed acceptance commit through a controlled bootstrap and complete google-production-gates.md before setting release readiness. Startup eligibility is not proof of public acceptance.
 

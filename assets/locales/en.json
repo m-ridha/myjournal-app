@@ -91,7 +91,7 @@
   "entries.retry": "Retry",
   "entries.kicker": "Journal",
   "entries.title": "Entries",
-  "entries.loading": "Loading entries…",
+  "entries.loading": "Loading…",
   "entries.empty": "No entries yet.",
   "entries.unavailable": "Entries are unavailable right now.",
   "entries.previewUnavailable": "No preview available",

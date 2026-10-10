@@ -22,7 +22,7 @@ Simultaneous external Drive edits are unsupported: an edit between checksum comp
 - Document these restrictions and residual risk for users before production sign-in is enabled.
 - Use the HTTPS/Secure-cookie acceptance build for controlled public validation; keep release automation gated until google-production-gates.md is complete. No bypass flag is introduced.
 
-Hosting choice: Railway at https://myjournal-ink.up.railway.app. Published GitHub Releases with stable vX.Y.Z tags remain the deployment trigger. See [Railway preparation](../railway-preparation.md).
+Hosting choice: Railway at <https://myjournal-ink.up.railway.app>. Published GitHub Releases with stable vX.Y.Z tags remain the deployment trigger. See [Railway preparation](../railway-preparation.md).
 
 ## Initial release audience and launch limitations
 

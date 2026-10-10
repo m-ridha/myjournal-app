@@ -15,7 +15,6 @@ Use the local provider and synthetic text. Stop your own spike first, then `make
 
 Record browser/version and observed results without account identifiers, entry contents, or whole cookies. See PROGRESS.md and findings.md for reported browser checks. Actual phone testing was waived by the user in favor of device-toolbar checks. Debounced autosave, page-hide network saving, full conflict actions, and timezone correctness are outside this focused change.
 
-
 ## Storage-write failure (check 7)
 
 Sign in normally, open a synthetic test entry, wait for loading to finish, then run in the console:
@@ -54,7 +53,6 @@ localStorage.getItem('mj-draft:2026-10-01') // null after successful migration
 
 Reload: the synthetic text should now restore from the account-scoped backup. Save or clear the disposable entry afterward. This tests explicit migration of old backups whose account is unknown; it is not the normal draft recovery in checks 1–2.
 
-
 ## Conflict actions and independent tab backups
 
 New backups use tab-local sessionStorage. Reload and same-tab navigation retain them. Closing the tab can discard them, as agreed with the user; old local backups remain available through Review older draft.
@@ -70,7 +68,6 @@ New backups use tab-local sessionStorage. Reload and same-tab navigation retain 
 
 Record observations here or in findings.md. The user confirmed all eight checks above passed on 2026-10-09; results are recorded in findings.md. Browser/version was not specified in that report.
 
-
 ## Failed logout recovery (PR #3 follow-up)
 
 1. Leave synthetic unsaved text in an editor tab. Open Settings in another tab.
@@ -79,7 +76,6 @@ Record observations here or in findings.md. The user confirmed all eight checks 
 4. If testing HTTP 503 with request interception, repeat the backup-retention check with that response. A transport failure can occur after the server has cleared the cookie; in that case text still recovers, but saving can require reconnecting.
 
 Automated regressions cover pending logout, HTTP 503, network rejection, editor recovery/save after failure, successful retry, and a storage failure after successful logout. The latter must clearly say signed out and offer Retry draft cleanup without repeating the logout request. The user confirmed this failed-logout recovery checklist works on 2026-10-09; browser/version and any optional request-interception scenarios were not specified.
-
 
 ## Oversized save recovery (PR #5 follow-up)
 
@@ -96,7 +92,6 @@ oversizedEditor.dispatchEvent(new Event('input', { bubbles: true }));
 3. After copying anything you need to preserve, replace the synthetic text with a short test sentence and Save. It should succeed and clear the saved draft.
 
 The cap applies to the entire serialized JSON request, so exactly 1 MiB of ASCII text exceeds it once the request fields are added. Automated regressions cover the 413 response, newer edits during the pending request, recovery/retry, and unavailable backup. This browser follow-up is not yet human-reported.
-
 
 ## CSP and security-header browser check
 
@@ -131,7 +126,6 @@ Automated interaction regressions pass. Agent-driven Chrome/local-provider valid
 5. After another simulated failure, switch offline before retrying. Verification failure must make no PUT, retain text/backup/version and pause automatic writes. Reconnect and manually retry. Sign out in a separate tab while verification is pending to confirm no late write or draft recreation.
 
 The wrapper is a synthetic response-loss test, not evidence of a Google timeout cause. Trash the disposable entry only after successful reconciliation and review.
-
 
 ### Observed local browser evidence — 2026-10-10
 
