@@ -596,3 +596,106 @@ Recorded the Gophers-guided audit in [go-code-review.md](go-code-review.md). Fre
 ## Go review implementation (2026-10-10)
 
 Implemented the approved review follow-up and recorded durable style/boundary conventions in AGENTS.md. See [review follow-up](go-code-review.md#implementation-follow-up--2026-10-10) for scope, regression coverage, and remaining limitations. Wire was regenerated from the composition source; generated OpenAPI was unchanged. Fresh make fmt lint test passed with zero lint issues, all four JavaScript regression suites, and all Go packages. All seven make test-architecture probes passed separately and cleaned up. Fresh go vet ./... and go test -race -short ./... passed; git diff --check passed. These are automated refactor checks, not renewed live Google acceptance. No commit, push, browser/account operation, or agents/ change was performed.
+
+
+## Initial performance measurements (2026-10-10)
+
+The isolated benchmark uses the real Drive adapter/journal service/cache and local fake HTTP, with thirty 1,920-byte synthetic entries, a 20-entry page, and six repetitions of twenty timed operations. Existing opens make 4 calls; changed saves 5; unchanged saves 4; data-cold Entries 28; warm Entries/Calendar 0; changed save followed by Entries 33. These counts validate repeated metadata discovery and broad post-save invalidation as optimization hypotheses. Local timings are not real Drive latency.
+
+Changed saves allocate ~17.04 MB/op, compared with ~106 KB for unchanged saves. An additional whole-run allocation profile (including fixture setup) attributes ~98% of allocation space to the installed Google SDK's media buffer; its default upload chunk is 16 MiB. This is evidence for a separately measured upload-buffer candidate, not a latency improvement or a production heap estimate. See [benchmark protocol/results](performance-benchmark.md) for raw repetitions, source manifest, profiling caveats, and live-probe instructions. No optimization was applied.
+
+Fresh make fmt lint test passed (zero lint issues, five JavaScript suites, all Go packages). Eight benchmark scenarios passed a race-detector smoke with one iteration each. All seven architecture probes passed separately with cleanup; git diff --check passed. Chrome app availability was observed, but the browser automation read-only scope cannot execute the authenticated timing probe or access Performance entries. Live timing collection was handed to the user without exporting session material; no live entries were created by automation. Existing AGENTS.md semantic-format edit is preserved.
+
+
+## Live exploratory performance result (2026-10-10)
+
+User supplied a successful browser probe with sixty HTTP-200 timed requests and cleanupVerified=true. Independently recomputed medians: open 2.270 s; changed save 3.333 s; unchanged save 1.815 s; repeated Entries 4.55 ms (first sample 7.074 s); repeated Calendar 4.95 ms; Entries after changed save 7.078 s, excluding the preceding save. All ten post-save browsing samples took 6.601–7.842 seconds. This supports invalidation/repopulation as a user-visible bottleneck, consistent with synthetic counts, but live request/cache/retry attribution remains uninstrumented. Calendar was measured after Entries had populated indexes. Upload allocation is a separate proven local issue, not a demonstrated cause of live latency. No optimization applied.
+
+Raw attachment reports January 1; accompanying user message reports January 2. Stored the sanitized raw result unchanged and flagged the discrepancy in its manifest; requested clarification without another run. The user also reported subsequent January 1 preflight refusals (zero samples), demonstrating no overwrite. Historical cleanup success does not establish that date's current state or the cause of any retained fixture. No additional account mutation or cleanup was attempted. See [performance results](performance-benchmark.md#live-exploratory-results--2026-10-10). Documentation/data changes only; git diff --check passed.
+
+
+The user subsequently confirmed the attachment was the object displayed after the January 2 invocation. Its raw date remains January 1. The probe returns its date argument directly; no cause for the discrepancy is established. Both reports are retained in the manifest without relabeling samples or inferring current fixture state. Timing conclusions remain exploratory and unchanged.
+
+
+## Partial benchmark failure and safe diagnostics (2026-10-10)
+
+New attachment labels January 2 and corroborates earlier timings (post-save browse median 6.673 s), reporting sixty HTTP-200 samples and cleanup verified. Console history includes an earlier pending run and results arriving after subsequent invocations; this supports asynchronous completion/possible overlap as the explanation for date-label confusion, without proving exact concurrency. Preserve individual run dates and do not pool samples.
+
+January 3 stopped after ten successful opens, nine successful changed saves, then HTTP 500 at 21.743 s. Retained all twenty measured samples including the failure; cleanupVerified=false and upload outcome unknown. No account mutation/cleanup or automated retry was attempted. The external-client timeout is a hypothesis, not a proven live cause. Requested safe terminal duration and public error message. A separate wrapped-deadline regression reproduced HTTP 500 fallthrough; changed classification to existing HTTP 503 unavailable response. Probe now reports dated scenario progress and rejects overlapping invocations; tests cover guard release after setup failure. Fresh make fmt lint test passes, with zero lint issues and five JavaScript suites. No performance optimization applied.
+
+
+January 3 response follow-up: user supplied HTTP 500 with the generic JSON message “Something went wrong. Please try again.” and response Date 2026-10-10 03:11:02 UTC (10:11:02 WIB). This matches the handler fallback envelope, but supplies no backend error category or terminal duration. The accompanying JavaScript stack identifies the request/save call site only. Deadline fallthrough remains a reproduced code defect and a plausible explanation for this run, not a confirmed live root cause. Copied request headers, payload, and base version were not persisted; only sanitized response metadata was added to the failed-run manifest. No request was replayed or fixture changed.
+
+
+## Measured performance candidates (2026-10-10)
+
+Implemented the approved candidates sequentially, with six twenty-operation repetitions per stage. Small changed-save allocation fell from median ~17.04 MB/op to ~0.17 MB/op using SDK ChunkSize(0); single-request uploads retain size/checksum checks and no ambiguous retry. Bounded operation-local exact-query reuse reduces cold Entries from 28 to 24 HTTP calls. A domain-owned optional operation-store port keeps Google details outside the core, and cache decorators forward the fresh view.
+
+Targeted invalidation retains unrelated snapshots without extending expiry, drops all affected-date preview budgets (including unchanged acknowledgements), independently checks year/all-years membership, and conservatively invalidates indexes on create/trash/ambiguous failure. The scalar epoch still rejects stale racing fills, with no account-generation map or acknowledgement-content seeding. Off-page save/page drops from original 33 calls to 5; newly added visible-date comparison drops from matching scoped baseline 29 to 9. Local timing medians are descriptive, not real Drive speedups or statistical significance; benchstat is unavailable. Raw outputs/manifests and policy tradeoffs are in the performance report and ADR 015.
+
+Fresh make fmt lint test passes (zero lint issues, five JavaScript suites, all Go packages), all seven architecture canaries pass separately, and go vet passes. The browser probe now supports selected scenarios with safety/selection regressions. Requested a same-config app restart and targeted live result; the January 3 fixture remains untouched, and no new live fixture was created by automation. Private plan updated locally; no commit or push.
+
+
+Final verification after independent year-list membership refinement: fresh go test -race -short ./... passes for all packages, as do go vet ./..., make fmt lint test, and seven separate architecture probes. Final candidate source hashes include production boundaries, fake transport/fixtures, benchmark harness and regression tests. Targeted live comparison remains pending; no live speedup is claimed.
+
+
+## Targeted live candidate comparison (2026-10-10)
+
+The user completed the January 4 targeted probe: ten samples each for changed saves, repeated Entries, and post-save Entries, all HTTP 200; cleanupVerified=true. Against January 2, post-save browse median fell from 6.673 to 2.277 seconds (~66% lower). Repeated Entries median was 3.70 ms, with its first request taking 3.756 seconds. Changed-save median rose from 3.385 to 3.632 seconds (~7.3%); no live save-speed improvement is established.
+
+Keep the three bounded candidates based on synthetic allocation/request reductions, passing automated checks and exploratory live browsing evidence. Retained sanitized samples/manifest in benchmarks/results/2026-10-10-live-targeted-candidate; details in performance-benchmark.md. Different dates, sequential runs, unverified exact build/cache state, earlier possible overlap and absent live request/retry traces limit attribution. Thirty successful samples do not establish failure-rate acceptance; January 3 remains untouched and unexplained. No new runtime changes, commit, push or production enabling accompany this evidence update.
+
+## Save timing investigation prepared (2026-10-10)
+
+Source/synthetic evidence still shows five upstream calls for changed saves; live timing has not attributed their latency. Added debug-only Drive transport timing with bounded categories/status/outcomes, header time and body completion time; OAuth acquisition is included in header time and body consumption includes decoder time. No raw errors, URLs, IDs, payloads or account values are emitted. Concurrent operations cannot be correlated from these records; documented idle-tab sequential capture. Added browser-only two-GET January 3 inspector comparing exact known synthetic A/B bodies without returning content/checksums or writing/deleting. Requested user-run flags; January 3 remains untouched and its historical write outcome/cause unconfirmed. No retry, timeout increase or new optimization.
+
+Fresh verification: make fmt lint test passed with zero lint issues, five JavaScript suites and all Go packages; go test -race ./internal/provider/google and git diff --check passed.
+
+
+## January 3 read-only inspection follow-up — 2026-10-10
+
+The user ran the browser inspection helper and reported exists=true, stableAcrossReads=true, matchesLastAttempt=true, matchesPreviousAcknowledged=false, matchesInitialFixture=false, cleanupPerformed=false. The [sanitized flags](../../benchmarks/results/2026-10-10-live-jan03-failed/inspection.json) establish that the exact final attempted B content is currently present across two fresh reads despite the earlier HTTP 500. This supports treating the failed response as an ambiguous acknowledgement rather than proof that the write was rejected. It does not establish historical commit timing or identify the failing backend operation; the original timeout hypothesis remains unconfirmed. No retry, save or cleanup was performed. Live debug timing collection remains pending.
+
+
+## Live save timing breakdown — January 5 fixture (2026-10-10)
+
+The user supplied ten successful changed-save samples (browser median 3.469 s, range 3.329–4.483 s) and debug logs; cleanupVerified=true. Retained [sanitized samples and grouped timings](../../benchmarks/results/2026-10-10-live-save-timings/raw.json) exclude machine hostnames, request IDs and raw log lines. The first PUT creates the fixture and is excluded; the subsequent ten PUTs align sequentially with browser samples. Every measured save contains three lists, one fresh metadata request and one upload, all HTTP 200 with complete bodies. There are no extra attempts visible in this capture.
+
+| Stage | Median total per save | Share of aggregate server time |
+| --- | ---: | ---: |
+| Three discovery lists | 1.360 s | 40.5% |
+| Fresh metadata/conflict check | 0.342 s | 9.9% |
+| Single upload | 1.665 s | 49.5% |
+
+Median server duration is 3.464 s. Timed upstream requests account for 99.94% of aggregate server duration; median remainder is 1.89 ms. Independent stage medians need not sum to the overall median. The maximum header-to-body-completion gap is only 1.67 ms in these measured requests, so response consumption is not the observed bottleneck. This is time within the wrapped external call, including potential token acquisition/transport work, not proof of time spent inside Google's servers.
+
+Sample four's 4.479 s server duration includes a 2.757 s upload. Sample ten's 4.285 s includes 2.309 s of discovery (one list takes 1.432 s), while its upload takes 1.653 s. Both discovery and upload variability matter; this run does not support a single failing stage or explain January 3. No failures/retries were observed, which does not prove future reliability.
+
+Decision: do not optimize local CPU, increase timeouts, remove the fresh conflict check or add automatic write retries from this evidence. Upload allocation changes improved memory rather than eliminating upstream upload latency. Further latency work would need a separately reviewed discovery-request reduction or bounded hint-cache experiment preserving external rename/move/trash/duplicate behavior and fresh pre-upload validation. Persistent hints remain deferred; no new caching policy is implemented here. First retain this baseline and address ambiguous-write recovery/concurrency acceptance before expanding caching. Exact build identity and per-request correlation remain unavailable; sequential idle-window grouping is the attribution assumption.
+
+
+User decision: discontinue January 3 root-cause investigation. Existing evidence remains recorded; this is a deferral, not a confirmed fix or cleanup authorization. Continue with general ambiguous-save recovery and external-writer concurrency acceptance.
+
+## Explicit retry reconciles uncertain saves (2026-10-10)
+
+Approved bounded design implemented: manual Save after a non-conflict failed save first reads the current entry with cache:no-store. Exact retry-snapshot matches acknowledge current content/version without another upload; valid absence acknowledges an empty snapshot. Different text retains the original base for the conditional PUT, preserving conflict controls. Failed/malformed/unauthorized reads make no PUT, preserve drafts and keep autosave paused. Later typing remains editable/backed up, and sign-out prevents late writes. Initial and ordinary automatic saves gain no extra GET. Reload uses its existing initial-read reconciliation. No claim of historical outcome, atomicity or external-writer protection; ADR 005's production gate remains open. January 3 root-cause work stays deferred and its fixture is untouched.
+
+New dependency-free editor regressions failed before implementation and pass afterward, covering committed-but-unacknowledged saves (503/network/truncated JSON), matching reads without PUT, original-version retry/conflict, later typing, failed verification/401, malformed versions, empty/absent text, sign-out races and reload reconciliation. Added browser acceptance instructions; no new human/browser acceptance result claimed.
+
+Fresh verification for uncertain-save retry: make fmt lint test passes with zero lint issues, all five JavaScript suites and all Go packages. git diff --check passes. No commit or push performed.
+
+
+## Uncertain-save local browser validation (2026-10-10)
+
+Agent-driven Chrome/macOS QA against localhost:3030 with local provider passed the recovery checklist using a disposable February 20, 2020 entry. Verified lost acknowledgement preserves text/backup and pauses retry; matching retry trace PUT→GET has no duplicate upload; newer retry trace PUT→GET→PUT conflicts rather than silently rebasing. Held verification keeps typing enabled and later input Unsaved changes, with subsequent save success. Rejected verification GET retains backup without a PUT; explicit retry recovers. Separate-tab sign-out during held GET prevents late PUT/backup recreation. Restored native fetch and local login, trashed the disposable fixture through confirmation, and reloaded to Blank page. January 3 remains untouched.
+
+Evidence is recorded in editor-recovery-checks.md. Network failure/delay were scoped DevTools fetch injections, not a browser-wide Offline toggle. Exact Chrome version was not captured; Safari and Google are not covered. An unsuccessful initial probe-paste attempt is excluded. No product code changes or new runtime test run were needed for this QA evidence update; git diff --check passes. Workflow used the Web App QA & Release Copilot skill.
+
+Performance plan maintenance (2026-10-10): refreshed stale opening/completion checkboxes in the private plan and tracked implementation plan. Preserved original proposal as historical, recorded actual evidence limits, and removed January 3 investigation as active work. Private agents files remain outside commit scope. Documentation-only update; git diff --check passes.
+
+
+## Shared test fixture review (2026-10-10)
+
+Reviewed user-added internal/testutil constants with Gophers Go review/declaration guidance. A dependency-free shared fixture is appropriate across test packages; renamed MockBaseUrl to LocalBaseURL with URL initialism casing and documentation. Reused the origin in request/provider setup, while preserving literal default/redirect expectations and loopback security boundary cases to avoid tautological contract tests. Production code does not import testutil; live HTTP tests retain httptest.Server URLs. Renamed the local provider callback constant to CallbackPath and retained an independent full redirect expectation. Corrected the incidental README API prefix edit back to the implemented /api/v1. Repeated strings alone do not justify a global constant: extract values only when they share fixture/policy meaning.
+
+Final PR preparation verification after shared test fixtures: fresh make fmt lint test, all seven separate architecture probes, go vet ./... and go test -race -short ./... passed. Private agents/ files and environment/local data are excluded from the commit.

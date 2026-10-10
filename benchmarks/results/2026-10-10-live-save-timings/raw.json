@@ -1,0 +1,503 @@
+{
+  "date": "2020-01-05",
+  "fixtureBytes": 2230,
+  "cleanupVerified": true,
+  "samples": [
+    {
+      "scenario": "changed-save",
+      "status": 200,
+      "elapsedMs": 3461.2999999523163
+    },
+    {
+      "scenario": "changed-save",
+      "status": 200,
+      "elapsedMs": 3399
+    },
+    {
+      "scenario": "changed-save",
+      "status": 200,
+      "elapsedMs": 3331.9000000953674
+    },
+    {
+      "scenario": "changed-save",
+      "status": 200,
+      "elapsedMs": 4483.400000095367
+    },
+    {
+      "scenario": "changed-save",
+      "status": 200,
+      "elapsedMs": 3476
+    },
+    {
+      "scenario": "changed-save",
+      "status": 200,
+      "elapsedMs": 3336.600000143051
+    },
+    {
+      "scenario": "changed-save",
+      "status": 200,
+      "elapsedMs": 3328.600000143051
+    },
+    {
+      "scenario": "changed-save",
+      "status": 200,
+      "elapsedMs": 3528.2999999523163
+    },
+    {
+      "scenario": "changed-save",
+      "status": 200,
+      "elapsedMs": 3490.300000190735
+    },
+    {
+      "scenario": "changed-save",
+      "status": 200,
+      "elapsedMs": 4290
+    }
+  ],
+  "saveTimings": [
+    {
+      "status": 200,
+      "serverMs": 3456.7808750000004,
+      "requests": [
+        {
+          "category": "list",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 486.38275,
+          "elapsedMs": 486.457833
+        },
+        {
+          "category": "list",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 496.660625,
+          "elapsedMs": 496.744375
+        },
+        {
+          "category": "list",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 372.945417,
+          "elapsedMs": 373.003625
+        },
+        {
+          "category": "metadata",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 361.679125,
+          "elapsedMs": 362.742416
+        },
+        {
+          "category": "upload",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 1734.41575,
+          "elapsedMs": 1734.443875
+        }
+      ],
+      "browserMs": 3461.2999999523163
+    },
+    {
+      "status": 200,
+      "serverMs": 3394.022541,
+      "requests": [
+        {
+          "category": "list",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 464.833375,
+          "elapsedMs": 464.895791
+        },
+        {
+          "category": "list",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 613.263,
+          "elapsedMs": 613.339208
+        },
+        {
+          "category": "list",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 416.238209,
+          "elapsedMs": 416.2945
+        },
+        {
+          "category": "metadata",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 336.547291,
+          "elapsedMs": 336.666666
+        },
+        {
+          "category": "upload",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 1560.918833,
+          "elapsedMs": 1560.93325
+        }
+      ],
+      "browserMs": 3399
+    },
+    {
+      "status": 200,
+      "serverMs": 3328.018834,
+      "requests": [
+        {
+          "category": "list",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 464.757916,
+          "elapsedMs": 464.8295
+        },
+        {
+          "category": "list",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 490.912458,
+          "elapsedMs": 490.993208
+        },
+        {
+          "category": "list",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 406.51325,
+          "elapsedMs": 406.548375
+        },
+        {
+          "category": "metadata",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 325.577792,
+          "elapsedMs": 325.613834
+        },
+        {
+          "category": "upload",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 1638.2655829999999,
+          "elapsedMs": 1638.344083
+        }
+      ],
+      "browserMs": 3331.9000000953674
+    },
+    {
+      "status": 200,
+      "serverMs": 4479.090208,
+      "requests": [
+        {
+          "category": "list",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 465.774083,
+          "elapsedMs": 465.800083
+        },
+        {
+          "category": "list",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 450.509625,
+          "elapsedMs": 450.628334
+        },
+        {
+          "category": "list",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 456.866042,
+          "elapsedMs": 456.924833
+        },
+        {
+          "category": "metadata",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 346.654125,
+          "elapsedMs": 346.73825
+        },
+        {
+          "category": "upload",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 2756.050209,
+          "elapsedMs": 2756.514667
+        }
+      ],
+      "browserMs": 4483.400000095367
+    },
+    {
+      "status": 200,
+      "serverMs": 3471.208083,
+      "requests": [
+        {
+          "category": "list",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 495.629875,
+          "elapsedMs": 497.303792
+        },
+        {
+          "category": "list",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 492.797208,
+          "elapsedMs": 492.845083
+        },
+        {
+          "category": "list",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 409.592792,
+          "elapsedMs": 409.657083
+        },
+        {
+          "category": "metadata",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 409.018916,
+          "elapsedMs": 409.102291
+        },
+        {
+          "category": "upload",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 1660.178292,
+          "elapsedMs": 1660.189792
+        }
+      ],
+      "browserMs": 3476
+    },
+    {
+      "status": 200,
+      "serverMs": 3333.221916,
+      "requests": [
+        {
+          "category": "list",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 464.416959,
+          "elapsedMs": 464.469584
+        },
+        {
+          "category": "list",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 492.205459,
+          "elapsedMs": 492.256834
+        },
+        {
+          "category": "list",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 372.968958,
+          "elapsedMs": 373.017208
+        },
+        {
+          "category": "metadata",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 331.725792,
+          "elapsedMs": 332.637167
+        },
+        {
+          "category": "upload",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 1668.972625,
+          "elapsedMs": 1668.993125
+        }
+      ],
+      "browserMs": 3336.600000143051
+    },
+    {
+      "status": 200,
+      "serverMs": 3324.017666,
+      "requests": [
+        {
+          "category": "list",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 455.83925,
+          "elapsedMs": 455.917417
+        },
+        {
+          "category": "list",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 496.097792,
+          "elapsedMs": 496.137167
+        },
+        {
+          "category": "list",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 405.388042,
+          "elapsedMs": 405.468
+        },
+        {
+          "category": "metadata",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 307.718625,
+          "elapsedMs": 307.806208
+        },
+        {
+          "category": "upload",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 1657.002125,
+          "elapsedMs": 1657.024209
+        }
+      ],
+      "browserMs": 3328.600000143051
+    },
+    {
+      "status": 200,
+      "serverMs": 3523.738958,
+      "requests": [
+        {
+          "category": "list",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 469.992292,
+          "elapsedMs": 470.04225
+        },
+        {
+          "category": "list",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 465.867416,
+          "elapsedMs": 465.92925
+        },
+        {
+          "category": "list",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 366.113875,
+          "elapsedMs": 366.160084
+        },
+        {
+          "category": "metadata",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 430.229958,
+          "elapsedMs": 430.266875
+        },
+        {
+          "category": "upload",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 1787.099083,
+          "elapsedMs": 1787.1247079999998
+        }
+      ],
+      "browserMs": 3528.2999999523163
+    },
+    {
+      "status": 200,
+      "serverMs": 3485.301042,
+      "requests": [
+        {
+          "category": "list",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 488.823333,
+          "elapsedMs": 488.85
+        },
+        {
+          "category": "list",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 488.201375,
+          "elapsedMs": 488.23775
+        },
+        {
+          "category": "list",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 352.793625,
+          "elapsedMs": 352.86625
+        },
+        {
+          "category": "metadata",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 409.568958,
+          "elapsedMs": 409.649708
+        },
+        {
+          "category": "upload",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 1743.859625,
+          "elapsedMs": 1743.879042
+        }
+      ],
+      "browserMs": 3490.300000190735
+    },
+    {
+      "status": 200,
+      "serverMs": 4285.020542,
+      "requests": [
+        {
+          "category": "list",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 516.36725,
+          "elapsedMs": 516.436167
+        },
+        {
+          "category": "list",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 1432.306417,
+          "elapsedMs": 1432.363042
+        },
+        {
+          "category": "list",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 360.447958,
+          "elapsedMs": 360.484083
+        },
+        {
+          "category": "metadata",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 320.970625,
+          "elapsedMs": 321.067875
+        },
+        {
+          "category": "upload",
+          "status": 200,
+          "outcome": "complete",
+          "headersMs": 1652.7659159999998,
+          "elapsedMs": 1652.789416
+        }
+      ],
+      "browserMs": 4290
+    }
+  ],
+  "summary": {
+    "list": {
+      "medianPerSaveMs": 1359.9468335000001,
+      "meanPerSaveMs": 1461.4900708999999,
+      "minPerSaveMs": 1302.131584,
+      "maxPerSaveMs": 2309.283292
+    },
+    "metadata": {
+      "medianPerSaveMs": 341.702458,
+      "meanPerSaveMs": 358.229129,
+      "minPerSaveMs": 307.806208,
+      "maxPerSaveMs": 430.266875
+    },
+    "upload": {
+      "medianPerSaveMs": 1664.5914585,
+      "meanPerSaveMs": 1786.0236167,
+      "minPerSaveMs": 1560.93325,
+      "maxPerSaveMs": 2756.514667
+    },
+    "serverMs": 3463.994479,
+    "medianUnattributedServerMs": 1.886542499999905,
+    "aggregateTimedUpstreamShare": 0.9993627430452244,
+    "maxHeadersToCompletionMs": 1.6739169999999604
+  }
+}

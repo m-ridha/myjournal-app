@@ -1,0 +1,108 @@
+{
+  "failed": true,
+  "reason": "HTTP 500 during changed-save",
+  "fixtureDate": "2020-01-03",
+  "cleanupVerified": false,
+  "samples": [
+    {
+      "scenario": "open",
+      "status": 200,
+      "elapsedMs": 2127.2999999523163
+    },
+    {
+      "scenario": "open",
+      "status": 200,
+      "elapsedMs": 2062.0999999046326
+    },
+    {
+      "scenario": "open",
+      "status": 200,
+      "elapsedMs": 2164.2000000476837
+    },
+    {
+      "scenario": "open",
+      "status": 200,
+      "elapsedMs": 1995.4000000953674
+    },
+    {
+      "scenario": "open",
+      "status": 200,
+      "elapsedMs": 2079.800000190735
+    },
+    {
+      "scenario": "open",
+      "status": 200,
+      "elapsedMs": 2038.0999999046326
+    },
+    {
+      "scenario": "open",
+      "status": 200,
+      "elapsedMs": 2260.7999999523163
+    },
+    {
+      "scenario": "open",
+      "status": 200,
+      "elapsedMs": 2165.7999999523163
+    },
+    {
+      "scenario": "open",
+      "status": 200,
+      "elapsedMs": 2164.5
+    },
+    {
+      "scenario": "open",
+      "status": 200,
+      "elapsedMs": 2128
+    },
+    {
+      "scenario": "changed-save",
+      "status": 200,
+      "elapsedMs": 2983.7000000476837
+    },
+    {
+      "scenario": "changed-save",
+      "status": 200,
+      "elapsedMs": 5175.699999809265
+    },
+    {
+      "scenario": "changed-save",
+      "status": 200,
+      "elapsedMs": 3406.899999856949
+    },
+    {
+      "scenario": "changed-save",
+      "status": 200,
+      "elapsedMs": 6401.899999856949
+    },
+    {
+      "scenario": "changed-save",
+      "status": 200,
+      "elapsedMs": 3442.300000190735
+    },
+    {
+      "scenario": "changed-save",
+      "status": 200,
+      "elapsedMs": 6354.299999952316
+    },
+    {
+      "scenario": "changed-save",
+      "status": 200,
+      "elapsedMs": 3171.5
+    },
+    {
+      "scenario": "changed-save",
+      "status": 200,
+      "elapsedMs": 3045.4000000953674
+    },
+    {
+      "scenario": "changed-save",
+      "status": 200,
+      "elapsedMs": 6285.400000095367
+    },
+    {
+      "scenario": "changed-save",
+      "status": 500,
+      "elapsedMs": 21742.699999809265
+    }
+  ]
+}

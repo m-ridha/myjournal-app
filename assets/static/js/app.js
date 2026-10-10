@@ -86,6 +86,7 @@
     let edited = false;
     let signedOut = false;
     let unverifiedDraft = false;
+    let saveNeedsVerification = false;
     let backupAvailable = true;
     let legacyDraft = null;
     let autosaveTimer = null;
@@ -246,17 +247,37 @@
       setSaveState('saving');
       notice(t('editor.saving'));
       try {
-        const response = await fetch(`/api/v1/entries/${date}`, {
-          method: 'PUT',
-          keepalive,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
+        let response;
+        let entry;
+        // A failed acknowledgement can hide a successful upload. Only an explicit
+        // retry reads first; differing text never silently adopts a new version.
+        if (!automatic && saveNeedsVerification) {
+          response = await fetch(`/api/v1/entries/${date}`, { cache: 'no-store' });
+          if (response.ok) {
+            const current = await response.json();
+            if (typeof current.text !== 'string' || typeof current.version !== 'string' ||
+                typeof current.exists !== 'boolean' || (current.exists && !current.version) ||
+                (!current.exists && (current.text !== '' || current.version !== '')))
+              throw new Error('invalid verification response');
+            if (signedOut) return;
+            if (current.text === sentText) entry = current;
+            else response = null;
+          }
+        }
+        if (!response) {
+          response = await fetch(`/api/v1/entries/${date}`, {
+            method: 'PUT',
+            keepalive,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+        }
         if (signedOut) return;
         if (!response.ok) {
           autosavePaused = true;
           unverifiedDraft = true;
           conflicted = response.status === 409;
+          saveNeedsVerification = !conflicted;
           const key = response.status === 409 ? 'editor.conflict'
             : response.status === 401 ? 'editor.sessionExpired'
             : response.status === 413 ? 'editor.saveTooLarge' : 'editor.saveFailed';
@@ -265,13 +286,14 @@
           notice(t(key) + (kept ? t('editor.draftKept') : '') + (automatic && !conflicted ? t('editor.autosavePaused') : ''));
           return;
         }
-        const entry = await response.json();
+        if (!entry) entry = await response.json();
         if (typeof entry.text !== 'string' || typeof entry.version !== 'string') throw new Error('invalid save response');
         if (signedOut) return;
         saving = false;
         conflicted = false;
         autosavePaused = false;
         autosaveReady = true;
+        saveNeedsVerification = false;
         unverifiedDraft = false;
         baseVersion = entry.version;
         exists = entry.exists;
@@ -285,6 +307,7 @@
       } catch (error) {
         if (signedOut) return;
         autosavePaused = true;
+        saveNeedsVerification = true;
         unverifiedDraft = true;
         const kept = persistDraft();
         setSaveState('');
@@ -320,6 +343,7 @@
         exists = false;
         edited = false;
         conflicted = false;
+        saveNeedsVerification = false;
         unverifiedDraft = false;
         autosaveReady = false;
         autosavePaused = false;
@@ -365,6 +389,7 @@
         draft = null;
         edited = choice !== 'other';
         autosavePaused = false;
+        saveNeedsVerification = false;
         unverifiedDraft = false;
         conflicted = false;
         persistDraft();

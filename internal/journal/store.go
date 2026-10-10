@@ -21,3 +21,9 @@ type Store interface {
 type Clock interface {
 	Now() time.Time
 }
+
+// OperationStore optionally supplies a fresh store view for one use-case call.
+// Reuse must end with that operation; it must not become a cross-request cache.
+type OperationStore interface {
+	ForOperation() Store
+}

@@ -13,6 +13,7 @@ import (
 	"github/mridha/myjournal-app/internal/journal"
 	"github/mridha/myjournal-app/internal/provider"
 	"github/mridha/myjournal-app/internal/session"
+	"github/mridha/myjournal-app/internal/testutil"
 )
 
 type disconnectProvider struct {
@@ -44,7 +45,7 @@ func TestDisconnectRevokesBeforeClearingSession(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			p := &disconnectProvider{err: tc.err}
 			cfg := config.Config{SessionKey: "test-key", CookieSecure: true}
-			router := NewRouter(cfg, provider.NewRegistry(p), mockClock{now: now}, nil)
+			router := NewRouter(cfg, provider.NewRegistry(p), testutil.StubClock{Time: now}, nil)
 			r := httptest.NewRequest(http.MethodPost, "/api/v1/disconnect", nil)
 			addLocalSessionCookie(t, r, cfg.SessionKey, now)
 			w := httptest.NewRecorder()
@@ -86,7 +87,7 @@ func TestDisconnectRejectsUnauthenticatedAndCrossOriginRequests(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			p := &disconnectProvider{}
 			cfg := config.Config{SessionKey: "test-key"}
-			router := NewRouter(cfg, provider.NewRegistry(p), mockClock{now: now}, nil)
+			router := NewRouter(cfg, provider.NewRegistry(p), testutil.StubClock{Time: now}, nil)
 			r := httptest.NewRequest(http.MethodPost, "/api/v1/disconnect", nil)
 			if tc.cookie {
 				addLocalSessionCookie(t, r, cfg.SessionKey, tc.issued)

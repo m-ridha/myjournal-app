@@ -8,13 +8,14 @@ import (
 	"time"
 
 	"github/mridha/myjournal-app/internal/provider"
+	"github/mridha/myjournal-app/internal/testutil"
 
 	"cloud.google.com/go/civil"
 )
 
 func TestStoreSaveAndGet(t *testing.T) {
 	root := t.TempDir()
-	store, err := New("http://localhost:3030", root).Store(context.Background(), providerConnection())
+	store, err := New(testutil.LocalBaseURL, root).Store(context.Background(), providerConnection())
 	if err != nil {
 		t.Fatalf("Store() unexpected error: %v", err)
 	}
@@ -48,7 +49,7 @@ func TestStoreSaveAndGet(t *testing.T) {
 
 func TestStoreListYearsAndYear(t *testing.T) {
 	root := t.TempDir()
-	store, err := New("http://localhost:3030", root).Store(context.Background(), providerConnection())
+	store, err := New(testutil.LocalBaseURL, root).Store(context.Background(), providerConnection())
 	if err != nil {
 		t.Fatalf("Store() unexpected error: %v", err)
 	}

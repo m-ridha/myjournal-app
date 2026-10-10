@@ -8,10 +8,11 @@ import (
 	"testing"
 
 	"github/mridha/myjournal-app/internal/provider"
+	"github/mridha/myjournal-app/internal/testutil"
 )
 
 func TestAuthorizationHandoff(t *testing.T) {
-	p := New(Config{ClientID: "client", ClientSecret: "secret", BaseURL: "http://localhost:3030", Scopes: []string{"openid", "email", "profile", "https://www.googleapis.com/auth/drive.file"}})
+	p := New(Config{ClientID: "client", ClientSecret: "secret", BaseURL: testutil.LocalBaseURL, Scopes: []string{"openid", "email", "profile", "https://www.googleapis.com/auth/drive.file"}})
 	request := provider.LoginRequest{State: "browser-state", Verifier: "persisted-verifier", Nonce: "browser-nonce"}
 	raw, err := p.Begin(context.Background(), request)
 	if err != nil {

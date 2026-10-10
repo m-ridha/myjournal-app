@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -9,13 +10,15 @@ import (
 	"testing"
 	"time"
 
-	openapi_types "github.com/oapi-codegen/runtime/types"
 	"github/mridha/myjournal-app/internal/clock"
 	"github/mridha/myjournal-app/internal/config"
 	"github/mridha/myjournal-app/internal/journal"
 	"github/mridha/myjournal-app/internal/provider"
 	"github/mridha/myjournal-app/internal/provider/local"
+	"github/mridha/myjournal-app/internal/testutil"
 	"github/mridha/myjournal-app/internal/web/api"
+
+	openapi_types "github.com/oapi-codegen/runtime/types"
 )
 
 func assertJSONError(t *testing.T, res *httptest.ResponseRecorder, status int, message string) {
@@ -30,7 +33,7 @@ func assertJSONError(t *testing.T, res *httptest.ResponseRecorder, status int, m
 }
 
 func TestSaveRequiredFieldsPreserveExistingEntry(t *testing.T) {
-	registry := provider.NewRegistry(local.New("http://localhost:3030", t.TempDir()))
+	registry := provider.NewRegistry(local.New(testutil.LocalBaseURL, t.TempDir()))
 	h := New(config.Config{SessionKey: "test-key"}, registry, localServiceFactory(registry), testCatalog(t), clock.System{})
 	date := openapi_types.Date{Time: time.Date(2026, 9, 21, 0, 0, 0, 0, time.UTC)}
 	save := func(body string) *httptest.ResponseRecorder {
@@ -70,7 +73,7 @@ func TestSaveRequiredFieldsPreserveExistingEntry(t *testing.T) {
 }
 
 func TestCalendarRejectsInvalidMonth(t *testing.T) {
-	registry := provider.NewRegistry(local.New("http://localhost:3030", t.TempDir()))
+	registry := provider.NewRegistry(local.New(testutil.LocalBaseURL, t.TempDir()))
 	h := New(config.Config{SessionKey: "test-key"}, registry, localServiceFactory(registry), testCatalog(t), clock.System{})
 	for _, month := range []string{"", "2026-13", "2026-00", "2026-1", "2026-01-01", "0000-01", "garbage"} {
 		t.Run(month, func(t *testing.T) {
@@ -89,7 +92,7 @@ func TestWrappedServiceErrors(t *testing.T) {
 		err    error
 		status int
 		key    string
-	}{{ErrUnauthenticated, 401, "errors.unauthorized"}, {journal.ErrAuthRequired, 401, "errors.unauthorized"}, {journal.ErrUnavailable, 503, "errors.entryUnavailable"}, {journal.ErrConflict, 409, "errors.conflict"}, {journal.ErrNotFound, 404, "errors.entryUnavailable"}, {journal.ErrFutureDate, 400, "errors.futureDate"}, {journal.ErrInvalidPagination, 400, "errors.pagination"}, {journal.ErrInvalidText, 400, "errors.invalidText"}, {fmt.Errorf("private storage details"), 500, "errors.internal"}} {
+	}{{ErrUnauthenticated, 401, "errors.unauthorized"}, {journal.ErrAuthRequired, 401, "errors.unauthorized"}, {journal.ErrUnavailable, 503, "errors.entryUnavailable"}, {context.DeadlineExceeded, 503, "errors.entryUnavailable"}, {journal.ErrConflict, 409, "errors.conflict"}, {journal.ErrNotFound, 404, "errors.entryUnavailable"}, {journal.ErrFutureDate, 400, "errors.futureDate"}, {journal.ErrInvalidPagination, 400, "errors.pagination"}, {journal.ErrInvalidText, 400, "errors.invalidText"}, {fmt.Errorf("private storage details"), 500, "errors.internal"}} {
 		t.Run(tc.err.Error(), func(t *testing.T) {
 			w := httptest.NewRecorder()
 			h.writeServiceError(w, fmt.Errorf("adapter: %w", tc.err))

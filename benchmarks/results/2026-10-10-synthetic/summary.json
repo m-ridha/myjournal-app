@@ -1,0 +1,390 @@
+{
+  "open": [
+    {
+      "ns_per_op": 678169,
+      "download/op": 1.0,
+      "http/op": 4.0,
+      "list/op": 3.0,
+      "B/op": 104414.0,
+      "allocs/op": 1180.0
+    },
+    {
+      "ns_per_op": 676965,
+      "download/op": 1.0,
+      "http/op": 4.0,
+      "list/op": 3.0,
+      "B/op": 106044.0,
+      "allocs/op": 1179.0
+    },
+    {
+      "ns_per_op": 647085,
+      "download/op": 1.0,
+      "http/op": 4.0,
+      "list/op": 3.0,
+      "B/op": 107860.0,
+      "allocs/op": 1180.0
+    },
+    {
+      "ns_per_op": 655660,
+      "download/op": 1.0,
+      "http/op": 4.0,
+      "list/op": 3.0,
+      "B/op": 105923.0,
+      "allocs/op": 1179.0
+    },
+    {
+      "ns_per_op": 648796,
+      "download/op": 1.0,
+      "http/op": 4.0,
+      "list/op": 3.0,
+      "B/op": 105626.0,
+      "allocs/op": 1178.0
+    },
+    {
+      "ns_per_op": 653690,
+      "download/op": 1.0,
+      "http/op": 4.0,
+      "list/op": 3.0,
+      "B/op": 103921.0,
+      "allocs/op": 1178.0
+    }
+  ],
+  "changed-save": [
+    {
+      "ns_per_op": 891217,
+      "http/op": 5.0,
+      "list/op": 3.0,
+      "metadata/op": 1.0,
+      "upload/op": 1.0,
+      "B/op": 17042488.0,
+      "allocs/op": 1567.0
+    },
+    {
+      "ns_per_op": 930615,
+      "http/op": 5.0,
+      "list/op": 3.0,
+      "metadata/op": 1.0,
+      "upload/op": 1.0,
+      "B/op": 17043222.0,
+      "allocs/op": 1572.0
+    },
+    {
+      "ns_per_op": 1011067,
+      "http/op": 5.0,
+      "list/op": 3.0,
+      "metadata/op": 1.0,
+      "upload/op": 1.0,
+      "B/op": 17030958.0,
+      "allocs/op": 1556.0
+    },
+    {
+      "ns_per_op": 997831,
+      "http/op": 5.0,
+      "list/op": 3.0,
+      "metadata/op": 1.0,
+      "upload/op": 1.0,
+      "B/op": 17047360.0,
+      "allocs/op": 1566.0
+    },
+    {
+      "ns_per_op": 999967,
+      "http/op": 5.0,
+      "list/op": 3.0,
+      "metadata/op": 1.0,
+      "upload/op": 1.0,
+      "B/op": 17051434.0,
+      "allocs/op": 1572.0
+    },
+    {
+      "ns_per_op": 1051031,
+      "http/op": 5.0,
+      "list/op": 3.0,
+      "metadata/op": 1.0,
+      "upload/op": 1.0,
+      "B/op": 17013294.0,
+      "allocs/op": 1556.0
+    }
+  ],
+  "unchanged-save": [
+    {
+      "ns_per_op": 650233,
+      "http/op": 4.0,
+      "list/op": 3.0,
+      "metadata/op": 1.0,
+      "B/op": 106323.0,
+      "allocs/op": 1202.0
+    },
+    {
+      "ns_per_op": 637200,
+      "http/op": 4.0,
+      "list/op": 3.0,
+      "metadata/op": 1.0,
+      "B/op": 107506.0,
+      "allocs/op": 1200.0
+    },
+    {
+      "ns_per_op": 651573,
+      "http/op": 4.0,
+      "list/op": 3.0,
+      "metadata/op": 1.0,
+      "B/op": 104705.0,
+      "allocs/op": 1203.0
+    },
+    {
+      "ns_per_op": 668285,
+      "http/op": 4.0,
+      "list/op": 3.0,
+      "metadata/op": 1.0,
+      "B/op": 108090.0,
+      "allocs/op": 1202.0
+    },
+    {
+      "ns_per_op": 654881,
+      "http/op": 4.0,
+      "list/op": 3.0,
+      "metadata/op": 1.0,
+      "B/op": 106240.0,
+      "allocs/op": 1202.0
+    },
+    {
+      "ns_per_op": 660050,
+      "http/op": 4.0,
+      "list/op": 3.0,
+      "metadata/op": 1.0,
+      "B/op": 105949.0,
+      "allocs/op": 1200.0
+    }
+  ],
+  "entries-cold": [
+    {
+      "ns_per_op": 2607381,
+      "download/op": 20.0,
+      "http/op": 28.0,
+      "list/op": 8.0,
+      "B/op": 1091262.0,
+      "allocs/op": 7256.0
+    },
+    {
+      "ns_per_op": 2558910,
+      "download/op": 20.0,
+      "http/op": 28.0,
+      "list/op": 8.0,
+      "B/op": 1101430.0,
+      "allocs/op": 7214.0
+    },
+    {
+      "ns_per_op": 2515169,
+      "download/op": 20.0,
+      "http/op": 28.0,
+      "list/op": 8.0,
+      "B/op": 1084680.0,
+      "allocs/op": 7215.0
+    },
+    {
+      "ns_per_op": 2549908,
+      "download/op": 20.0,
+      "http/op": 28.0,
+      "list/op": 8.0,
+      "B/op": 1107924.0,
+      "allocs/op": 7248.0
+    },
+    {
+      "ns_per_op": 2543781,
+      "download/op": 20.0,
+      "http/op": 28.0,
+      "list/op": 8.0,
+      "B/op": 1077290.0,
+      "allocs/op": 7200.0
+    },
+    {
+      "ns_per_op": 2547971,
+      "download/op": 20.0,
+      "http/op": 28.0,
+      "list/op": 8.0,
+      "B/op": 1097074.0,
+      "allocs/op": 7232.0
+    }
+  ],
+  "entries-warm": [
+    {
+      "ns_per_op": 3204,
+      "http/op": 0.0,
+      "B/op": 7560.0,
+      "allocs/op": 57.0
+    },
+    {
+      "ns_per_op": 3573,
+      "http/op": 0.0,
+      "B/op": 7560.0,
+      "allocs/op": 57.0
+    },
+    {
+      "ns_per_op": 3748,
+      "http/op": 0.0,
+      "B/op": 7577.0,
+      "allocs/op": 57.0
+    },
+    {
+      "ns_per_op": 3425,
+      "http/op": 0.0,
+      "B/op": 7560.0,
+      "allocs/op": 57.0
+    },
+    {
+      "ns_per_op": 3467,
+      "http/op": 0.0,
+      "B/op": 7577.0,
+      "allocs/op": 57.0
+    },
+    {
+      "ns_per_op": 3498,
+      "http/op": 0.0,
+      "B/op": 7560.0,
+      "allocs/op": 57.0
+    }
+  ],
+  "entries-after-save": [
+    {
+      "ns_per_op": 3439523,
+      "download/op": 20.0,
+      "http/op": 33.0,
+      "list/op": 11.0,
+      "metadata/op": 1.0,
+      "upload/op": 1.0,
+      "B/op": 18132638.0,
+      "allocs/op": 8838.0
+    },
+    {
+      "ns_per_op": 3489817,
+      "download/op": 20.0,
+      "http/op": 33.0,
+      "list/op": 11.0,
+      "metadata/op": 1.0,
+      "upload/op": 1.0,
+      "B/op": 18142389.0,
+      "allocs/op": 8812.0
+    },
+    {
+      "ns_per_op": 3495029,
+      "download/op": 20.0,
+      "http/op": 33.0,
+      "list/op": 11.0,
+      "metadata/op": 1.0,
+      "upload/op": 1.0,
+      "B/op": 18132356.0,
+      "allocs/op": 8823.0
+    },
+    {
+      "ns_per_op": 3440896,
+      "download/op": 20.0,
+      "http/op": 33.0,
+      "list/op": 11.0,
+      "metadata/op": 1.0,
+      "upload/op": 1.0,
+      "B/op": 18110626.0,
+      "allocs/op": 8809.0
+    },
+    {
+      "ns_per_op": 3481565,
+      "download/op": 20.0,
+      "http/op": 33.0,
+      "list/op": 11.0,
+      "metadata/op": 1.0,
+      "upload/op": 1.0,
+      "B/op": 18119900.0,
+      "allocs/op": 8802.0
+    },
+    {
+      "ns_per_op": 3506150,
+      "download/op": 20.0,
+      "http/op": 33.0,
+      "list/op": 11.0,
+      "metadata/op": 1.0,
+      "upload/op": 1.0,
+      "B/op": 18123657.0,
+      "allocs/op": 8808.0
+    }
+  ],
+  "calendar-cold": [
+    {
+      "ns_per_op": 699067,
+      "http/op": 3.0,
+      "list/op": 3.0,
+      "B/op": 250833.0,
+      "allocs/op": 1683.0
+    },
+    {
+      "ns_per_op": 705244,
+      "http/op": 3.0,
+      "list/op": 3.0,
+      "B/op": 257638.0,
+      "allocs/op": 1685.0
+    },
+    {
+      "ns_per_op": 696862,
+      "http/op": 3.0,
+      "list/op": 3.0,
+      "B/op": 263062.0,
+      "allocs/op": 1688.0
+    },
+    {
+      "ns_per_op": 688656,
+      "http/op": 3.0,
+      "list/op": 3.0,
+      "B/op": 257867.0,
+      "allocs/op": 1685.0
+    },
+    {
+      "ns_per_op": 695667,
+      "http/op": 3.0,
+      "list/op": 3.0,
+      "B/op": 257701.0,
+      "allocs/op": 1687.0
+    },
+    {
+      "ns_per_op": 693000,
+      "http/op": 3.0,
+      "list/op": 3.0,
+      "B/op": 248677.0,
+      "allocs/op": 1682.0
+    }
+  ],
+  "calendar-warm": [
+    {
+      "ns_per_op": 2719,
+      "http/op": 0.0,
+      "B/op": 5144.0,
+      "allocs/op": 10.0
+    },
+    {
+      "ns_per_op": 2467,
+      "http/op": 0.0,
+      "B/op": 5144.0,
+      "allocs/op": 10.0
+    },
+    {
+      "ns_per_op": 2029,
+      "http/op": 0.0,
+      "B/op": 5144.0,
+      "allocs/op": 10.0
+    },
+    {
+      "ns_per_op": 1869,
+      "http/op": 0.0,
+      "B/op": 5144.0,
+      "allocs/op": 10.0
+    },
+    {
+      "ns_per_op": 2517,
+      "http/op": 0.0,
+      "B/op": 5144.0,
+      "allocs/op": 10.0
+    },
+    {
+      "ns_per_op": 2496,
+      "http/op": 0.0,
+      "B/op": 5144.0,
+      "allocs/op": 10.0
+    }
+  ]
+}

@@ -1,0 +1,10 @@
+{
+  "fixtureDate": "2020-01-03",
+  "readOnly": true,
+  "exists": true,
+  "stableAcrossReads": true,
+  "matchesLastAttempt": true,
+  "matchesPreviousAcknowledged": false,
+  "matchesInitialFixture": false,
+  "cleanupPerformed": false
+}

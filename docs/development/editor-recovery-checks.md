@@ -106,3 +106,46 @@ The cap applies to the entire serialized JSON request, so exactly 1 MiB of ASCII
 4. Open Settings and sign out. Confirm the normal sign-out/draft cleanup behavior. Check a styled missing page and signed-out API rejection for security headers as well.
 
 Automated browser verification on 2026-10-09 passed the covered flows in Chrome 155.0.8059.40 (headless) and native Safari 26.4, including deliberate inline-script blocking, conflict/Keep mine, draft recovery, and logout cleanup. Safari full startup-console history and Safari blocked-storage behavior remain unverified. See [browser QA evidence](csp-browser-qa.md) for scope, expected negative probes, and limitations.
+
+## Uncertain-save manual retry
+
+Automated interaction regressions pass. Agent-driven Chrome/local-provider validation passed on 2026-10-10 with scoped synthetic fetch failures/delays; see the evidence below. Use a disposable synthetic past entry, with other tabs idle. Never use personal text or the retained January 3 fixture.
+
+1. Simulate one lost acknowledgement without preventing the real save: in DevTools on the synthetic editor, replace `fetch` temporarily with the following wrapper, then type distinct synthetic text and click Save. It restores fetch as soon as the next entry PUT responds. The real PUT still runs; the editor receives a deliberate rejection. If you abandon the test before a PUT, run `window.fetch = originalFetch` to restore it.
+
+   ```js
+   var originalFetch = window.fetch;
+   window.fetch = async function (input, init) {
+     const response = await originalFetch.call(window, input, init);
+     if (typeof input === 'string' && input.startsWith('/api/v1/entries/') && init?.method === 'PUT') {
+       window.fetch = originalFetch;
+       throw new Error('Synthetic lost acknowledgement');
+     }
+     return response;
+   };
+   ```
+
+2. Confirm the page retains its text and draft with failed-save feedback. Wait more than five seconds: no automatic retry should occur. In Network, click Save again: expect one GET, no additional PUT, and Saved if content already matches.
+3. Repeat, but type newer text before retrying. The verification GET must not silently adopt a newer server version for different text; a conditional PUT using the original version should conflict if the earlier upload committed. Use the existing conflict controls to choose the desired result.
+4. Throttle the verification GET, click Save, and type while it is pending. A matching snapshot acknowledgement must preserve later typing as Unsaved changes, with its backup and the verified version. Save remains disabled during verification; typing remains enabled.
+5. After another simulated failure, switch offline before retrying. Verification failure must make no PUT, retain text/backup/version and pause automatic writes. Reconnect and manually retry. Sign out in a separate tab while verification is pending to confirm no late write or draft recreation.
+
+The wrapper is a synthetic response-loss test, not evidence of a Google timeout cause. Trash the disposable entry only after successful reconciliation and review.
+
+
+### Observed local browser evidence — 2026-10-10
+
+Executed with the Web App QA & Release Copilot skill using Chrome on macOS, localhost:3030 and the local development account. Exact Chrome version was not captured. Used an initially blank February 20, 2020 entry. A DevTools fetch wrapper affected only that exact entry API path, recorded method names only, and injected lost acknowledgements, a delayed GET response and a rejected verification GET. The offline case simulates a network rejection; browser-wide Offline mode was not toggled. No Google access or external-writer atomicity is established by this run.
+
+| Check | Observed evidence | Result |
+| --- | --- | --- |
+| Lost save acknowledgement | Real PUT completed; injected rejection displayed Save failed. Draft kept locally. Text and tab backup remained. | Pass |
+| Paused automatic retry | More than five seconds elapsed during inspection; method trace remained one PUT. | Pass |
+| Matching manual retry | Method trace PUT, GET; no duplicate PUT. UI changed to Saved. | Pass |
+| Newer text before retry | Trace PUT, GET, PUT; conditional retry produced conflict controls with newer draft intact. Keep mine subsequently saved it. | Pass |
+| Typing during held verification | Saving and disabled Save while GET held; textarea remained editable. Releasing matching snapshot showed Unsaved changes with later text intact; subsequent autosave reached Saved. | Pass |
+| Verification network failure | Trace PUT, GET with no further PUT; draft backup present and Save available. Returning probe to normal and explicitly retrying reached Saved. | Pass |
+| Sign-out during verification | Separate Settings tab signed out while GET was held. Releasing it left trace PUT, GET, disabled signed-out editor and no fixture draft. No late PUT or backup recreation. | Pass |
+| Cleanup | Restored native fetch, signed in locally, trashed only the disposable entry via confirmation. Reload showed Blank page, empty editor and no trash control. | Pass |
+
+The initially attempted paste did not install the probe; its ordinary successful save is excluded from failure evidence. Console input was then verified before running the cases above. Extension-origin favicon CSP messages were visible and are not attributed to app behavior. Agent-created QA tabs are temporary; local sign-in was restored after the sign-out test. No product code changed during QA. Safari and Google-backed repetition remain separate coverage.

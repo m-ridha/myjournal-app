@@ -49,7 +49,7 @@ func (s *Service) Save(ctx context.Context, d Date, text string, base Version) (
 		return Entry{}, ErrInvalidText
 	}
 	clean := normalizeText(text)
-	return s.store.Put(ctx, d, clean, base)
+	return s.operationStore().Put(ctx, d, clean, base)
 }
 
 func (s *Service) Open(ctx context.Context, d Date) (Entry, error) {
@@ -59,14 +59,15 @@ func (s *Service) Open(ctx context.Context, d Date) (Entry, error) {
 	if d.After(s.Today(TimeZone(ctx))) {
 		return Entry{}, ErrFutureDate
 	}
-	return s.store.Get(ctx, d)
+	return s.operationStore().Get(ctx, d)
 }
 
 func (s *Service) Page(ctx context.Context, page, size int) (ListPage, error) {
 	if page < 1 || page > MaxPage || size < 1 || size > MaxPageSize {
 		return ListPage{}, ErrInvalidPagination
 	}
-	years, err := s.store.ListYears(ctx)
+	store := s.operationStore()
+	years, err := store.ListYears(ctx)
 	if err != nil {
 		return ListPage{}, err
 	}
@@ -75,7 +76,7 @@ func (s *Service) Page(ctx context.Context, page, size int) (ListPage, error) {
 	// Retain only the requested page plus one item to detect a next page.
 	pageDates := make([]Date, 0, size+1)
 	for _, year := range years {
-		meta, err := s.store.ListYear(ctx, year)
+		meta, err := store.ListYear(ctx, year)
 		if err != nil {
 			return ListPage{}, err
 		}
@@ -101,7 +102,7 @@ func (s *Service) Page(ctx context.Context, page, size int) (ListPage, error) {
 	if len(pageDates) == 0 {
 		return ListPage{Page: page, PageSize: size}, nil
 	}
-	previews, err := s.store.Previews(ctx, pageDates, previewBytes+utf8.UTFMax)
+	previews, err := store.Previews(ctx, pageDates, previewBytes+utf8.UTFMax)
 	if err != nil {
 		return ListPage{}, err
 	}
@@ -155,7 +156,7 @@ func (s *Service) Month(ctx context.Context, year int, month time.Month) (MonthV
 	last := time.Date(year, month+1, 0, 0, 0, 0, 0, time.UTC)
 	start := first.AddDate(0, 0, -((int(first.Weekday()) + 6) % 7))
 	today := s.Today(TimeZone(ctx))
-	meta, err := s.store.ListYear(ctx, year)
+	meta, err := s.operationStore().ListYear(ctx, year)
 	if err != nil {
 		return MonthView{}, err
 	}
@@ -191,5 +192,12 @@ func (s *Service) Delete(ctx context.Context, d Date) error {
 	if d.After(s.Today(TimeZone(ctx))) {
 		return ErrFutureDate
 	}
-	return s.store.Trash(ctx, d)
+	return s.operationStore().Trash(ctx, d)
+}
+
+func (s *Service) operationStore() Store {
+	if scoped, ok := s.store.(OperationStore); ok {
+		return scoped.ForOperation()
+	}
+	return s.store
 }

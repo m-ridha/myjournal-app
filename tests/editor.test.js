@@ -205,6 +205,59 @@ async function run() {
   f.queue.push(response('', '', 409)); f.save.fire('click'); await tick();
   assert(!f.panel.hidden, 'migrated stale backup must still conflict');
 
+  // Manual retries verify uncertain saves before risking another upload.
+  for (const failure of [() => response('', '', 503), () => Promise.reject(new Error('lost acknowledgement')),
+      () => ({ok: true, status: 200, json: async () => { throw new Error('truncated acknowledgement'); }})]) {
+    f = setup(); await tick(); f.input('uncertain snapshot'); f.queue.push(failure()); f.save.fire('click'); await tick();
+    f.queue.push(response('uncertain snapshot', 'v2')); f.save.fire('click'); await tick();
+    assert(!f.calls[2].options?.method && f.calls.length === 3, 'retry must read matching saved text without another PUT');
+    assert(!f.values.has(key) && f.editor.classList.contains('is-saved'), 'matching read acknowledges the uncertain snapshot');
+    f.input('next'); f.queue.push(response('next', 'v3')); await f.advance(5000);
+    assert(JSON.parse(f.calls[3].options.body).baseVersion === 'v2', 'follow-up autosave uses verified version');
+  }
+  f = setup(); await tick(); f.input('uncertain'); f.queue.push(response('', '', 503)); f.save.fire('click'); await tick();
+  const verifying = deferred(); f.queue.push(verifying.promise); f.save.fire('click'); await tick();
+  f.input('typed during verification'); f.save.fire('click');
+  assert(f.calls.length === 3 && f.save.disabled && !f.text.readOnly, 'verification serializes saves while allowing typing');
+  verifying.resolve(response('uncertain', 'v2')); await tick();
+  assert(f.text.value === 'typed during verification' && f.status.textContent === 'editor.unsaved' && JSON.parse(f.values.get(key)).baseVersion === 'v2', 'verified snapshot must preserve later edits and their backup');
+
+  f = setup(); await tick(); f.input('mine'); f.queue.push(response('', '', 503)); f.save.fire('click'); await tick();
+  f.queue.push(response('server', 'v1'), response('mine', 'v2')); f.save.fire('click'); await tick();
+  assert(!f.calls[2].options?.method && f.calls[3].options.method === 'PUT' && JSON.parse(f.calls[3].options.body).baseVersion === 'v1', 'uncommitted retry keeps original conditional version');
+
+  f = setup(); await tick(); f.input('mine'); f.queue.push(response('', '', 503)); f.save.fire('click'); await tick();
+  f.queue.push(response('external change', 'v9'), response('', '', 409)); f.save.fire('click'); await tick();
+  assert(JSON.parse(f.calls[3].options.body).baseVersion === 'v1' && !f.panel.hidden && f.text.value === 'mine' && f.values.has(key), 'verification must never silently rebase different server text');
+
+  for (const failedRead of [() => response('', '', 401), () => response('', '', 503),
+      () => Promise.reject(new Error('offline')), () => ({ok: true, status: 200, json: async () => ({text:'mine', version:'', exists:true})})]) {
+    f = setup(); await tick(); f.input('mine'); f.queue.push(response('', '', 503)); f.save.fire('click'); await tick();
+    f.queue.push(failedRead()); f.save.fire('click'); await tick();
+    assert(f.calls.length === 3 && !f.calls[2].options?.method && f.text.value === 'mine' && f.values.has(key) && !f.save.disabled, 'failed verification must retain draft without a PUT');
+    assert(JSON.parse(f.values.get(key)).baseVersion === 'v1', 'failed verification retains original version');
+    f.text.fire('blur'); await f.advance(10000); assert(f.calls.length === 3, 'failed verification must keep autosave paused');
+  }
+
+  f = setup(); await tick(); f.input('snapshot'); f.queue.push(response('', '', 503)); f.save.fire('click'); await tick();
+  const unchangedRead = deferred(); f.queue.push(unchangedRead.promise, response('snapshot', 'v2')); f.save.fire('click'); await tick();
+  f.input('newer while reading'); unchangedRead.resolve(response('server', 'v1')); await tick();
+  assert(JSON.parse(f.calls[3].options.body).text === 'snapshot' && f.text.value === 'newer while reading' && JSON.parse(f.values.get(key)).baseVersion === 'v2', 'read-before-retry uploads its snapshot and retains later typing');
+
+  f = setup(); await tick(); f.input(''); f.queue.push(response('', '', 503)); f.save.fire('click'); await tick();
+  f.queue.push({ok:true, status:200, json:async () => ({exists:false, text:'', version:''})}); f.save.fire('click'); await tick();
+  assert(f.calls.length === 3 && !f.values.has(key) && f.status.textContent === 'editor.blank', 'verified absence acknowledges an empty snapshot without creating a file');
+
+  f = setup(); await tick(); f.input('uncertain'); f.queue.push(response('', '', 503)); f.save.fire('click'); await tick();
+  const signingOutRead = deferred(); f.queue.push(signingOutRead.promise); f.save.fire('click'); await tick();
+  f.winEvents.storage({key:'mj-signout:account-a'}); signingOutRead.resolve(response('server', 'v1')); await tick();
+  assert(f.calls.length === 3 && !f.values.has(key), 'signout during verification prevents a later PUT or backup recreation');
+
+  f = setup(); await tick(); f.input('committed'); f.queue.push(response('', '', 503)); f.save.fire('click'); await tick();
+  const afterFailureBackup = f.values;
+  f = setup({initial:response('committed', 'v2'), sessionValues:afterFailureBackup}); await tick();
+  assert(f.text.value === 'committed' && !f.values.has(key) && f.calls.length === 1, 'reload reconciles matching recovery through its initial GET without writing');
+
   // Autosave uses the same acknowledged snapshot/version and recovery rules.
   f = setup(); await tick(); await f.advance(10000);
   assert(f.calls.length === 1, 'loading an unchanged entry must not write');

@@ -7,6 +7,8 @@ import (
 	"time"
 
 	"cloud.google.com/go/civil"
+
+	"github/mridha/myjournal-app/internal/testutil"
 )
 
 func TestUserDateBoundaries(t *testing.T) {
@@ -32,7 +34,7 @@ func TestUserDateBoundaries(t *testing.T) {
 			}
 			ctx := WithTimeZone(context.Background(), zone)
 			store := newInMemStore()
-			service := NewService(store, dummyClock{now: now})
+			service := NewService(store, testutil.StubClock{Time: now})
 			today, err := civil.ParseDate(tc.today)
 			if err != nil {
 				t.Fatal(err)
@@ -82,21 +84,17 @@ func TestUserDateBoundaries(t *testing.T) {
 	}
 }
 
-type movingClock struct{ now time.Time }
-
-func (c *movingClock) Now() time.Time { return c.now }
-
 func TestSelectedDateSurvivesMidnight(t *testing.T) {
 	zone, err := time.LoadLocation("Asia/Jakarta")
 	if err != nil {
 		t.Fatal(err)
 	}
 	ctx := WithTimeZone(context.Background(), zone)
-	clock := &movingClock{now: time.Date(2026, 10, 8, 23, 59, 0, 0, zone)}
+	clock := &testutil.StubClock{Time: time.Date(2026, 10, 8, 23, 59, 0, 0, zone)}
 	store := newInMemStore()
 	service := NewService(store, clock)
 	selected := service.Today(zone)
-	clock.now = clock.now.Add(2 * time.Minute)
+	clock.Time = clock.Time.Add(2 * time.Minute)
 	entry, err := service.Save(ctx, selected, "late save", "")
 	if err != nil {
 		t.Fatal(err)
@@ -107,7 +105,7 @@ func TestSelectedDateSurvivesMidnight(t *testing.T) {
 }
 
 func TestMissingTimeZoneUsesUTC(t *testing.T) {
-	service := NewService(newInMemStore(), dummyClock{now: time.Date(2026, 10, 8, 1, 0, 0, 0, time.FixedZone("host", 7*3600))})
+	service := NewService(newInMemStore(), testutil.StubClock{Time: time.Date(2026, 10, 8, 1, 0, 0, 0, time.FixedZone("host", 7*3600))})
 	for _, ctx := range []context.Context{context.Background(), WithTimeZone(context.Background(), nil)} {
 		if got := service.Today(TimeZone(ctx)).String(); got != "2026-10-07" {
 			t.Fatalf("fallback today=%s", got)

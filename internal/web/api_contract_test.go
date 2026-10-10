@@ -16,14 +16,15 @@ import (
 	"github/mridha/myjournal-app/internal/provider"
 	"github/mridha/myjournal-app/internal/provider/local"
 	"github/mridha/myjournal-app/internal/session"
+	"github/mridha/myjournal-app/internal/testutil"
 	"github/mridha/myjournal-app/internal/web/api"
 )
 
 func TestAPIRouterErrorEnvelopes(t *testing.T) {
 	now := time.Date(2026, 10, 9, 12, 0, 0, 0, time.UTC)
-	cfg := config.Config{BaseURL: "http://localhost:3030", SessionKey: "test-key"}
+	cfg := config.Config{BaseURL: testutil.LocalBaseURL, SessionKey: "test-key"}
 	registry := provider.NewRegistry(local.New(cfg.BaseURL, t.TempDir()))
-	router := NewRouter(cfg, registry, mockClock{now: now}, nil)
+	router := NewRouter(cfg, registry, testutil.StubClock{Time: now}, nil)
 	for _, tc := range []struct {
 		method, path, site string
 		status             int
@@ -49,7 +50,7 @@ func TestAPIRouterErrorEnvelopes(t *testing.T) {
 
 func TestAPIRouterWrappedProviderFailures(t *testing.T) {
 	now := time.Date(2026, 10, 9, 12, 0, 0, 0, time.UTC)
-	cfg := config.Config{BaseURL: "http://localhost:3030", SessionKey: "test-key"}
+	cfg := config.Config{BaseURL: testutil.LocalBaseURL, SessionKey: "test-key"}
 	for _, tc := range []struct {
 		err    error
 		status int
@@ -57,7 +58,7 @@ func TestAPIRouterWrappedProviderFailures(t *testing.T) {
 		factory := func(context.Context, session.Session) (*journal.Service, error) {
 			return nil, fmt.Errorf("sensitive context: %w", tc.err)
 		}
-		router := NewRouter(cfg, provider.NewRegistry(local.New(cfg.BaseURL, t.TempDir())), mockClock{now: now}, factory)
+		router := NewRouter(cfg, provider.NewRegistry(local.New(cfg.BaseURL, t.TempDir())), testutil.StubClock{Time: now}, factory)
 		for _, route := range []struct{ method, path string }{{"GET", "/api/v1/entries"}, {"GET", "/api/v1/entries/2026-10-09"}, {"PUT", "/api/v1/entries/2026-10-09"}, {"DELETE", "/api/v1/entries/2026-10-09"}, {"GET", "/api/v1/calendar?month=2026-10"}} {
 			r := httptest.NewRequest(route.method, route.path, strings.NewReader(`{"text":"","baseVersion":""}`))
 			addLocalSessionCookie(t, r, cfg.SessionKey, now)
@@ -83,8 +84,8 @@ func checkAPIError(t *testing.T, w *httptest.ResponseRecorder, status int) {
 }
 
 func TestMethodNotAllowedPreservesAllowedMethods(t *testing.T) {
-	cfg := config.Config{BaseURL: "http://localhost:3030", SessionKey: "test-key"}
-	router := NewRouter(cfg, provider.NewRegistry(local.New(cfg.BaseURL, t.TempDir())), mockClock{now: time.Now()}, nil)
+	cfg := config.Config{BaseURL: testutil.LocalBaseURL, SessionKey: "test-key"}
+	router := NewRouter(cfg, provider.NewRegistry(local.New(cfg.BaseURL, t.TempDir())), testutil.StubClock{Time: time.Now()}, nil)
 	for _, tc := range []struct {
 		method, path string
 		allowed      []string

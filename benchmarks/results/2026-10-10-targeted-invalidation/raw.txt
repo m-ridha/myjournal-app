@@ -1,0 +1,60 @@
+goos: darwin
+goarch: arm64
+pkg: github/mridha/myjournal-app/internal/provider/google
+cpu: Apple M4
+BenchmarkDriveBaseline/open-10         	      20	    624781 ns/op	         1.000 download/op	         4.000 http/op	         3.000 list/op	  103682 B/op	    1184 allocs/op
+BenchmarkDriveBaseline/open-10         	      20	    538023 ns/op	         1.000 download/op	         4.000 http/op	         3.000 list/op	  107565 B/op	    1181 allocs/op
+BenchmarkDriveBaseline/open-10         	      20	    528865 ns/op	         1.000 download/op	         4.000 http/op	         3.000 list/op	  110606 B/op	    1184 allocs/op
+BenchmarkDriveBaseline/open-10         	      20	    532633 ns/op	         1.000 download/op	         4.000 http/op	         3.000 list/op	  105082 B/op	    1183 allocs/op
+BenchmarkDriveBaseline/open-10         	      20	    537565 ns/op	         1.000 download/op	         4.000 http/op	         3.000 list/op	  106101 B/op	    1188 allocs/op
+BenchmarkDriveBaseline/open-10         	      20	    557423 ns/op	         1.000 download/op	         4.000 http/op	         3.000 list/op	  110374 B/op	    1185 allocs/op
+BenchmarkDriveBaseline/changed-save-10 	      20	    666575 ns/op	         5.000 http/op	         3.000 list/op	         1.000 metadata/op	         1.000 upload/op	  176601 B/op	    1497 allocs/op
+BenchmarkDriveBaseline/changed-save-10 	      20	    622208 ns/op	         5.000 http/op	         3.000 list/op	         1.000 metadata/op	         1.000 upload/op	  173143 B/op	    1495 allocs/op
+BenchmarkDriveBaseline/changed-save-10 	      20	    631085 ns/op	         5.000 http/op	         3.000 list/op	         1.000 metadata/op	         1.000 upload/op	  175019 B/op	    1498 allocs/op
+BenchmarkDriveBaseline/changed-save-10 	      20	    624296 ns/op	         5.000 http/op	         3.000 list/op	         1.000 metadata/op	         1.000 upload/op	  167000 B/op	    1494 allocs/op
+BenchmarkDriveBaseline/changed-save-10 	      20	    633083 ns/op	         5.000 http/op	         3.000 list/op	         1.000 metadata/op	         1.000 upload/op	  176057 B/op	    1496 allocs/op
+BenchmarkDriveBaseline/changed-save-10 	      20	    628756 ns/op	         5.000 http/op	         3.000 list/op	         1.000 metadata/op	         1.000 upload/op	  181230 B/op	    1505 allocs/op
+BenchmarkDriveBaseline/unchanged-save-10         	      20	    525725 ns/op	         4.000 http/op	         3.000 list/op	         1.000 metadata/op	  103240 B/op	    1204 allocs/op
+BenchmarkDriveBaseline/unchanged-save-10         	      20	    528581 ns/op	         4.000 http/op	         3.000 list/op	         1.000 metadata/op	  108762 B/op	    1206 allocs/op
+BenchmarkDriveBaseline/unchanged-save-10         	      20	    531290 ns/op	         4.000 http/op	         3.000 list/op	         1.000 metadata/op	  104805 B/op	    1205 allocs/op
+BenchmarkDriveBaseline/unchanged-save-10         	      20	    531998 ns/op	         4.000 http/op	         3.000 list/op	         1.000 metadata/op	  106846 B/op	    1206 allocs/op
+BenchmarkDriveBaseline/unchanged-save-10         	      20	    533581 ns/op	         4.000 http/op	         3.000 list/op	         1.000 metadata/op	  106836 B/op	    1205 allocs/op
+BenchmarkDriveBaseline/unchanged-save-10         	      20	    538685 ns/op	         4.000 http/op	         3.000 list/op	         1.000 metadata/op	  111368 B/op	    1209 allocs/op
+BenchmarkDriveBaseline/entries-cold-10           	      20	   1818798 ns/op	        20.00 download/op	        24.00 http/op	         4.000 list/op	 1109603 B/op	    5698 allocs/op
+BenchmarkDriveBaseline/entries-cold-10           	      20	   1733273 ns/op	        20.00 download/op	        24.00 http/op	         4.000 list/op	 1185481 B/op	    5768 allocs/op
+BenchmarkDriveBaseline/entries-cold-10           	      20	   1735235 ns/op	        20.00 download/op	        24.00 http/op	         4.000 list/op	 1144740 B/op	    5706 allocs/op
+BenchmarkDriveBaseline/entries-cold-10           	      20	   1711904 ns/op	        20.00 download/op	        24.00 http/op	         4.000 list/op	 1155095 B/op	    5735 allocs/op
+BenchmarkDriveBaseline/entries-cold-10           	      20	   1770181 ns/op	        20.00 download/op	        24.00 http/op	         4.000 list/op	 1160979 B/op	    5734 allocs/op
+BenchmarkDriveBaseline/entries-cold-10           	      20	   1771912 ns/op	        20.00 download/op	        24.00 http/op	         4.000 list/op	 1139112 B/op	    5744 allocs/op
+BenchmarkDriveBaseline/entries-warm-10           	      20	      3131 ns/op	         0 http/op	    7696 B/op	      61 allocs/op
+BenchmarkDriveBaseline/entries-warm-10           	      20	      3169 ns/op	         0 http/op	    7696 B/op	      61 allocs/op
+BenchmarkDriveBaseline/entries-warm-10           	      20	      2965 ns/op	         0 http/op	    7696 B/op	      61 allocs/op
+BenchmarkDriveBaseline/entries-warm-10           	      20	      3460 ns/op	         0 http/op	    7696 B/op	      61 allocs/op
+BenchmarkDriveBaseline/entries-warm-10           	      20	      3769 ns/op	         0 http/op	    7696 B/op	      61 allocs/op
+BenchmarkDriveBaseline/entries-warm-10           	      20	      3165 ns/op	         0 http/op	    7696 B/op	      61 allocs/op
+BenchmarkDriveBaseline/entries-after-save-10     	      20	    642185 ns/op	         5.000 http/op	         3.000 list/op	         1.000 metadata/op	         1.000 upload/op	  186500 B/op	    1564 allocs/op
+BenchmarkDriveBaseline/entries-after-save-10     	      20	    670644 ns/op	         5.000 http/op	         3.000 list/op	         1.000 metadata/op	         1.000 upload/op	  221790 B/op	    1582 allocs/op
+BenchmarkDriveBaseline/entries-after-save-10     	      20	    642342 ns/op	         5.000 http/op	         3.000 list/op	         1.000 metadata/op	         1.000 upload/op	  204572 B/op	    1569 allocs/op
+BenchmarkDriveBaseline/entries-after-save-10     	      20	    641473 ns/op	         5.000 http/op	         3.000 list/op	         1.000 metadata/op	         1.000 upload/op	  198722 B/op	    1560 allocs/op
+BenchmarkDriveBaseline/entries-after-save-10     	      20	    683152 ns/op	         5.000 http/op	         3.000 list/op	         1.000 metadata/op	         1.000 upload/op	  224089 B/op	    1574 allocs/op
+BenchmarkDriveBaseline/entries-after-save-10     	      20	    658460 ns/op	         5.000 http/op	         3.000 list/op	         1.000 metadata/op	         1.000 upload/op	  202927 B/op	    1569 allocs/op
+BenchmarkDriveBaseline/entries-after-visible-save-10         	      20	   1334515 ns/op	         1.000 download/op	         9.000 http/op	         6.000 list/op	         1.000 metadata/op	         1.000 upload/op	  545149 B/op	    3415 allocs/op
+BenchmarkDriveBaseline/entries-after-visible-save-10         	      20	   1358356 ns/op	         1.000 download/op	         9.000 http/op	         6.000 list/op	         1.000 metadata/op	         1.000 upload/op	  574930 B/op	    3447 allocs/op
+BenchmarkDriveBaseline/entries-after-visible-save-10         	      20	   1343954 ns/op	         1.000 download/op	         9.000 http/op	         6.000 list/op	         1.000 metadata/op	         1.000 upload/op	  554938 B/op	    3430 allocs/op
+BenchmarkDriveBaseline/entries-after-visible-save-10         	      20	   1360992 ns/op	         1.000 download/op	         9.000 http/op	         6.000 list/op	         1.000 metadata/op	         1.000 upload/op	  526695 B/op	    3413 allocs/op
+BenchmarkDriveBaseline/entries-after-visible-save-10         	      20	   1337671 ns/op	         1.000 download/op	         9.000 http/op	         6.000 list/op	         1.000 metadata/op	         1.000 upload/op	  557492 B/op	    3421 allocs/op
+BenchmarkDriveBaseline/entries-after-visible-save-10         	      20	   1399610 ns/op	         1.000 download/op	         9.000 http/op	         6.000 list/op	         1.000 metadata/op	         1.000 upload/op	  549940 B/op	    3419 allocs/op
+BenchmarkDriveBaseline/calendar-cold-10                      	      20	    633988 ns/op	         3.000 http/op	         3.000 list/op	  254782 B/op	    1704 allocs/op
+BenchmarkDriveBaseline/calendar-cold-10                      	      20	    607517 ns/op	         3.000 http/op	         3.000 list/op	  248908 B/op	    1699 allocs/op
+BenchmarkDriveBaseline/calendar-cold-10                      	      20	    616010 ns/op	         3.000 http/op	         3.000 list/op	  248412 B/op	    1689 allocs/op
+BenchmarkDriveBaseline/calendar-cold-10                      	      20	    678190 ns/op	         3.000 http/op	         3.000 list/op	  255289 B/op	    1694 allocs/op
+BenchmarkDriveBaseline/calendar-cold-10                      	      20	    618998 ns/op	         3.000 http/op	         3.000 list/op	  247367 B/op	    1692 allocs/op
+BenchmarkDriveBaseline/calendar-cold-10                      	      20	    629731 ns/op	         3.000 http/op	         3.000 list/op	  261536 B/op	    1707 allocs/op
+BenchmarkDriveBaseline/calendar-warm-10                      	      20	      2133 ns/op	         0 http/op	    5280 B/op	      14 allocs/op
+BenchmarkDriveBaseline/calendar-warm-10                      	      20	      2646 ns/op	         0 http/op	    5280 B/op	      14 allocs/op
+BenchmarkDriveBaseline/calendar-warm-10                      	      20	      7031 ns/op	         0 http/op	    5280 B/op	      14 allocs/op
+BenchmarkDriveBaseline/calendar-warm-10                      	      20	      2296 ns/op	         0 http/op	    5280 B/op	      14 allocs/op
+BenchmarkDriveBaseline/calendar-warm-10                      	      20	      2162 ns/op	         0 http/op	    5280 B/op	      14 allocs/op
+BenchmarkDriveBaseline/calendar-warm-10                      	      20	      2315 ns/op	         0 http/op	    5280 B/op	      14 allocs/op
+PASS
+ok  	github/mridha/myjournal-app/internal/provider/google	3.970s

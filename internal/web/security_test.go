@@ -11,12 +11,13 @@ import (
 	"github/mridha/myjournal-app/internal/provider"
 	localProvider "github/mridha/myjournal-app/internal/provider/local"
 	"github/mridha/myjournal-app/internal/session"
+	"github/mridha/myjournal-app/internal/testutil"
 )
 
 func TestExpiredSessionsRejectedByPagesAndAPI(t *testing.T) {
 	now := time.Date(2026, 10, 9, 12, 0, 0, 0, time.UTC)
-	cfg := config.Config{BaseURL: "http://localhost:3030", SessionKey: "test-key"}
-	router := NewRouter(cfg, provider.NewRegistry(localProvider.New(cfg.BaseURL, "")), mockClock{now: now}, nil)
+	cfg := config.Config{BaseURL: testutil.LocalBaseURL, SessionKey: "test-key"}
+	router := NewRouter(cfg, provider.NewRegistry(localProvider.New(cfg.BaseURL, "")), testutil.StubClock{Time: now}, nil)
 	for _, issued := range []time.Time{now.Add(-session.Lifetime), now.Add(time.Second), {}} {
 		for _, tc := range []struct {
 			path   string
@@ -34,11 +35,11 @@ func TestExpiredSessionsRejectedByPagesAndAPI(t *testing.T) {
 }
 
 func TestCrossOriginMutationsRejectedBeforeCookieChanges(t *testing.T) {
-	cfg := config.Config{BaseURL: "http://localhost:3030", SessionKey: "test-key"}
-	router := NewRouter(cfg, provider.NewRegistry(localProvider.New(cfg.BaseURL, "")), mockClock{now: time.Now()}, nil)
+	cfg := config.Config{BaseURL: testutil.LocalBaseURL, SessionKey: "test-key"}
+	router := NewRouter(cfg, provider.NewRegistry(localProvider.New(cfg.BaseURL, "")), testutil.StubClock{Time: time.Now()}, nil)
 	for _, tc := range []struct{ method, path string }{{"POST", "/api/v1/logout"}, {"PUT", "/api/v1/entries/2026-10-09"}, {"DELETE", "/api/v1/entries/2026-10-09"}} {
 		for _, header := range []string{"Origin", "Sec-Fetch-Site"} {
-			req := httptest.NewRequest(tc.method, "http://localhost:3030"+tc.path, nil)
+			req := httptest.NewRequest(tc.method, testutil.LocalBaseURL+tc.path, nil)
 			if header == "Origin" {
 				req.Header.Set(header, "https://other.example")
 			} else {
@@ -52,7 +53,7 @@ func TestCrossOriginMutationsRejectedBeforeCookieChanges(t *testing.T) {
 		}
 	}
 	for _, site := range []string{"same-origin", ""} {
-		req := httptest.NewRequest(http.MethodPost, "http://localhost:3030/api/v1/logout", nil)
+		req := httptest.NewRequest(http.MethodPost, testutil.LocalBaseURL+"/api/v1/logout", nil)
 		req.Header.Set("Sec-Fetch-Site", site)
 		req.Header.Set("Origin", cfg.BaseURL)
 		res := httptest.NewRecorder()
@@ -65,10 +66,10 @@ func TestCrossOriginMutationsRejectedBeforeCookieChanges(t *testing.T) {
 
 func TestLoginCookieHasFixedExpiry(t *testing.T) {
 	now := time.Date(2026, 10, 9, 12, 0, 0, 0, time.UTC)
-	cfg := config.Config{BaseURL: "http://localhost:3030", SessionKey: "test-key", CookieSecure: true}
-	router := NewRouter(cfg, provider.NewRegistry(localProvider.New(cfg.BaseURL, "")), mockClock{now: now}, nil)
+	cfg := config.Config{BaseURL: testutil.LocalBaseURL, SessionKey: "test-key", CookieSecure: true}
+	router := NewRouter(cfg, provider.NewRegistry(localProvider.New(cfg.BaseURL, "")), testutil.StubClock{Time: now}, nil)
 	res := httptest.NewRecorder()
-	router.ServeHTTP(res, httptest.NewRequest(http.MethodGet, "/api/v1/auth/local/callback", nil))
+	router.ServeHTTP(res, httptest.NewRequest(http.MethodGet, localProvider.CallbackPath, nil))
 	cookies := res.Result().Cookies()
 	if len(cookies) != 1 {
 		t.Fatalf("cookies=%d", len(cookies))
@@ -84,8 +85,8 @@ func TestLoginCookieHasFixedExpiry(t *testing.T) {
 }
 
 func TestSecurityHeadersAndExternalScripts(t *testing.T) {
-	cfg := config.Config{BaseURL: "http://localhost:3030", SessionKey: "test-key"}
-	router := NewRouter(cfg, provider.NewRegistry(localProvider.New(cfg.BaseURL, "")), mockClock{now: time.Now()}, nil)
+	cfg := config.Config{BaseURL: testutil.LocalBaseURL, SessionKey: "test-key"}
+	router := NewRouter(cfg, provider.NewRegistry(localProvider.New(cfg.BaseURL, "")), testutil.StubClock{Time: time.Now()}, nil)
 	for _, path := range []string{"/", "/settings", "/missing", "/api/v1/settings", "/static/js/theme-init.js"} {
 		req := httptest.NewRequest(http.MethodGet, path, nil)
 		res := httptest.NewRecorder()
@@ -118,7 +119,7 @@ func TestSecurityHeadersAndExternalScripts(t *testing.T) {
 			t.Fatal("theme bootstrap asset unavailable")
 		}
 	}
-	req := httptest.NewRequest(http.MethodPost, "http://localhost:3030/api/v1/logout", nil)
+	req := httptest.NewRequest(http.MethodPost, testutil.LocalBaseURL+"/api/v1/logout", nil)
 	req.Header.Set("Sec-Fetch-Site", "cross-site")
 	res := httptest.NewRecorder()
 	router.ServeHTTP(res, req)

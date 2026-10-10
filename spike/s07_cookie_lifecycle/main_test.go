@@ -12,6 +12,8 @@ import (
 
 	"github/mridha/myjournal-app/internal/provider"
 	"github/mridha/myjournal-app/internal/session"
+	"github/mridha/myjournal-app/internal/testutil"
+
 	"golang.org/x/oauth2"
 	"google.golang.org/api/googleapi"
 )
@@ -58,7 +60,7 @@ func fixture(t *testing.T) (*experiment, *http.Cookie, *int, *bool) {
 }
 
 func request(e *experiment, method, path string, c *http.Cookie) *httptest.ResponseRecorder {
-	r := httptest.NewRequest(method, "http://localhost:3030"+path, nil)
+	r := httptest.NewRequest(method, testutil.LocalBaseURL+path, nil)
 	if c != nil {
 		r.AddCookie(c)
 	}
@@ -154,7 +156,7 @@ func TestDriveFailureDiagnosticsSuppressPrivateDetails(t *testing.T) {
 func TestLoginCookieAndCrossOriginProtection(t *testing.T) {
 	e, c, _, _ := fixture(t)
 	e.cfg.Endpoint.AuthURL = "https://accounts.example.test/auth"
-	e.cfg.RedirectURL = "http://localhost:3030/auth/google/callback"
+	e.cfg.RedirectURL = testutil.LocalBaseURL + "/auth/google/callback"
 	w := request(e, "GET", "/login", nil)
 	if w.Code != 302 || len(w.Result().Cookies()) != 1 {
 		t.Fatal("login setup failed")
@@ -174,7 +176,7 @@ func TestLoginCookieAndCrossOriginProtection(t *testing.T) {
 	if w := request(e, "GET", "/auth/google/callback?state=wrong&code=synthetic", pendingCookie); w.Code != 400 {
 		t.Fatal("state mismatch accepted")
 	}
-	r := httptest.NewRequest("POST", "http://localhost:3030/tamper", nil)
+	r := httptest.NewRequest("POST", testutil.LocalBaseURL+"/tamper", nil)
 	r.AddCookie(c)
 	r.Header.Set("Origin", "https://elsewhere.example.test")
 	w = httptest.NewRecorder()

@@ -5,11 +5,12 @@ import (
 	"time"
 
 	"github/mridha/myjournal-app/internal/config"
+	"github/mridha/myjournal-app/internal/testutil"
 )
 
 func TestBuildApp(t *testing.T) {
 	cfg := config.Config{
-		BaseURL:      "http://localhost:3030",
+		BaseURL:      testutil.LocalBaseURL,
 		Port:         3030,
 		LogLevel:     "info",
 		SessionKey:   "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
@@ -43,14 +44,14 @@ func TestBuildApp(t *testing.T) {
 func TestNewProviderRegistryFailsClosed(t *testing.T) {
 	for _, cfg := range []config.Config{
 		{BaseURL: "http://localhost.evil.com:3030", Providers: "local"},
-		{BaseURL: "http://localhost:3030", Providers: "gogle"},
-		{BaseURL: "http://localhost:3030", Providers: "google"},
+		{BaseURL: testutil.LocalBaseURL, Providers: "gogle"},
+		{BaseURL: testutil.LocalBaseURL, Providers: "google"},
 	} {
 		if _, err := newProviderRegistry(cfg); err == nil {
 			t.Fatalf("newProviderRegistry(%#v) error = nil, want rejection", cfg)
 		}
 	}
-	if registry, err := newProviderRegistry(config.Config{BaseURL: "http://localhost:3030", Providers: "local"}); err != nil || registry == nil {
+	if registry, err := newProviderRegistry(config.Config{BaseURL: testutil.LocalBaseURL, Providers: "local"}); err != nil || registry == nil {
 		t.Fatalf("newProviderRegistry(local) = %v, %v; want nonnil registry", registry, err)
 	}
 }
@@ -63,14 +64,14 @@ func TestGoogleIntegrationModeIsLocalOnly(t *testing.T) {
 			t.Fatal("Google test mode accepted nonlocal deployment")
 		}
 	}
-	registry, err := newProviderRegistry(config.Config{BaseURL: "http://localhost:3030", Providers: "google", GoogleTestMode: true, GoogleClientID: "test-client", GoogleClientSecret: "test-secret"})
+	registry, err := newProviderRegistry(config.Config{BaseURL: testutil.LocalBaseURL, Providers: "google", GoogleTestMode: true, GoogleClientID: "test-client", GoogleClientSecret: "test-secret"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if _, ok := registry.Get("google"); !ok {
 		t.Fatal("Google integration mode not registered")
 	}
-	if _, err := newProviderRegistry(config.Config{BaseURL: "http://localhost:3030", Providers: "google,google", GoogleTestMode: true, GoogleClientID: "test-client", GoogleClientSecret: "test-secret"}); err == nil {
+	if _, err := newProviderRegistry(config.Config{BaseURL: testutil.LocalBaseURL, Providers: "google,google", GoogleTestMode: true, GoogleClientID: "test-client", GoogleClientSecret: "test-secret"}); err == nil {
 		t.Fatal("duplicate Google accepted")
 	}
 }

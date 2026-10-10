@@ -9,6 +9,9 @@ import (
 	"github/mridha/myjournal-app/internal/provider"
 )
 
+// CallbackPath is the local development sign-in callback route.
+const CallbackPath = "/api/v1/auth/local/callback"
+
 // Provider is the local dev-only storage provider used for UI work without OAuth.
 type Provider struct {
 	baseURL string
@@ -28,7 +31,7 @@ func (p *Provider) Begin(_ context.Context, _ provider.LoginRequest) (string, er
 	if err := config.ValidateLoopbackURL(p.baseURL); err != nil {
 		return "", err
 	}
-	return strings.TrimRight(p.baseURL, "/") + "/api/v1/auth/local/callback", nil
+	return strings.TrimRight(p.baseURL, "/") + CallbackPath, nil
 }
 
 func (p *Provider) Complete(_ context.Context, _ provider.LoginCallback) (provider.Connection, error) {

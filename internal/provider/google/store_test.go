@@ -34,6 +34,7 @@ type fakeDrive struct {
 	next       int
 	writes     int
 	lists      int
+	pageSize   int
 	failReads  int
 	failWrites int
 }
@@ -99,7 +100,11 @@ func (f *fakeDrive) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 		sort.Slice(matches, func(i, j int) bool { return matches[i].Id < matches[j].Id })
 		offset, _ := strconv.Atoi(r.URL.Query().Get("pageToken"))
-		end := offset + 2
+		pageSize := f.pageSize
+		if pageSize == 0 {
+			pageSize = 2
+		}
+		end := offset + pageSize
 		if end > len(matches) {
 			end = len(matches)
 		}
