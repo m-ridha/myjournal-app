@@ -58,7 +58,9 @@ func NewRouter(cfg config.Config, registry *provider.Registry, clk journal.Clock
 			renderEntryPage(w, clk.Now().In(journal.TimeZone(r.Context())), clk, current, journal.TimeZone(r.Context()))
 			return
 		}
-		renderPage(w, pageData{TitleKey: "landing.title", DescriptionKey: "landing.description", SignedIn: false, Page: "landing"})
+		_, googleLogin := registry.Get("google")
+		_, localLogin := registry.Get("local")
+		renderPage(w, pageData{TitleKey: "landing.title", DescriptionKey: "landing.description", SignedIn: false, Page: "landing", GoogleLogin: googleLogin, LocalLogin: localLogin})
 	})
 	r.Get("/entries/today", func(w http.ResponseWriter, r *http.Request) {
 		current, err := currentSession(r, cfg.SessionKey, registry, clk.Now())
@@ -104,7 +106,13 @@ func NewRouter(cfg config.Config, registry *provider.Registry, clk journal.Clock
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
 		}
-		renderPage(w, pageData{TitleKey: "settings.title", SignedIn: true, Page: "settings", AccountName: current.AccountEmail, DraftScope: draftScope(current), FolderName: localeCatalog.Text("app.name")})
+		folderURL := ""
+		if p, ok := registry.Get(current.ProviderID); ok {
+			if locator, ok := p.(provider.FolderLocator); ok {
+				folderURL, _ = locator.FolderURL(r.Context(), current.Connection)
+			}
+		}
+		renderPage(w, pageData{TitleKey: "settings.title", SignedIn: true, Page: "settings", AccountName: current.AccountEmail, DraftScope: draftScope(current), FolderName: localeCatalog.Text("app.name"), FolderURL: folderURL})
 	})
 	r.Get("/privacy", func(w http.ResponseWriter, r *http.Request) {
 		renderPage(w, pageData{TitleKey: "privacy.title", DescriptionKey: "privacy.description", Page: "privacy"})

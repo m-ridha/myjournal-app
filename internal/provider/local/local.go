@@ -49,7 +49,7 @@ func (p *Provider) ID() string { return "local" }
 
 func (p *Provider) Name() string { return "Local dev account" }
 
-func (p *Provider) Begin(_ context.Context, _ string) (string, error) {
+func (p *Provider) Begin(_ context.Context, _ provider.LoginRequest) (string, error) {
 	if err := ValidateBaseURL(p.baseURL); err != nil {
 		return "", err
 	}
@@ -72,7 +72,7 @@ func ValidateBaseURL(raw string) error {
 	return fmt.Errorf("local provider requires an absolute localhost APP_BASE_URL")
 }
 
-func (p *Provider) Complete(_ context.Context, _ string) (provider.Connection, error) {
+func (p *Provider) Complete(_ context.Context, _ provider.LoginCallback) (provider.Connection, error) {
 	return provider.Connection{
 		ProviderID:   "local",
 		AccountID:    "dev",

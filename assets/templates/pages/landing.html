@@ -9,7 +9,8 @@
       <a class="mj-btn mj-btn-primary" href="/entries/today">{{t "landing.openToday"}}</a>
       <a class="mj-btn mj-btn-secondary" href="/settings">{{t "landing.settings"}}</a>
     {{else}}
-      <a class="mj-btn mj-btn-primary" href="/api/v1/auth/local/login">{{t "landing.connectLocal"}}</a>
+      {{if .GoogleLogin}}<a class="mj-btn mj-btn-primary" href="/api/v1/auth/google/login">{{t "landing.connectGoogle"}}</a>{{end}}
+      {{if .LocalLogin}}<a class="mj-btn {{if .GoogleLogin}}mj-btn-secondary{{else}}mj-btn-primary{{end}}" href="/api/v1/auth/local/login">{{t "landing.connectLocal"}}</a>{{end}}
       <a class="mj-btn mj-btn-secondary" href="/help">{{t "landing.driveHelp"}}</a>
     {{end}}
   </div>

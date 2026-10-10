@@ -2,17 +2,18 @@ package google
 
 import (
 	"context"
-	"crypto/rand"
-	"crypto/sha256"
-	"encoding/base64"
 	"fmt"
+	"net/http"
 	"os"
+	"sync"
+	"time"
 
-	"github/mridha/myjournal-app/internal/journal"
 	"github/mridha/myjournal-app/internal/provider"
 
 	"golang.org/x/oauth2"
 	goauth "golang.org/x/oauth2/google"
+	"google.golang.org/api/idtoken"
+	"google.golang.org/api/option"
 )
 
 // Config carries the environment-derived Google OAuth configuration.
@@ -43,72 +44,50 @@ func ConfigFromEnv() Config {
 
 // Provider is the Google-backed provider used by the real application.
 type Provider struct {
-	cfg Config
+	cfg       Config
+	endpoint  oauth2.Endpoint
+	client    *http.Client
+	validate  func(context.Context, string, string) (*idtoken.Payload, error)
+	mu        sync.Mutex
+	tokens    map[[32]byte]*oauth2.Token
+	locks     [64]chan struct{}
+	mutations [64]chan struct{}
 }
 
 func New(cfg Config) *Provider {
-	return &Provider{cfg: cfg}
+	p := &Provider{cfg: cfg, endpoint: goauth.Endpoint, client: &http.Client{Timeout: 20 * time.Second}, tokens: make(map[[32]byte]*oauth2.Token)}
+	validator, err := idtoken.NewValidator(context.Background(), option.WithHTTPClient(p.client))
+	p.validate = func(ctx context.Context, token, audience string) (*idtoken.Payload, error) {
+		if err != nil {
+			return nil, err
+		}
+		return validator.Validate(ctx, token, audience)
+	}
+	for i := range p.locks {
+		p.locks[i] = make(chan struct{}, 1)
+		p.mutations[i] = make(chan struct{}, 1)
+	}
+	return p
 }
 
 func (p *Provider) ID() string { return "google" }
 
 func (p *Provider) Name() string { return "Google" }
 
-func (p *Provider) Begin(_ context.Context, state string) (string, error) {
-	if p.cfg.ClientID == "" || p.cfg.ClientSecret == "" {
+func (p *Provider) Begin(_ context.Context, request provider.LoginRequest) (string, error) {
+	if p.cfg.ClientID == "" || p.cfg.ClientSecret == "" || request.State == "" || request.Verifier == "" || request.Nonce == "" {
 		return "", fmt.Errorf("google OAuth client configuration is missing")
 	}
 
-	cfg := &oauth2.Config{
-		ClientID:     p.cfg.ClientID,
-		ClientSecret: p.cfg.ClientSecret,
-		RedirectURL:  p.cfg.BaseURL + "/auth/google/callback",
-		Scopes:       p.cfg.Scopes,
-		Endpoint:     goauth.Endpoint,
-	}
+	cfg := p.oauthConfig()
 
-	verifier, err := randomVerifier()
-	if err != nil {
-		return "", err
-	}
-	challenge := codeChallenge(verifier)
-
-	url := cfg.AuthCodeURL(state,
+	options := []oauth2.AuthCodeOption{
 		oauth2.AccessTypeOffline,
-		oauth2.ApprovalForce,
-		oauth2.SetAuthURLParam("code_challenge", challenge),
-		oauth2.SetAuthURLParam("code_challenge_method", "S256"),
-		oauth2.SetAuthURLParam("prompt", "consent"),
-	)
-	return url, nil
-}
-
-func (p *Provider) Complete(_ context.Context, _ string) (provider.Connection, error) {
-	return provider.Connection{
-		ProviderID:   "google",
-		AccountID:    "google-user",
-		AccountEmail: "placeholder@google.local",
-		Credentials:  "google-oauth-credentials",
-	}, nil
-}
-
-func (p *Provider) Store(_ context.Context, _ provider.Connection) (journal.Store, error) {
-	return nil, fmt.Errorf("google provider store is not implemented yet")
-}
-
-func (p *Provider) Revoke(_ context.Context, _ provider.Connection) error {
-	return nil
-}
-
-func randomVerifier() (string, error) {
-	b := make([]byte, 32)
-	if _, err := rand.Read(b); err != nil {
-		return "", err
+		oauth2.S256ChallengeOption(request.Verifier),
+		oauth2.SetAuthURLParam("nonce", request.Nonce),
 	}
-	return base64.RawURLEncoding.EncodeToString(b), nil
-}
-
-func codeChallenge(verifier string) string {
-	sum := sha256.Sum256([]byte(verifier))
-	return base64.RawURLEncoding.EncodeToString(sum[:])
+	if request.ForceConsent {
+		options = append(options, oauth2.SetAuthURLParam("prompt", "consent"))
+	}
+	return cfg.AuthCodeURL(request.State, options...), nil
 }

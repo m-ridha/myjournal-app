@@ -32,6 +32,8 @@ type pageData struct {
 	Description    string
 	DescriptionKey string
 	SignedIn       bool
+	GoogleLogin    bool
+	LocalLogin     bool
 	Theme          string
 	Page           string
 	Date           string
@@ -40,6 +42,7 @@ type pageData struct {
 	AccountName    string
 	DraftScope     string
 	FolderName     string
+	FolderURL      string
 	Locale         string
 	Messages       string
 }

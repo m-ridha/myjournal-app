@@ -11,13 +11,14 @@ import (
 
 // Config contains the application-level settings used by the server at startup.
 type Config struct {
-	BaseURL      string
-	Port         int
-	LogLevel     string
-	SessionKey   string
-	CookieSecure bool
-	Providers    string
-	LocalDataDir string
+	BaseURL        string
+	Port           int
+	LogLevel       string
+	SessionKey     string
+	CookieSecure   bool
+	Providers      string
+	LocalDataDir   string
+	GoogleTestMode bool
 }
 
 func Load() (Config, error) {
@@ -58,6 +59,13 @@ func Load() (Config, error) {
 	}
 	if v, ok := os.LookupEnv("LOCAL_DATA_DIR"); ok {
 		cfg.LocalDataDir = v
+	}
+	if v, ok := os.LookupEnv("GOOGLE_TEST_MODE"); ok {
+		enabled, err := strconv.ParseBool(v)
+		if err != nil {
+			return Config{}, fmt.Errorf("GOOGLE_TEST_MODE must be true or false")
+		}
+		cfg.GoogleTestMode = enabled
 	}
 	return cfg, nil
 }

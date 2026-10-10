@@ -11,10 +11,22 @@ import (
 type Provider interface {
 	ID() string
 	Name() string
-	Begin(ctx context.Context, state string) (string, error)
-	Complete(ctx context.Context, code string) (Connection, error)
+	Begin(ctx context.Context, request LoginRequest) (string, error)
+	Complete(ctx context.Context, callback LoginCallback) (Connection, error)
 	Store(ctx context.Context, c Connection) (journal.Store, error)
 	Revoke(ctx context.Context, c Connection) error
+}
+
+// LoginRequest carries independent browser state, PKCE verifier, and OIDC nonce.
+type LoginRequest struct {
+	State, Verifier, Nonce string
+	ForceConsent           bool
+}
+
+// LoginCallback carries the validated browser handoff to the provider exchange.
+type LoginCallback struct {
+	Code, Verifier, Nonce string
+	Previous              *Connection
 }
 
 // Connection is a provider-specific connection blob stored in the session.
@@ -51,4 +63,9 @@ func (r *Registry) List() []Provider {
 		items = append(items, p)
 	}
 	return items
+}
+
+// FolderLocator supplies an existing provider folder link without creating paths.
+type FolderLocator interface {
+	FolderURL(context.Context, Connection) (string, error)
 }

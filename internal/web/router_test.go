@@ -10,6 +10,7 @@ import (
 	"github/mridha/myjournal-app/internal/clock"
 	"github/mridha/myjournal-app/internal/config"
 	"github/mridha/myjournal-app/internal/provider"
+	googleProvider "github/mridha/myjournal-app/internal/provider/google"
 	localProvider "github/mridha/myjournal-app/internal/provider/local"
 	"github/mridha/myjournal-app/internal/session"
 )
@@ -271,6 +272,37 @@ func TestEntryPagesUseRequestTimeZone(t *testing.T) {
 			}
 			if tc.date != "" && (!strings.Contains(res.Body.String(), `data-entry-date="`+tc.date+`"`) || !strings.Contains(res.Body.String(), `data-today="`+tc.date+`"`)) {
 				t.Fatal("editor date and today disagree with request timezone")
+			}
+		})
+	}
+}
+
+func TestLandingOffersOnlyRegisteredProviders(t *testing.T) {
+	local := localProvider.New("http://localhost:3030")
+	google := googleProvider.New(googleProvider.Config{ClientID: "test-client", ClientSecret: "test-secret", BaseURL: "http://localhost:3030"})
+	for _, tc := range []struct {
+		name          string
+		providers     []provider.Provider
+		local, google bool
+	}{
+		{"local", []provider.Provider{local}, true, false},
+		{"google", []provider.Provider{google}, false, true},
+		{"both", []provider.Provider{local, google}, true, true},
+		{"none", nil, false, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			h := NewRouter(config.Config{SessionKey: "test-key"}, provider.NewRegistry(tc.providers...), mockClock{now: time.Date(2026, 10, 10, 0, 0, 0, 0, time.UTC)}, nil)
+			response := httptest.NewRecorder()
+			h.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/", nil))
+			body := response.Body.String()
+			if got := strings.Contains(body, `href="/api/v1/auth/local/login"`); got != tc.local {
+				t.Errorf("local login offered=%v want=%v", got, tc.local)
+			}
+			if got := strings.Contains(body, `href="/api/v1/auth/google/login"`); got != tc.google {
+				t.Errorf("Google login offered=%v want=%v", got, tc.google)
+			}
+			if tc.google && !strings.Contains(body, ">Continue with Google</a>") {
+				t.Error("missing localized Google button")
 			}
 		})
 	}

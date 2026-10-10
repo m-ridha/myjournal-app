@@ -739,8 +739,8 @@ html[data-theme="dark"] .icon-moon {
 }
 
 .mj-btn-secondary.mj-danger {
-  border-color: #b3261e;
-  color: #b3261e;
+  border-color: var(--mj-danger);
+  color: var(--mj-danger);
 }
 
 @media (max-width: 640px) {

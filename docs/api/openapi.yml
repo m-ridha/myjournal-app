@@ -161,10 +161,23 @@ paths:
   /api/v1/auth/{provider}/login:
     get:
       summary: Start provider login flow
+      description: >-
+        Remote providers set an encrypted HttpOnly mj_oauth cookie, valid for ten
+        minutes at /api/v1/auth/, binding state, PKCE verifier, and OIDC nonce.
+        Only one pending login per browser is supported. Local development login
+        does not use this OAuth transaction. Google is available only in explicit
+        localhost test mode until live acceptance passes.
       security: []
       operationId: startProviderLogin
       parameters:
         - $ref: '#/components/parameters/ProviderPathParam'
+        - name: force_consent
+          in: query
+          required: false
+          description: Set to 1 to explicitly request consent again; first Google login also requests consent.
+          schema:
+            type: integer
+            enum: [0, 1]
       responses:
         '302':
           description: Redirect to provider login
@@ -180,6 +193,12 @@ paths:
   /api/v1/auth/{provider}/callback:
     get:
       summary: Complete provider login flow
+      description: >-
+        Remote callbacks require the pending mj_oauth cookie and exactly one
+        nonempty code and matching state. Expired, malformed, denied, or
+        mismatched callbacks are rejected before provider exchange. The pending
+        cookie is cleared; failed login preserves any existing session.
+        Local development callbacks are exempt from OAuth parameters.
       security: []
       operationId: completeProviderLogin
       parameters:
@@ -197,6 +216,8 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalError'
+        '502':
+          $ref: '#/components/responses/BadGateway'
 
   /api/v1/logout:
     post:

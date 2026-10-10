@@ -14,6 +14,7 @@ import (
 	"github/mridha/myjournal-app/internal/config"
 	"github/mridha/myjournal-app/internal/journal"
 	"github/mridha/myjournal-app/internal/provider"
+	"github/mridha/myjournal-app/internal/provider/google"
 	"github/mridha/myjournal-app/internal/provider/local"
 	"github/mridha/myjournal-app/internal/session"
 	"github/mridha/myjournal-app/internal/web"
@@ -114,7 +115,22 @@ func newProviderRegistry(cfg config.Config) (*provider.Registry, error) {
 			providers = append(providers, local.New(cfg.BaseURL, cfg.LocalDataDir))
 			seen[name] = struct{}{}
 		case "google":
-			return nil, fmt.Errorf("Google provider is not implemented; do not enable it")
+			if _, ok := seen[name]; ok {
+				return nil, fmt.Errorf("PROVIDERS contains duplicate provider %q", name)
+			}
+			if !cfg.GoogleTestMode {
+				return nil, fmt.Errorf("Google is awaiting live acceptance; use GOOGLE_TEST_MODE=true only for localhost integration testing")
+			}
+			if err := local.ValidateBaseURL(cfg.BaseURL); err != nil {
+				return nil, fmt.Errorf("Google test mode requires localhost: %w", err)
+			}
+			gc := google.ConfigFromEnv()
+			gc.BaseURL = cfg.BaseURL
+			if gc.ClientID == "" || gc.ClientSecret == "" {
+				return nil, fmt.Errorf("Google OAuth client configuration is missing")
+			}
+			providers = append(providers, google.New(gc))
+			seen[name] = struct{}{}
 		case "":
 			return nil, fmt.Errorf("PROVIDERS contains an empty provider name")
 		default:
