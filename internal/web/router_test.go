@@ -1,6 +1,8 @@
 package web
 
 import (
+	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -9,6 +11,7 @@ import (
 
 	"github/mridha/myjournal-app/internal/clock"
 	"github/mridha/myjournal-app/internal/config"
+	"github/mridha/myjournal-app/internal/journal"
 	"github/mridha/myjournal-app/internal/provider"
 	googleProvider "github/mridha/myjournal-app/internal/provider/google"
 	localProvider "github/mridha/myjournal-app/internal/provider/local"
@@ -302,5 +305,27 @@ func TestLandingOffersOnlyRegisteredProviders(t *testing.T) {
 				t.Error("missing localized Google button")
 			}
 		})
+	}
+}
+
+func TestAPIPanicReturnsGenericEnvelope(t *testing.T) {
+	cfg := config.Config{BaseURL: testutil.LocalBaseURL, SessionKey: "0123456789abcdef0123456789abcdef"}
+	h := NewRouter(cfg, provider.NewRegistry(localProvider.New(testutil.LocalBaseURL, "")), clock.System{}, func(context.Context, session.Session) (*journal.Service, error) {
+		panic("private provider details")
+	})
+	login := httptest.NewRecorder()
+	h.ServeHTTP(login, httptest.NewRequest(http.MethodGet, localProvider.CallbackPath, nil))
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/entries/2020-01-01", nil)
+	for _, cookie := range login.Result().Cookies() {
+		req.AddCookie(cookie)
+	}
+	res := httptest.NewRecorder()
+	h.ServeHTTP(res, req)
+	var body map[string]string
+	if err := json.Unmarshal(res.Body.Bytes(), &body); err != nil {
+		t.Fatalf("GET panicking API decode = %v, want JSON envelope", err)
+	}
+	if res.Code != http.StatusInternalServerError || body["message"] != localeCatalog.Text("errors.internal") || len(body) != 1 || res.Header().Get("Content-Type") != "application/json" {
+		t.Fatalf("GET panicking API = (%d, %v, %q), want generic JSON 500", res.Code, body, res.Header().Get("Content-Type"))
 	}
 }

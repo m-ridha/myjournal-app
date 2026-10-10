@@ -202,7 +202,7 @@ Partial live Google smoke success is recorded in findings; full integrated accep
 
 - [x] Retain January 2 successful results and January 3 partial failure; keep failed sample and unknown write outcome explicit
 - [x] Add probe progress/single-running guard and reproduce/fix deadline errors falling through to HTTP 500 (now existing 503 unavailable response)
-- [ ] Confirm January 3 error category from safe terminal/response evidence and inspect retained fixture before any cleanup/retry
+- Deferred by user: January 3 error-category investigation. Read-only fixture inspection is complete; retain the fixture without cleanup.
 
 
 ## Performance candidates (2026-10-10)
@@ -242,3 +242,45 @@ Performance plan status refreshed (2026-10-10): focused iteration complete; priv
 
 - [x] Returning an unsaved new entry to empty text restores Blank page; an existing empty file retains Saved.
 - [x] Regression reproduces the original failure and verifies no autosave PUT or retained backup after reverting; make fmt lint test passes.
+
+## Google reliability regression coverage (2026-10-10)
+
+- [x] Verify safe-read retry classification: 429, 5xx and rate-limited 403 retry; authentication, permissions, absence, precondition and unclassified transport errors return directly.
+- [x] Verify three-attempt exhaustion, recovery within that bound, and cancellation/deadline during backoff using testing/synctest without wall-clock sleeps.
+- [x] Simulate Drive applying both new-entry and update uploads before returning 503: report unavailable without automatic upload retry, recover applied content/version through Get, and reject stale original-base retries.
+- [x] Fresh make fmt lint test, go test -race ./internal/provider/google, and git diff --check pass. These are synthetic reliability results, not live Google or production acceptance.
+
+Next: remaining live Google checks (especially Settings Disconnect, omitted-refresh-token reconnect, folder recreation and revision measurements), external-writer/multi-instance policy, then remaining UI/release acceptance. Production Google stays disabled.
+
+## Production Google acceptance preparation (2026-10-10)
+
+- [x] Recheck official Drive update/performance guidance; no atomic conditional media-update guarantee established.
+- [x] Settings Disconnect/reconnect: user confirmed sign-out, missing Drive consent was correctly rejected (grant/401), explicit consent succeeded, and agent reload verified saved synthetic file preservation.
+- [x] Integrated disposable-year recreation: absent read did not recreate folder; save recreated it and survived reload. Both synthetic 2019-02-20 files trashed through Drive; editor absence verified; empty replacement year retained.
+- [x] Changed revision stage on 2019-02-21: user reported 50 successful saves/50 checksum changes in 228968 ms; agent observed 50 Drive versions (current plus 1–49).
+- [x] Unchanged revision stage on 2019-02-21: user reported 50 successful saves/0 checksum changes in 120301 ms, no uploads in supplied logs; agent reopened Drive Manage versions and observed the same 50 versions.
+- [x] User trashed synthetic 2019-02-21 through the app and confirmed reload shows Blank page; revision fixture cleanup complete.
+- [x] User accepted restricted first-release policy (ADR 016): one active app process, no simultaneous external edits, explicit lost-update risk. Deployment compliance and remaining release acceptance stay open.
+
+No live pass or production readiness is claimed from this preparation.
+
+- [x] Run dependency vulnerability baseline with govulncheck v1.8.0 on Go 1.27.1.
+- [x] Upgrade to Go 1.27.2 and patched x/net dependency family; govulncheck v1.8.0 reports zero reachable/imported-package vulnerabilities. Unused openpgp module-only advisory remains documented.
+- [x] Update CI linter to v2.14.0 for Go 1.27.2 compatibility; formatting, lint, JavaScript/Go tests and seven architecture probes pass.
+
+- [x] User confirmed Google sign-in without forced consent followed by same-key/config restart and successful existing-entry reads. Actual OAuth refresh-token omission was not observed.
+
+- [x] Human Google-backed synthetic lost-acknowledgement test: failed feedback retained draft; manual retry GET reconciled to Saved without a second PUT (2019-02-22).
+- [x] Complete human Google uncertain-save cases and clean up the synthetic fixture; see findings for scope and storage-inspection limits.
+
+- [x] Human Google uncertain-save newer-text case: paused autosave, verification GET then stale-base PUT/409, retained text/conflict controls, Keep mine PUT succeeded.
+
+- [x] Human Google recovery GET checks: typing during delayed verification passed; offline verification issued no PUT, and online manual retry saved successfully.
+- [x] Human Google sign-out during pending recovery GET: sign-in feedback, only GET/no follow-up PUT; reconnect retained text and showed Saved. Storage cleanup was not independently inspected.
+- [x] User confirmed failed-save pause does not automatically retry; trashed synthetic 2019-02-22 and reloaded to Blank page.
+
+- [x] Replace raw chi panic logging with generic event/request ID recovery; preserve API JSON errors, abort semantics and committed-response safety. Fresh make fmt lint test passes.
+- [ ] Finish startup/server/error privacy review and remaining production HTTPS/deployment acceptance.
+
+- [x] Review app startup/server logging; sanitize net/http diagnostic fallback, regenerate Wire and verify secret-omission regression. Fresh make fmt lint test passes.
+- [ ] Select deployment target and verify production HTTPS, Google Console setup, non-overlapping rollout and infrastructure logging/privacy.

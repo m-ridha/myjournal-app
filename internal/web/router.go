@@ -30,7 +30,13 @@ func NewRouter(cfg config.Config, registry *provider.Registry, clk journal.Clock
 	r.Use(webMiddleware.SecurityHeaders)
 	r.Use(middleware.RequestID)
 	r.Use(webMiddleware.RequestLog)
-	r.Use(middleware.Recoverer)
+	r.Use(webMiddleware.Recoverer(func(w http.ResponseWriter, r *http.Request) {
+		if strings.HasPrefix(r.URL.Path, "/api/v1/") {
+			api.WriteError(w, http.StatusInternalServerError, localeCatalog.Text("errors.internal"))
+			return
+		}
+		http.Error(w, localeCatalog.Text("errors.internal"), http.StatusInternalServerError)
+	}))
 	r.Use(middleware.Timeout(30 * time.Second))
 	r.Use(webMiddleware.TimeZone)
 	protection := http.NewCrossOriginProtection()

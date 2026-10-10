@@ -149,3 +149,15 @@ Executed with the Web App QA & Release Copilot skill using Chrome on macOS, loca
 | Cleanup | Restored native fetch, signed in locally, trashed only the disposable entry via confirmation. Reload showed Blank page, empty editor and no trash control. | Pass |
 
 The initially attempted paste did not install the probe; its ordinary successful save is excluded from failure evidence. Console input was then verified before running the cases above. Extension-origin favicon CSP messages were visible and are not attributed to app behavior. Agent-created QA tabs are temporary; local sign-in was restored after the sign-out test. No product code changed during QA. Safari and Google-backed repetition remain separate coverage.
+
+### Human Google-backed evidence — 2026-10-10
+
+On disposable 2019-02-22, the user reported that a scoped fetch wrapper hid the real PUT response, the editor showed Save failed. Draft kept locally., and manual retry made a GET without another PUT and reached Saved. This covers matching-current-content reconciliation only. Remaining cases and cleanup are pending; no actual network failure cause or historical write outcome is inferred.
+
+Google newer-text case: user confirmed paused autosave after further editing; manual retry made GET then conditional PUT/409 while retaining latest text and conflict controls. Keep mine completed a successful PUT and Saved. Delayed/failed verification and sign-out race remain separate cases.
+
+Google verification cases: user reported delayed-GET typing check passed; offline verification made no PUT and manual retry after restoring online access succeeded. The no-automatic-retry waiting period was not separately reported. Sign-out race and synthetic fixture cleanup remain pending.
+
+Google sign-out race: user reported sign-in-required feedback with text retained and only GET/no follow-up PUT; after reconnect text remained and status was Saved. No independent storage inspection was performed. Fixture cleanup and explicit pause waiting-period confirmation remain pending.
+
+Final Google confirmations: user observed no automatic retries after failed-save feedback; trashed synthetic 2019-02-22 through the app and confirmed reload shows Blank page. This completes the reported Google recovery sequence and fixture cleanup, subject to the evidence limits above.

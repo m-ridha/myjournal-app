@@ -13,7 +13,7 @@ Read the user's current instructions first, then consult:
 
 ## Stack, setup, and checks
 
-Use Go, chi, `html/template`, embedded assets, Google Wire, and oapi-codegen. Preserve module `github/mridha/myjournal-app` and the declared Go version (currently 1.27.1). Prefer the standard library and existing dependencies.
+Use Go, chi, `html/template`, embedded assets, Google Wire, and oapi-codegen. Preserve module `github/mridha/myjournal-app` and the declared Go version (currently 1.27.2). Prefer the standard library and existing dependencies.
 
 ```sh
 # Create .env from .env.example; set SESSION_KEY using openssl rand -base64 32.
@@ -30,7 +30,7 @@ make generate-wire     # after Wire edits; requires wire
 - Edit `cmd/app/wire.go`, regenerate `cmd/app/wire_gen.go`, and version both. Edit `docs/api/openapi.yml`, regenerate `internal/web/api/openapi.gen.go`. Never hand-edit generated code or restore top-level generated directories.
 - The schema declares OpenAPI 3.2.1 and the generated header identifies oapi-codegen v2.8.0. Verify installed compatibility; do not silently downgrade. `make generate` runs both generators; `go generate ./cmd/app` also runs Wire. Inspect generated diffs.
 - `make test` runs JavaScript regressions and `go test ./...`. JavaScript requires Node.js or macOS JavaScriptCore, without npm packages. Preserve the JavaScriptCore success-marker check so asynchronous assertions cannot appear to pass.
-- Lint uses golangci-lint v2. For documentation-only changes, check links/paths, consistency, and `git diff --check`; runtime tests are unnecessary. Report unavailable tools and exact commands/results; never present historical checks as a fresh run.
+- Lint uses golangci-lint v2.14.0 (v2.13.2 cannot read Go 1.27.2 export data). For documentation-only changes, check links/paths, consistency, and `git diff --check`; runtime tests are unnecessary. Report unavailable tools and exact commands/results; never present historical checks as a fresh run.
 - Spikes also use port 3030. Do not kill an existing listener without establishing ownership.
 
 ## Product constraints
@@ -96,7 +96,7 @@ Preserve these accepted behaviors when implementing autosave or other features:
 
 ## Google and current priorities
 
-- Production Google remains intentionally disabled pending live acceptance and external-writer concurrency policy. GOOGLE_TEST_MODE=true permits the integrated OAuth/Drive adapter only on exact localhost/loopback URLs; normal production registration must remain guarded. S1/S2/S4/S7 and the Phase 1 go decision are recorded; consult tracked evidence instead of routinely asking to repeat accepted experiments.
+- Production Google remains intentionally disabled pending live/release acceptance. ADR 016 records the user-approved restricted first-release policy: one active app process including deployments, no simultaneous external editing, and documented residual lost-update risk. Do not claim atomic concurrency or enable multi-instance deployment. GOOGLE_TEST_MODE=true permits the integrated OAuth/Drive adapter only on exact localhost/loopback URLs; normal production registration must remain guarded. S1/S2/S4/S7 and the Phase 1 go decision are recorded; consult tracked evidence instead of routinely asking to repeat accepted experiments.
 - Use Drive md5Checksum for content versions (ADR 005), while treating pre-upload comparison as non-atomic and handling absent checksums explicitly. Share folder locks per account; select duplicates deterministically without deleting them. Single-process convergence does not prove multi-instance safety.
 - Preserve existing refresh tokens when later OAuth responses omit them. The approved lifetime is fixed 30 days from original IssuedAt (ADR 002); refresh must not extend it. Server age and cookie expiry are enforced; a shorter future limit must apply to existing cookies too.
 - Spikes use `/auth/google/callback`; app auth uses `/api/v1/auth/{provider}/...`. The app now persists state/PKCE/nonce in a separate ten-minute encrypted login cookie and validates the browser callback before exchange; see ADR 002 for single-pending-login and stateless replay limits. Code exchange, signature/claim/nonce checks, account-bound refresh preservation, revocation, and Drive storage are implemented with synthetic tests; follow google-live-checks.md for human acceptance before production enabling. Keep live checks human-assisted and production Console/HTTPS acceptance separate.
