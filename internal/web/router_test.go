@@ -116,6 +116,13 @@ func TestEntriesPageRendersTemplate(t *testing.T) {
 	if got := res.Body.String(); !strings.Contains(got, "Entries") {
 		t.Fatalf("entries page body = %q, want Entries heading", got)
 	}
+	if got := res.Body.String(); !strings.Contains(got, `data-entries-status>Loading…</p>`) {
+		t.Fatal("initial loading message must belong to the shared live status region")
+	}
+	if got := strings.Count(res.Body.String(), ">Loading…</p>"); got != 1 {
+		t.Fatalf("loading message count = %d, want 1", got)
+	}
+
 }
 
 func TestCalendarPageRendersTemplate(t *testing.T) {

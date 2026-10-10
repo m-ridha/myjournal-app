@@ -71,7 +71,6 @@ Next candidate priority: reduce repeated metadata discovery with explicit operat
 
 `make fmt lint test` passes, including five JavaScript suites (the probe tests cover refusal to overwrite existing entries, stopping on failed writes, sanitized output, and verified cleanup). The benchmark scenarios also pass under the race detector with `-benchtime=1x`. All seven architecture probes passed separately with cleanup; keep these probes separate from lint/build. Keep baseline/candidate instrumentation identical and retain raw results before any optimization.
 
-
 ## Additional live evidence and probe corrections — 2026-10-10
 
 The next [successful attachment](../../benchmarks/results/2026-10-10-live-jan02/raw.json) labels its own date January 2 and reports sixty HTTP-200 samples with cleanup verified. Medians: open 2.206 s, changed save 3.385 s, unchanged save 1.717 s, repeated Entries 4.05 ms (first sample 6.965 s), Calendar 4.45 ms, and post-save Entries 6.673 s. These corroborate the browsing pattern, but are not independent controlled sessions; console history suggests overlapping invocations may have occurred. Do not pool runs or infer a precise cache-hit/latency attribution.
@@ -123,7 +122,6 @@ await mjBenchmark('2020-01-04', {
 
 This runs thirty timed requests plus setup, untimed prerequisite saves, and verified recoverable cleanup. Date/scenario progress and the running guard remain enabled. The original six-scenario invocation still works; targeted options reject empty, duplicate, or unsupported scenarios. Keep all returned samples/failures. Compare with the original matching scenarios, label the current fixture's visible/off-page status where known, and do not pool earlier overlapping runs. The user completed this targeted comparison; results follow. No live fixture was created by automation.
 
-
 ### Targeted live result — January 4 fixture
 
 The [user-reported candidate samples](../../benchmarks/results/2026-10-10-live-targeted-candidate/raw.json) contain thirty HTTP-200 requests and report `cleanupVerified: true` for the 2,230-byte January 4 fixture. Progress reached completed. Compare matching scenarios with the January 2 baseline without pooling runs:
@@ -150,11 +148,9 @@ For January 3, paste [the read-only inspection helper](../../scripts/inspect-ben
 
 Automated tests cover sanitized timing output, preserved error identity, waiting for body completion, disabled logging passthrough, read-only inspection, exact known-fixture classification and rejection of changing/unrelated matches. Live timing breakdown and January 3 inspection remain pending user evidence.
 
-
 ### January 3 read-only inspection follow-up — 2026-10-10
 
 The user ran the browser inspection helper and reported exists=true, stableAcrossReads=true, matchesLastAttempt=true, matchesPreviousAcknowledged=false, matchesInitialFixture=false, cleanupPerformed=false. The [sanitized flags](../../benchmarks/results/2026-10-10-live-jan03-failed/inspection.json) establish that the exact final attempted B content is currently present across two fresh reads despite the earlier HTTP 500. This supports treating the failed response as an ambiguous acknowledgement rather than proof that the write was rejected. It does not establish historical commit timing or identify the failing backend operation; the original timeout hypothesis remains unconfirmed. No retry, save or cleanup was performed. Live debug timing collection remains pending.
-
 
 ## Live save timing breakdown — January 5 fixture (2026-10-10)
 

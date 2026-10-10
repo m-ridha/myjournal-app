@@ -36,6 +36,9 @@ async function run() {
  f=setup('?page=2',{ok:false,status:503});await tick();assert(f.list.children[0].textContent==='entries.unavailable' && !f.retry.hidden && !f.newer.hidden && f.older.hidden,'failed later page offers retry and Newer without advancing');
  f.queue.push(payload(2,false,[{date:'2026-01-01',preview:'recovered'}]));f.retry.fire('click');await tick();assert(f.calls.length===2 && f.calls[0]===f.calls[1] && f.retry.hidden,'retry fetches same page and clears failure');
  const deferred=()=>{let resolve,reject;const promise=new Promise((a,b)=>{resolve=a;reject=b;});return {promise,resolve,reject};};
+ const pendingList=deferred();f=setup('',pendingList.promise);
+ assert(f.status.textContent==='entries.loading' && f.list.children.length===0 && f.list['aria-busy']==='true','pending entries request uses only the shared loading status');
+ pendingList.resolve(payload());await tick();assert(f.status.textContent==='entries.page' && f.list['aria-busy']==='false','loaded entries replace loading status');
  const calendarData=(year,month)=>({ok:true,json:async()=>({year,month,weeks:[[{date:`${year}-${String(month).padStart(2,'0')}-01`,inMonth:true,isFuture:false,hasEntry:false,isToday:false}]]})});
  const old=deferred();f=setup('',old.promise,true);f.queue.push(calendarData(2026,11));f.next.fire('click');await tick();
  const latestLabel=f.label.textContent;assert(latestLabel.includes('November') && f.grid.children.length===8,'latest calendar response renders one grid');

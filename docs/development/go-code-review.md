@@ -24,6 +24,8 @@ Fresh golangci-lint run (0 issues), go vet ./..., and go test -race -short ./...
 
 ## Maintainability and architecture cleanup
 
+<!-- markdownlint-disable MD029 -->
+
 8. **Shared provider IDs and named limits.** The example in internal/web/handler/auth.go:24/60 is valid: local/google literals are repeated in registry wiring, config, routing, credentials, and providers. Define untyped LocalID/GoogleID constants in internal/provider/provider.go, which all relevant layers can import inward. Use generated api.StartProviderLoginParamsProviderLocal etc. only for API-typed comparisons. Never import internal/web/api into providers/config to reuse generated constants. Name policy values near their owner: encoded cookie and callback limits, credential limits, token-cache/lock capacities, preview length/budget, retry policy, and provider timeout. Use net/http status constants in Google error mapping. Keep distinct limits distinct; 4096 for a code and 4096 for a cookie need separate names. Ordinary zero values, empty versions, UTF-16 ranges, and protocol field names do not all need a shared constants package.
 
 9. **Configuration belongs at startup.** internal/provider/local/local.go:21 guesses the meaning of variadic strings and re-reads environment/defaults; internal/provider/google/google.go:27 also loads environment independently of internal/config. cmd/app/wire.go parses and validates provider names again and uses a local-adapter URL helper for Google test-mode policy. Load/validate configuration once, pass explicit constructor inputs, and own generic loopback policy in configuration or the composition root. Avoid a new generic utilities package. Keep Wire generation authoritative.
@@ -37,6 +39,8 @@ Fresh golangci-lint run (0 issues), go vet ./..., and go test -race -short ./...
 13. **Small Go clarity issues.** Flatten cache ListYears/ListYear's returning if/else branches; give Cache.New an explicit capacity option rather than a variadic argument that silently ignores extras; fix token-cache replacement at capacity so refreshing an existing key does not unnecessarily evict another entry (auth.go:119). Use named fields for credentials literals, consistent stdlib/external/internal import groups, useful godoc for exported constructors/functions, and normal separation between functions in Google files. Add compile-time Store/Provider assertions where absent. Do not create interfaces just to satisfy a style rule or replace clear concrete constructors with unnecessary factories.
 
 14. **Tests and lint should cover these risks, not every literal.** Add targeted regressions for findings 1–7 and token-cache replacement. Add shared provider-ID consistency coverage at API/config boundaries while keeping some independent expected wire strings so tests can detect accidental contract changes. Current lint catches correctness basics but not constant duplication, API docs, or long functions. Introduce selected goconst/revive/complexity checks gradually with reviewed exclusions for generated code, fixtures, and spikes; avoid enabling every stylistic linter at once.
+
+<!-- markdownlint-enable MD029 -->
 
 ## Existing production gate, not a newly discovered regression
 
