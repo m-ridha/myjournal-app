@@ -4,7 +4,6 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
-	"errors"
 	"io/fs"
 	"net/http"
 	"strings"
@@ -20,6 +19,7 @@ import (
 	"github/mridha/myjournal-app/internal/provider"
 	"github/mridha/myjournal-app/internal/session"
 	"github/mridha/myjournal-app/internal/web/api"
+	"github/mridha/myjournal-app/internal/web/authsession"
 	"github/mridha/myjournal-app/internal/web/handler"
 	webMiddleware "github/mridha/myjournal-app/internal/web/middleware"
 )
@@ -58,8 +58,8 @@ func NewRouter(cfg config.Config, registry *provider.Registry, clk journal.Clock
 			renderEntryPage(w, clk.Now().In(journal.TimeZone(r.Context())), clk, current, journal.TimeZone(r.Context()))
 			return
 		}
-		_, googleLogin := registry.Get("google")
-		_, localLogin := registry.Get("local")
+		_, googleLogin := registry.Get(provider.GoogleID)
+		_, localLogin := registry.Get(provider.LocalID)
 		renderPage(w, pageData{TitleKey: "landing.title", DescriptionKey: "landing.description", SignedIn: false, Page: "landing", GoogleLogin: googleLogin, LocalLogin: localLogin})
 	})
 	r.Get("/entries/today", func(w http.ResponseWriter, r *http.Request) {
@@ -107,12 +107,11 @@ func NewRouter(cfg config.Config, registry *provider.Registry, clk journal.Clock
 			return
 		}
 		folderURL := ""
+		var folderErr error
 		if p, ok := registry.Get(current.ProviderID); ok {
-			if locator, ok := p.(provider.FolderLocator); ok {
-				folderURL, _ = locator.FolderURL(r.Context(), current.Connection)
-			}
+			folderURL, folderErr = authsession.FolderURL(r.Context(), p, current.Connection)
 		}
-		renderPage(w, pageData{TitleKey: "settings.title", SignedIn: true, Page: "settings", AccountName: current.AccountEmail, DraftScope: draftScope(current), FolderName: localeCatalog.Text("app.name"), FolderURL: folderURL})
+		renderPage(w, pageData{TitleKey: "settings.title", SignedIn: true, Page: "settings", AccountName: current.AccountEmail, DraftScope: draftScope(current), FolderName: localeCatalog.Text("app.name"), FolderURL: folderURL, FolderUnavailable: folderErr != nil})
 	})
 	r.Get("/privacy", func(w http.ResponseWriter, r *http.Request) {
 		renderPage(w, pageData{TitleKey: "privacy.title", DescriptionKey: "privacy.description", Page: "privacy"})
@@ -147,8 +146,7 @@ func NewRouter(cfg config.Config, registry *provider.Registry, clk journal.Clock
 }
 
 func renderNotFoundPage(w http.ResponseWriter) {
-	w.WriteHeader(http.StatusNotFound)
-	renderPage(w, pageData{TitleKey: "notFound.title", DescriptionKey: "notFound.description", Page: "notfound"})
+	renderPageStatus(w, http.StatusNotFound, pageData{TitleKey: "notFound.title", DescriptionKey: "notFound.description", Page: "notfound"})
 }
 
 func renderEntryPage(w http.ResponseWriter, date time.Time, clk journal.Clock, current session.Session, location *time.Location) {
@@ -166,18 +164,7 @@ func renderEntryPage(w http.ResponseWriter, date time.Time, clk journal.Clock, c
 }
 
 func currentSession(r *http.Request, secret string, registry *provider.Registry, now time.Time) (session.Session, error) {
-	cookie, err := r.Cookie(session.CookieName)
-	if err != nil {
-		return session.Session{}, err
-	}
-	current, err := session.Decode(secret, cookie.Value)
-	if err != nil || !current.ValidAt(now) {
-		return session.Session{}, errors.New("invalid session")
-	}
-	if _, ok := registry.Get(current.ProviderID); !ok {
-		return session.Session{}, errors.New("session provider is unavailable")
-	}
-	return current, nil
+	return authsession.Read(r, secret, registry, now)
 }
 
 func requireSession(w http.ResponseWriter, r *http.Request, secret string, registry *provider.Registry, now time.Time) bool {

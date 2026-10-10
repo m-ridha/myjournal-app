@@ -12,6 +12,7 @@ import (
 	"github/mridha/myjournal-app/internal/provider"
 	"github/mridha/myjournal-app/internal/session"
 	"github/mridha/myjournal-app/internal/web/api"
+	"github/mridha/myjournal-app/internal/web/authsession"
 )
 
 type ServiceFactory func(context.Context, session.Session) (*journal.Service, error)
@@ -36,18 +37,7 @@ func New(cfg config.Config, registry *provider.Registry, service ServiceFactory,
 func (s *Server) message(key string) string { return s.messages.Text(key) }
 
 func (s *Server) currentSession(r *http.Request) (session.Session, error) {
-	cookie, err := r.Cookie(session.CookieName)
-	if err != nil {
-		return session.Session{}, ErrUnauthenticated
-	}
-	current, err := session.Decode(s.cfg.SessionKey, cookie.Value)
-	if err != nil || !current.ValidAt(s.now()) {
-		return session.Session{}, ErrUnauthenticated
-	}
-	if _, ok := s.registry.Get(current.ProviderID); !ok {
-		return session.Session{}, ErrUnauthenticated
-	}
-	return current, nil
+	return authsession.Read(r, s.cfg.SessionKey, s.registry, s.now())
 }
 
 func (s *Server) service(r *http.Request) (*journal.Service, error) {
@@ -71,6 +61,8 @@ func (s *Server) writeServiceError(w http.ResponseWriter, err error) {
 		status, key = http.StatusConflict, "errors.conflict"
 	case errors.Is(err, journal.ErrFutureDate):
 		status, key = http.StatusBadRequest, "errors.futureDate"
+	case errors.Is(err, journal.ErrInvalidDate):
+		status, key = http.StatusBadRequest, "errors.invalidDate"
 	case errors.Is(err, journal.ErrInvalidText):
 		status, key = http.StatusBadRequest, "errors.invalidText"
 	case errors.Is(err, journal.ErrInvalidPagination):

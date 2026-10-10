@@ -1,10 +1,13 @@
 package handler
 
 import (
+	"bytes"
 	"context"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"testing"
 	"time"
 
@@ -143,5 +146,20 @@ func TestLoginExchangeOutagePreservesSession(t *testing.T) {
 		if cookie.Name == session.CookieName {
 			t.Fatal("outage changed existing session")
 		}
+	}
+}
+
+func TestLoginDiagnosticsAllowOnlyKnownStages(t *testing.T) {
+	old := slog.Default()
+	defer slog.SetDefault(old)
+	var output bytes.Buffer
+	slog.SetDefault(slog.New(slog.NewJSONHandler(&output, nil)))
+	logLoginRejection(provider.LoginStage("synthetic-sensitive-value"))
+	if output.Len() != 0 {
+		t.Fatal("unrecognized diagnostic logged")
+	}
+	logLoginRejection(provider.LoginClaims)
+	if !strings.Contains(output.String(), `"stage":"claims"`) || strings.Contains(output.String(), "synthetic-sensitive-value") {
+		t.Fatal("unexpected diagnostic")
 	}
 }

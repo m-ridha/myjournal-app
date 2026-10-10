@@ -59,18 +59,18 @@ func TestGoogleIntegrationModeIsLocalOnly(t *testing.T) {
 	t.Setenv("GOOGLE_CLIENT_ID", "test-client")
 	t.Setenv("GOOGLE_CLIENT_SECRET", "test-secret")
 	for _, base := range []string{"https://journal.example.com", "http://localhost.evil.com:3030"} {
-		if _, err := newProviderRegistry(config.Config{BaseURL: base, Providers: "google", GoogleTestMode: true}); err == nil {
+		if _, err := newProviderRegistry(config.Config{BaseURL: base, Providers: "google", GoogleTestMode: true, GoogleClientID: "test-client", GoogleClientSecret: "test-secret"}); err == nil {
 			t.Fatal("Google test mode accepted nonlocal deployment")
 		}
 	}
-	registry, err := newProviderRegistry(config.Config{BaseURL: "http://localhost:3030", Providers: "google", GoogleTestMode: true})
+	registry, err := newProviderRegistry(config.Config{BaseURL: "http://localhost:3030", Providers: "google", GoogleTestMode: true, GoogleClientID: "test-client", GoogleClientSecret: "test-secret"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	if _, ok := registry.Get("google"); !ok {
 		t.Fatal("Google integration mode not registered")
 	}
-	if _, err := newProviderRegistry(config.Config{BaseURL: "http://localhost:3030", Providers: "google,google", GoogleTestMode: true}); err == nil {
+	if _, err := newProviderRegistry(config.Config{BaseURL: "http://localhost:3030", Providers: "google,google", GoogleTestMode: true, GoogleClientID: "test-client", GoogleClientSecret: "test-secret"}); err == nil {
 		t.Fatal("duplicate Google accepted")
 	}
 }

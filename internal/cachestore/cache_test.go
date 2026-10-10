@@ -189,7 +189,7 @@ func TestCacheExpiresEntries(t *testing.T) {
 
 func TestCacheEnforcesEntryBound(t *testing.T) {
 	base := newFakeStore()
-	cache := New(time.Minute, 1)
+	cache := NewWithCapacity(time.Minute, 1)
 	store := cache.Wrap("user-1", base)
 
 	if _, err := store.ListYears(context.Background()); err != nil {
@@ -268,5 +268,18 @@ func TestCacheWrapReturnsErrNotFoundForMissingValue(t *testing.T) {
 	_, err := store.Get(context.Background(), civil.Date{Year: 2026, Month: 9, Day: 20})
 	if !errors.Is(err, journal.ErrNotFound) {
 		t.Fatalf("Get() error = %v, want ErrNotFound", err)
+	}
+}
+
+func TestInvalidationEpochRejectsOldFillAfterAccountChurn(t *testing.T) {
+	c := New(time.Minute)
+	key := cacheKey{account: "original", kind: "years"}
+	_, epoch, _ := c.get(key)
+	for range 1000 {
+		c.invalidate("another")
+	}
+	c.set(key, []int{2026}, epoch)
+	if _, _, ok := c.get(key); ok {
+		t.Fatal("old in-flight fill survived epoch change")
 	}
 }

@@ -181,3 +181,11 @@ OpenAPI base contract added: the API definition now lives in `docs/api/openapi.y
 - [ ] Resolve external-writer/checksum-upload race and multi-instance policy before production enabling
 
 Partial live Google smoke success is recorded in findings; full integrated acceptance and production readiness remain open. Earlier spike evidence remains valid for its recorded scope.
+
+
+## Go review follow-up (2026-10-10)
+
+- [x] Review Go style and clean architecture; record prioritized findings and fresh checks in [Go code review](go-code-review.md)
+- [x] Address cache/date/path/logger issues, shared provider constants, explicit configuration, shared session policy, Settings/rendering/cancellation handling, safe auth diagnostics, and batched Drive previews; record conventions in AGENTS.md
+- [x] Verify refactor with make fmt lint test, all seven architecture probes, go vet ./..., and go test -race -short ./... (2026-10-10)
+- [ ] Optional local bounded-prefix previews remain deferred; production Google concurrency/release gates are unchanged

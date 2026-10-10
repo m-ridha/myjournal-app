@@ -35,7 +35,7 @@ type Cache struct {
 	now        func() time.Time
 	items      map[cacheKey]*list.Element
 	lru        list.List
-	generation map[string]uint64
+	generation uint64
 }
 
 // Store decorates a journal.Store with account-scoped cached indexes and previews.
@@ -45,17 +45,20 @@ type Store struct {
 	base    journal.Store
 }
 
-func New(ttl time.Duration, maxEntries ...int) *Cache {
-	capacity := defaultMaxEntries
-	if len(maxEntries) > 0 && maxEntries[0] > 0 {
-		capacity = maxEntries[0]
+// New constructs a cache with the default entry bound.
+func New(ttl time.Duration) *Cache { return NewWithCapacity(ttl, defaultMaxEntries) }
+
+// NewWithCapacity constructs a cache with an explicit entry bound.
+func NewWithCapacity(ttl time.Duration, capacity int) *Cache {
+	if capacity <= 0 {
+		capacity = defaultMaxEntries
 	}
+
 	return &Cache{
 		ttl:        ttl,
 		maxEntries: capacity,
 		now:        time.Now,
 		items:      make(map[cacheKey]*list.Element),
-		generation: make(map[string]uint64),
 	}
 }
 
@@ -69,34 +72,36 @@ func (c *Cache) Wrap(account string, base journal.Store) journal.Store {
 
 func (s *Store) ListYears(ctx context.Context) ([]int, error) {
 	key := cacheKey{account: s.account, kind: "years"}
-	if value, generation, ok := s.cache.get(key); ok {
+	value, generation, ok := s.cache.get(key)
+	if ok {
 		return append([]int(nil), value.([]int)...), nil
-	} else if s.cache.ttl <= 0 || s.account == "" {
-		return s.base.ListYears(ctx)
-	} else {
-		items, err := s.base.ListYears(ctx)
-		if err != nil {
-			return nil, err
-		}
-		s.cache.set(key, append([]int(nil), items...), generation)
-		return append([]int(nil), items...), nil
 	}
+	if s.cache.ttl <= 0 || s.account == "" {
+		return s.base.ListYears(ctx)
+	}
+	items, err := s.base.ListYears(ctx)
+	if err != nil {
+		return nil, err
+	}
+	s.cache.set(key, append([]int(nil), items...), generation)
+	return append([]int(nil), items...), nil
 }
 
 func (s *Store) ListYear(ctx context.Context, year int) ([]journal.EntryMeta, error) {
 	key := cacheKey{account: s.account, kind: "year", year: year}
-	if value, generation, ok := s.cache.get(key); ok {
+	value, generation, ok := s.cache.get(key)
+	if ok {
 		return append([]journal.EntryMeta(nil), value.([]journal.EntryMeta)...), nil
-	} else if s.cache.ttl <= 0 || s.account == "" {
-		return s.base.ListYear(ctx, year)
-	} else {
-		items, err := s.base.ListYear(ctx, year)
-		if err != nil {
-			return nil, err
-		}
-		s.cache.set(key, append([]journal.EntryMeta(nil), items...), generation)
-		return append([]journal.EntryMeta(nil), items...), nil
 	}
+	if s.cache.ttl <= 0 || s.account == "" {
+		return s.base.ListYear(ctx, year)
+	}
+	items, err := s.base.ListYear(ctx, year)
+	if err != nil {
+		return nil, err
+	}
+	s.cache.set(key, append([]journal.EntryMeta(nil), items...), generation)
+	return append([]journal.EntryMeta(nil), items...), nil
 }
 
 func (s *Store) Get(ctx context.Context, d civil.Date) (journal.Entry, error) {
@@ -156,7 +161,7 @@ func (c *Cache) get(key cacheKey) (any, uint64, bool) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
-	generation := c.generation[key.account]
+	generation := c.generation
 	if c.ttl <= 0 || key.account == "" {
 		return nil, generation, false
 	}
@@ -177,7 +182,7 @@ func (c *Cache) get(key cacheKey) (any, uint64, bool) {
 func (c *Cache) set(key cacheKey, value any, generation uint64) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	if c.ttl <= 0 || key.account == "" || c.generation[key.account] != generation {
+	if c.ttl <= 0 || key.account == "" || c.generation != generation {
 		return
 	}
 	if element, ok := c.items[key]; ok {
@@ -199,7 +204,8 @@ func (c *Cache) set(key cacheKey, value any, generation uint64) {
 func (c *Cache) invalidate(account string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	c.generation[account]++
+	// A process-wide epoch bounds bookkeeping and rejects all older in-flight fills.
+	c.generation++
 	for key, element := range c.items {
 		if key.account == account {
 			c.lru.Remove(element)

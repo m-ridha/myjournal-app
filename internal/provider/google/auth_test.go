@@ -179,3 +179,14 @@ func TestRevocationAndRefreshFailure(t *testing.T) {
 		t.Fatal("revoked token did not require reconnect")
 	}
 }
+
+func TestTokenReplacementAtCapacityPreservesOtherEntries(t *testing.T) {
+	p := New(Config{})
+	for i := range 128 {
+		p.cacheToken(fmt.Sprint(i), &oauth2.Token{AccessToken: "test"})
+	}
+	p.cacheToken("0", &oauth2.Token{AccessToken: "updated"})
+	if len(p.tokens) != 128 {
+		t.Fatalf("replacement evicted another token: %d", len(p.tokens))
+	}
+}

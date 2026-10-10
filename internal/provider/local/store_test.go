@@ -2,6 +2,7 @@ package local
 
 import (
 	"context"
+	"github/mridha/myjournal-app/internal/config"
 	"os"
 	"path/filepath"
 	"testing"
@@ -60,18 +61,18 @@ func TestLocalStoreContract(t *testing.T) {
 	})
 }
 
-func TestValidateBaseURL(t *testing.T) {
+func TestValidateLoopbackURL(t *testing.T) {
 	for _, value := range []string{"http://localhost:3030", "https://localhost", "http://127.0.0.1:3030", "http://[::1]:3030"} {
 		t.Run(value, func(t *testing.T) {
-			if err := ValidateBaseURL(value); err != nil {
-				t.Fatalf("ValidateBaseURL(%q) error = %v", value, err)
+			if err := config.ValidateLoopbackURL(value); err != nil {
+				t.Fatalf("config.ValidateLoopbackURL(%q) error = %v", value, err)
 			}
 		})
 	}
 	for _, value := range []string{"http://localhost.evil.com", "https://example.com", "localhost:3030", "http://localhost/path"} {
 		t.Run(value, func(t *testing.T) {
-			if err := ValidateBaseURL(value); err == nil {
-				t.Fatalf("ValidateBaseURL(%q) error = nil, want rejection", value)
+			if err := config.ValidateLoopbackURL(value); err == nil {
+				t.Fatalf("config.ValidateLoopbackURL(%q) error = nil, want rejection", value)
 			}
 		})
 	}

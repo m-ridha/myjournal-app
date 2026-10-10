@@ -586,3 +586,13 @@ Confirmed Move to trash acknowledged Entry moved to trash. Reload showed Blank p
 ## Google integration PR verification (2026-10-10)
 
 Prepared feat/google-drive-integration with accumulated OAuth/Drive implementation, accessibility/provenance work, and integrated live evidence. Fresh make fmt lint test passed (0 lint issues, four JavaScript suites, all Go packages); make test-architecture passed all seven probes separately with cleanup. Fresh go vet ./... and go test -race -short ./... passed. git diff --check passed. Updated phase acceptance to distinguish partial live Google success from remaining release gates. Private agents/ files and .env are excluded; .env.example documents the localhost-only test switch. Production registration remains guarded.
+
+
+## Go style and architecture audit (2026-10-10)
+
+Recorded the Gophers-guided audit in [go-code-review.md](go-code-review.md). Fresh lint (0 issues), vet, race/short tests, and all seven architecture probes passed. Temporary synthetic probes reproduced invalid-date acceptance, month-13 acceptance, and failure of a year-0123 path round trip; probes and temporary data were removed. Source review also found unbounded cache generation bookkeeping, logger/config/session duplication, Settings error suppression, and rendering/cancellation improvements. No runtime implementation, live account action, commit, or push was performed for this review.
+
+
+## Go review implementation (2026-10-10)
+
+Implemented the approved review follow-up and recorded durable style/boundary conventions in AGENTS.md. See [review follow-up](go-code-review.md#implementation-follow-up--2026-10-10) for scope, regression coverage, and remaining limitations. Wire was regenerated from the composition source; generated OpenAPI was unchanged. Fresh make fmt lint test passed with zero lint issues, all four JavaScript regression suites, and all Go packages. All seven make test-architecture probes passed separately and cleaned up. Fresh go vet ./... and go test -race -short ./... passed; git diff --check passed. These are automated refactor checks, not renewed live Google acceptance. No commit, push, browser/account operation, or agents/ change was performed.

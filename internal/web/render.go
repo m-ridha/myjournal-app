@@ -1,6 +1,7 @@
 package web
 
 import (
+	"bytes"
 	"html/template"
 	"net/http"
 
@@ -27,27 +28,30 @@ func mustLoadLocale() i18n.Catalog {
 }
 
 type pageData struct {
-	Title          string
-	TitleKey       string
-	Description    string
-	DescriptionKey string
-	SignedIn       bool
-	GoogleLogin    bool
-	LocalLogin     bool
-	Theme          string
-	Page           string
-	Date           string
-	Today          string
-	IsToday        bool
-	AccountName    string
-	DraftScope     string
-	FolderName     string
-	FolderURL      string
-	Locale         string
-	Messages       string
+	Title             string
+	TitleKey          string
+	Description       string
+	DescriptionKey    string
+	SignedIn          bool
+	GoogleLogin       bool
+	LocalLogin        bool
+	Theme             string
+	Page              string
+	Date              string
+	Today             string
+	IsToday           bool
+	AccountName       string
+	DraftScope        string
+	FolderName        string
+	FolderURL         string
+	FolderUnavailable bool
+	Locale            string
+	Messages          string
 }
 
-func renderPage(w http.ResponseWriter, data pageData) {
+func renderPage(w http.ResponseWriter, data pageData) { renderPageStatus(w, http.StatusOK, data) }
+
+func renderPageStatus(w http.ResponseWriter, status int, data pageData) {
 	localeJSON, err := localeCatalog.JSON()
 	if err != nil {
 		http.Error(w, localeCatalog.Text("errors.internal"), http.StatusInternalServerError)
@@ -55,8 +59,12 @@ func renderPage(w http.ResponseWriter, data pageData) {
 	}
 	data.Locale = localeCatalog.Locale()
 	data.Messages = localeJSON
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	if err := pageTemplates.ExecuteTemplate(w, "base", data); err != nil {
+	var body bytes.Buffer
+	if err := pageTemplates.ExecuteTemplate(&body, "base", data); err != nil {
 		http.Error(w, localeCatalog.Text("errors.internal"), http.StatusInternalServerError)
+		return
 	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(status)
+	_, _ = w.Write(body.Bytes())
 }

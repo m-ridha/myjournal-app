@@ -17,6 +17,7 @@ type Date = civil.Date
 type Version string
 
 var (
+	ErrInvalidDate       = errors.New("invalid journal date")
 	ErrInvalidText       = errors.New("entry text must be valid UTF-8")
 	ErrConflict          = errors.New("entry changed elsewhere")
 	ErrNotFound          = errors.New("entry not found")
@@ -67,7 +68,7 @@ type ListItem struct {
 var entryFileRE = regexp.MustCompile(`^entries/(\d{4})/(\d{4}-\d{2}-\d{2})\.txt$`)
 
 func EntryPath(d Date) string {
-	return fmt.Sprintf("entries/%d/%04d-%02d-%02d.txt", d.Year, d.Year, d.Month, d.Day)
+	return fmt.Sprintf("entries/%04d/%04d-%02d-%02d.txt", d.Year, d.Year, d.Month, d.Day)
 }
 
 func ParseEntryDate(path string) (Date, error) {
@@ -82,6 +83,9 @@ func ParseEntryDate(path string) (Date, error) {
 	date, err := civil.ParseDate(matches[2])
 	if err != nil {
 		return Date{}, fmt.Errorf("invalid entry date %q: %w", matches[2], err)
+	}
+	if !date.IsValid() || date.Year < 1 || date.Year > 9999 {
+		return Date{}, ErrInvalidDate
 	}
 	if date.Year != year.Year() {
 		return Date{}, fmt.Errorf("year mismatch in %q", path)

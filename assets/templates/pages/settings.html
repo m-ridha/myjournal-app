@@ -14,7 +14,7 @@
     </div>
     <div class="mj-setting-row">
       <span>{{t "settings.journalFolder"}}</span>
-      {{if .FolderURL}}<a href="{{.FolderURL}}" target="_blank" rel="noopener noreferrer">{{.FolderName}}</a>{{else}}<strong>{{.FolderName}}</strong>{{end}}
+      {{if .FolderUnavailable}}<span role="status">{{t "settings.folderUnavailable"}} <a href="/settings">{{t "settings.retry"}}</a></span>{{else if .FolderURL}}<a href="{{.FolderURL}}" target="_blank" rel="noopener noreferrer">{{.FolderName}}</a>{{else}}<strong>{{.FolderName}}</strong>{{end}}
     </div>
 
   </div>

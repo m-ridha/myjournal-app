@@ -11,7 +11,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 	"unicode/utf8"
 
 	"github/mridha/myjournal-app/internal/journal"
@@ -21,18 +20,34 @@ import (
 
 // Local mutations share a bounded process-wide lock, including across Store instances.
 // This does not coordinate separate processes or external filesystem writers.
-var mutationLock sync.Mutex
+var mutationLock = make(chan struct{}, 1)
+
+func lockMutation(ctx context.Context) (func(), error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	select {
+	case mutationLock <- struct{}{}:
+		return func() { <-mutationLock }, nil
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+}
 
 // Store persists entries as plain text files on disk in the local dev directory.
 type Store struct {
 	root string
 }
 
+// NewStore constructs a filesystem store rooted in the development data directory.
 func NewStore(root string) *Store {
 	return &Store{root: root}
 }
 
 func (s *Store) ListYears(ctx context.Context) ([]int, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
 	entries, err := os.ReadDir(filepath.Join(s.root, "entries"))
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -42,6 +57,9 @@ func (s *Store) ListYears(ctx context.Context) ([]int, error) {
 	}
 	years := make([]int, 0, len(entries))
 	for _, entry := range entries {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		if !entry.IsDir() {
 			continue
 		}
@@ -54,7 +72,10 @@ func (s *Store) ListYears(ctx context.Context) ([]int, error) {
 }
 
 func (s *Store) ListYear(ctx context.Context, year int) ([]journal.EntryMeta, error) {
-	path := filepath.Join(s.root, "entries", fmt.Sprintf("%d", year))
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	path := s.yearDir(year)
 	entries, err := os.ReadDir(path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -64,10 +85,13 @@ func (s *Store) ListYear(ctx context.Context, year int) ([]journal.EntryMeta, er
 	}
 	meta := make([]journal.EntryMeta, 0, len(entries))
 	for _, entry := range entries {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
 		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".txt") {
 			continue
 		}
-		date, err := journal.ParseEntryDate(filepath.ToSlash(filepath.Join("entries", fmt.Sprintf("%d", year), entry.Name())))
+		date, err := journal.ParseEntryDate(filepath.ToSlash(filepath.Join("entries", fmt.Sprintf("%04d", year), entry.Name())))
 		if err != nil {
 			continue
 		}
@@ -87,7 +111,7 @@ func (s *Store) Get(ctx context.Context, d civil.Date) (journal.Entry, error) {
 	if err := ctx.Err(); err != nil {
 		return journal.Entry{}, err
 	}
-	path := filepath.Join(s.root, journal.EntryPath(d))
+	path := filepath.Join(s.yearDir(d.Year), d.String()+".txt")
 	data, err := os.ReadFile(path)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -117,8 +141,11 @@ func (s *Store) Previews(ctx context.Context, dates []civil.Date, maxBytes int) 
 }
 
 func (s *Store) Put(ctx context.Context, d civil.Date, text string, base journal.Version) (journal.Entry, error) {
-	mutationLock.Lock()
-	defer mutationLock.Unlock()
+	unlock, err := lockMutation(ctx)
+	if err != nil {
+		return journal.Entry{}, err
+	}
+	defer unlock()
 	if !utf8.ValidString(text) {
 		return journal.Entry{}, journal.ErrInvalidText
 	}
@@ -128,10 +155,10 @@ func (s *Store) Put(ctx context.Context, d civil.Date, text string, base journal
 	if err := ensureDir(filepath.Join(s.root, "entries")); err != nil {
 		return journal.Entry{}, err
 	}
-	if err := ensureDir(filepath.Join(s.root, "entries", fmt.Sprintf("%d", d.Year))); err != nil {
+	if err := ensureDir(s.yearDir(d.Year)); err != nil {
 		return journal.Entry{}, err
 	}
-	path := filepath.Join(s.root, journal.EntryPath(d))
+	path := filepath.Join(s.yearDir(d.Year), d.String()+".txt")
 	_, statErr := os.Stat(path)
 	switch {
 	case statErr == nil:
@@ -159,12 +186,15 @@ func (s *Store) Put(ctx context.Context, d civil.Date, text string, base journal
 }
 
 func (s *Store) Trash(ctx context.Context, d civil.Date) error {
-	mutationLock.Lock()
-	defer mutationLock.Unlock()
+	unlock, err := lockMutation(ctx)
+	if err != nil {
+		return err
+	}
+	defer unlock()
 	if err := ctx.Err(); err != nil {
 		return err
 	}
-	path := filepath.Join(s.root, journal.EntryPath(d))
+	path := filepath.Join(s.yearDir(d.Year), d.String()+".txt")
 	if _, err := os.Stat(path); err != nil {
 		if os.IsNotExist(err) {
 			return journal.ErrNotFound
@@ -198,6 +228,20 @@ func (s *Store) Trash(ctx context.Context, d civil.Date) error {
 	return nil
 }
 
+// Keep pre-padding development directories usable without moving or deleting files.
+func (s *Store) yearDir(year int) string {
+	padded := filepath.Join(s.root, "entries", fmt.Sprintf("%04d", year))
+	if year > 0 && year < 1000 {
+		if _, err := os.Stat(padded); os.IsNotExist(err) {
+			legacy := filepath.Join(s.root, "entries", strconv.Itoa(year))
+			if info, err := os.Stat(legacy); err == nil && info.IsDir() {
+				return legacy
+			}
+		}
+	}
+	return padded
+}
+
 func ensureDir(path string) error {
 	return os.MkdirAll(path, 0o755)
 }
@@ -229,3 +273,5 @@ func writeAtomically(ctx context.Context, path string, data []byte, rename func(
 	}
 	return rename(temp.Name(), path)
 }
+
+var _ journal.Store = (*Store)(nil)

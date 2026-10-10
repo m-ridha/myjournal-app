@@ -16,7 +16,7 @@ import (
 func TestExpiredSessionsRejectedByPagesAndAPI(t *testing.T) {
 	now := time.Date(2026, 10, 9, 12, 0, 0, 0, time.UTC)
 	cfg := config.Config{BaseURL: "http://localhost:3030", SessionKey: "test-key"}
-	router := NewRouter(cfg, provider.NewRegistry(localProvider.New(cfg.BaseURL)), mockClock{now: now}, nil)
+	router := NewRouter(cfg, provider.NewRegistry(localProvider.New(cfg.BaseURL, "")), mockClock{now: now}, nil)
 	for _, issued := range []time.Time{now.Add(-session.Lifetime), now.Add(time.Second), {}} {
 		for _, tc := range []struct {
 			path   string
@@ -35,7 +35,7 @@ func TestExpiredSessionsRejectedByPagesAndAPI(t *testing.T) {
 
 func TestCrossOriginMutationsRejectedBeforeCookieChanges(t *testing.T) {
 	cfg := config.Config{BaseURL: "http://localhost:3030", SessionKey: "test-key"}
-	router := NewRouter(cfg, provider.NewRegistry(localProvider.New(cfg.BaseURL)), mockClock{now: time.Now()}, nil)
+	router := NewRouter(cfg, provider.NewRegistry(localProvider.New(cfg.BaseURL, "")), mockClock{now: time.Now()}, nil)
 	for _, tc := range []struct{ method, path string }{{"POST", "/api/v1/logout"}, {"PUT", "/api/v1/entries/2026-10-09"}, {"DELETE", "/api/v1/entries/2026-10-09"}} {
 		for _, header := range []string{"Origin", "Sec-Fetch-Site"} {
 			req := httptest.NewRequest(tc.method, "http://localhost:3030"+tc.path, nil)
@@ -66,7 +66,7 @@ func TestCrossOriginMutationsRejectedBeforeCookieChanges(t *testing.T) {
 func TestLoginCookieHasFixedExpiry(t *testing.T) {
 	now := time.Date(2026, 10, 9, 12, 0, 0, 0, time.UTC)
 	cfg := config.Config{BaseURL: "http://localhost:3030", SessionKey: "test-key", CookieSecure: true}
-	router := NewRouter(cfg, provider.NewRegistry(localProvider.New(cfg.BaseURL)), mockClock{now: now}, nil)
+	router := NewRouter(cfg, provider.NewRegistry(localProvider.New(cfg.BaseURL, "")), mockClock{now: now}, nil)
 	res := httptest.NewRecorder()
 	router.ServeHTTP(res, httptest.NewRequest(http.MethodGet, "/api/v1/auth/local/callback", nil))
 	cookies := res.Result().Cookies()
@@ -85,7 +85,7 @@ func TestLoginCookieHasFixedExpiry(t *testing.T) {
 
 func TestSecurityHeadersAndExternalScripts(t *testing.T) {
 	cfg := config.Config{BaseURL: "http://localhost:3030", SessionKey: "test-key"}
-	router := NewRouter(cfg, provider.NewRegistry(localProvider.New(cfg.BaseURL)), mockClock{now: time.Now()}, nil)
+	router := NewRouter(cfg, provider.NewRegistry(localProvider.New(cfg.BaseURL, "")), mockClock{now: time.Now()}, nil)
 	for _, path := range []string{"/", "/settings", "/missing", "/api/v1/settings", "/static/js/theme-init.js"} {
 		req := httptest.NewRequest(http.MethodGet, path, nil)
 		res := httptest.NewRecorder()

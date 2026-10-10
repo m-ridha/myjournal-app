@@ -409,3 +409,22 @@ func TestDriveETagPreconditionIsForwarded(t *testing.T) {
 	// This proves forwarding/mapping only; real Drive conditional-upload support
 	// remains a live production gate, not an assertion made by this mock.
 }
+
+func TestPreviewsDiscoverFoldersOncePerYear(t *testing.T) {
+	s, f := testStore(t)
+	ctx := context.Background()
+	dates := []journal.Date{{Year: 2026, Month: 10, Day: 1}, {Year: 2026, Month: 10, Day: 2}, {Year: 2026, Month: 10, Day: 3}}
+	for _, d := range dates {
+		if _, err := s.Put(ctx, d, "preview", ""); err != nil {
+			t.Fatal(err)
+		}
+	}
+	before := f.lists
+	got, err := s.Previews(ctx, dates, 20)
+	if err != nil || len(got) != 3 {
+		t.Fatalf("previews=%v err=%v", got, err)
+	}
+	if calls := f.lists - before; calls > 4 {
+		t.Fatalf("discovery requests=%d, want root + year + two file pages", calls)
+	}
+}

@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"os"
 	"sync"
 	"time"
 
@@ -16,30 +15,18 @@ import (
 	"google.golang.org/api/option"
 )
 
+const (
+	maxCachedTokens = 128
+	lockStripes     = 64
+	requestTimeout  = 20 * time.Second
+)
+
 // Config carries the environment-derived Google OAuth configuration.
 type Config struct {
 	ClientID     string
 	ClientSecret string
 	BaseURL      string
 	Scopes       []string
-}
-
-func ConfigFromEnv() Config {
-	baseURL := os.Getenv("APP_BASE_URL")
-	if baseURL == "" {
-		baseURL = "http://localhost:3030"
-	}
-	return Config{
-		ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
-		ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
-		BaseURL:      baseURL,
-		Scopes: []string{
-			"openid",
-			"email",
-			"profile",
-			"https://www.googleapis.com/auth/drive.file",
-		},
-	}
 }
 
 // Provider is the Google-backed provider used by the real application.
@@ -50,12 +37,16 @@ type Provider struct {
 	validate  func(context.Context, string, string) (*idtoken.Payload, error)
 	mu        sync.Mutex
 	tokens    map[[32]byte]*oauth2.Token
-	locks     [64]chan struct{}
-	mutations [64]chan struct{}
+	locks     [lockStripes]chan struct{}
+	mutations [lockStripes]chan struct{}
 }
 
 func New(cfg Config) *Provider {
-	p := &Provider{cfg: cfg, endpoint: goauth.Endpoint, client: &http.Client{Timeout: 20 * time.Second}, tokens: make(map[[32]byte]*oauth2.Token)}
+	if len(cfg.Scopes) == 0 {
+		cfg.Scopes = []string{"openid", "email", "profile", driveScope}
+	}
+	cfg.Scopes = append([]string(nil), cfg.Scopes...)
+	p := &Provider{cfg: cfg, endpoint: goauth.Endpoint, client: &http.Client{Timeout: requestTimeout}, tokens: make(map[[32]byte]*oauth2.Token)}
 	validator, err := idtoken.NewValidator(context.Background(), option.WithHTTPClient(p.client))
 	p.validate = func(ctx context.Context, token, audience string) (*idtoken.Payload, error) {
 		if err != nil {
@@ -70,7 +61,7 @@ func New(cfg Config) *Provider {
 	return p
 }
 
-func (p *Provider) ID() string { return "google" }
+func (p *Provider) ID() string { return provider.GoogleID }
 
 func (p *Provider) Name() string { return "Google" }
 
@@ -91,3 +82,5 @@ func (p *Provider) Begin(_ context.Context, request provider.LoginRequest) (stri
 	}
 	return cfg.AuthCodeURL(request.State, options...), nil
 }
+
+var _ provider.Provider = (*Provider)(nil)

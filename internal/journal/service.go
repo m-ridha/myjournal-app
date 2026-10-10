@@ -12,8 +12,9 @@ import (
 )
 
 const (
-	MaxPage     = 10000
-	MaxPageSize = 100
+	previewBytes = 40
+	MaxPage      = 10000
+	MaxPageSize  = 100
 )
 
 // Service contains the journal domain rules.
@@ -38,6 +39,9 @@ func normalizeText(s string) string {
 }
 
 func (s *Service) Save(ctx context.Context, d Date, text string, base Version) (Entry, error) {
+	if !d.IsValid() || d.Year < 1 || d.Year > 9999 {
+		return Entry{}, ErrInvalidDate
+	}
 	if d.After(s.Today(TimeZone(ctx))) {
 		return Entry{}, ErrFutureDate
 	}
@@ -49,6 +53,9 @@ func (s *Service) Save(ctx context.Context, d Date, text string, base Version) (
 }
 
 func (s *Service) Open(ctx context.Context, d Date) (Entry, error) {
+	if !d.IsValid() || d.Year < 1 || d.Year > 9999 {
+		return Entry{}, ErrInvalidDate
+	}
 	if d.After(s.Today(TimeZone(ctx))) {
 		return Entry{}, ErrFutureDate
 	}
@@ -94,13 +101,13 @@ func (s *Service) Page(ctx context.Context, page, size int) (ListPage, error) {
 	if len(pageDates) == 0 {
 		return ListPage{Page: page, PageSize: size}, nil
 	}
-	previews, err := s.store.Previews(ctx, pageDates, 40+utf8.UTFMax)
+	previews, err := s.store.Previews(ctx, pageDates, previewBytes+utf8.UTFMax)
 	if err != nil {
 		return ListPage{}, err
 	}
 	items := make([]ListItem, 0, len(pageDates))
 	for _, date := range pageDates {
-		items = append(items, ListItem{Date: date, Preview: PreviewText(previews[date], 40)})
+		items = append(items, ListItem{Date: date, Preview: PreviewText(previews[date], previewBytes)})
 	}
 	return ListPage{
 		Items:    items,
@@ -141,6 +148,9 @@ func PreviewPrefix(text string, maxBytes int) string {
 }
 
 func (s *Service) Month(ctx context.Context, year int, month time.Month) (MonthView, error) {
+	if year < 1 || year > 9999 || month < time.January || month > time.December {
+		return MonthView{}, ErrInvalidDate
+	}
 	first := time.Date(year, month, 1, 0, 0, 0, 0, time.UTC)
 	last := time.Date(year, month+1, 0, 0, 0, 0, 0, time.UTC)
 	start := first.AddDate(0, 0, -((int(first.Weekday()) + 6) % 7))
@@ -175,6 +185,9 @@ func (s *Service) Month(ctx context.Context, year int, month time.Month) (MonthV
 }
 
 func (s *Service) Delete(ctx context.Context, d Date) error {
+	if !d.IsValid() || d.Year < 1 || d.Year > 9999 {
+		return ErrInvalidDate
+	}
 	if d.After(s.Today(TimeZone(ctx))) {
 		return ErrFutureDate
 	}

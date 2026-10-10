@@ -29,7 +29,24 @@ import (
 const folderMIME = "application/vnd.google-apps.folder"
 const appTag = "myjournal-v1"
 const fileFields = "id,name,mimeType,parents,appProperties,createdTime,modifiedTime,md5Checksum,trashed"
-const maxContentBytes = 1 << 20
+const (
+	maxContentBytes  = 1 << 20
+	previewReadBytes = 64 << 10
+	previewWorkers   = 4
+	readAttempts     = 3
+)
+
+const (
+	propertyApp  = "app"
+	propertyRole = "role"
+	propertyRoot = "root"
+	propertyYear = "year"
+	roleRoot     = "root"
+	roleEntries  = "entries"
+	roleYear     = "year"
+	roleEntry    = "entry"
+	textMIME     = "text/plain"
+)
 
 // Store uses private app properties for folders; names are presentation only.
 // Mutation locks coordinate this process, not external Drive clients or replicas.
@@ -45,7 +62,7 @@ func (p *Provider) Store(ctx context.Context, c provider.Connection) (journal.St
 	}
 	ctx = context.WithValue(ctx, oauth2.HTTPClient, p.client)
 	client := oauth2.NewClient(ctx, tokenSource{p: p, ctx: ctx, refresh: stored.Refresh})
-	client.Timeout = 20 * time.Second
+	client.Timeout = requestTimeout
 	service, err := drive.NewService(ctx, option.WithHTTPClient(client))
 	if err != nil {
 		return nil, journal.ErrUnavailable
@@ -56,6 +73,7 @@ func (p *Provider) Store(ctx context.Context, c provider.Connection) (journal.St
 		return acquire(ctx, p.mutations[int(hash[0])%len(p.mutations)])
 	}}, nil
 }
+
 func acquire(ctx context.Context, lock chan struct{}) (func(), error) {
 	select {
 	case lock <- struct{}{}:
@@ -64,12 +82,15 @@ func acquire(ctx context.Context, lock chan struct{}) (func(), error) {
 		return nil, ctx.Err()
 	}
 }
+
 func queryValue(value string) string {
 	return "'" + strings.ReplaceAll(strings.ReplaceAll(value, "\\", "\\\\"), "'", "\\'") + "'"
 }
+
 func property(key, value string) string {
 	return "appProperties has { key = " + queryValue(key) + " and value = " + queryValue(value) + " }"
 }
+
 func older(a, b *drive.File) bool {
 	left, leftErr := time.Parse(time.RFC3339Nano, a.CreatedTime)
 	right, rightErr := time.Parse(time.RFC3339Nano, b.CreatedTime)
@@ -106,16 +127,18 @@ func (s *Store) list(ctx context.Context, q string) ([]*drive.File, error) {
 	sort.Slice(result, func(i, j int) bool { return older(result[i], result[j]) })
 	return result, nil
 }
+
 func (s *Store) folders(ctx context.Context, role, root, year string) ([]*drive.File, error) {
-	q := "trashed = false and mimeType = " + queryValue(folderMIME) + " and " + property("app", appTag) + " and " + property("role", role)
+	q := "trashed = false and mimeType = " + queryValue(folderMIME) + " and " + property(propertyApp, appTag) + " and " + property(propertyRole, role)
 	if root != "" {
-		q += " and " + property("root", root)
+		q += " and " + property(propertyRoot, root)
 	}
 	if year != "" {
-		q += " and " + property("year", year)
+		q += " and " + property(propertyYear, year)
 	}
 	return s.list(ctx, q)
 }
+
 func (s *Store) folder(ctx context.Context, role, root, year, parent, name string, create bool) (*drive.File, error) {
 	folders, err := s.folders(ctx, role, root, year)
 	if err != nil {
@@ -127,12 +150,12 @@ func (s *Store) folder(ctx context.Context, role, root, year, parent, name strin
 	if !create {
 		return nil, journal.ErrNotFound
 	}
-	props := map[string]string{"app": appTag, "role": role}
+	props := map[string]string{propertyApp: appTag, propertyRole: role}
 	if root != "" {
-		props["root"] = root
+		props[propertyRoot] = root
 	}
 	if year != "" {
-		props["year"] = year
+		props[propertyYear] = year
 	}
 	metadata := &drive.File{Name: name, MimeType: folderMIME, AppProperties: props}
 	if parent != "" {
@@ -145,9 +168,11 @@ func (s *Store) folder(ctx context.Context, role, root, year, parent, name strin
 	}
 	return file, nil
 }
+
 func (s *Store) root(ctx context.Context, create bool) (*drive.File, error) {
-	return s.folder(ctx, "root", "", "", "", "myjournal", create)
+	return s.folder(ctx, roleRoot, "", "", "", "myjournal", create)
 }
+
 func (s *Store) year(ctx context.Context, year int, create bool) (*drive.File, error) {
 	root, err := s.root(ctx, create)
 	if err != nil {
@@ -155,14 +180,15 @@ func (s *Store) year(ctx context.Context, year int, create bool) (*drive.File, e
 	}
 	parent := ""
 	if create {
-		entries, err := s.folder(ctx, "entries", root.Id, "", root.Id, "entries", true)
+		entries, err := s.folder(ctx, roleEntries, root.Id, "", root.Id, "entries", true)
 		if err != nil {
 			return nil, err
 		}
 		parent = entries.Id
 	}
-	return s.folder(ctx, "year", root.Id, strconv.Itoa(year), parent, strconv.Itoa(year), create)
+	return s.folder(ctx, roleYear, root.Id, strconv.Itoa(year), parent, fmt.Sprintf("%04d", year), create)
 }
+
 func (s *Store) ListYears(ctx context.Context) ([]int, error) {
 	root, err := s.root(ctx, false)
 	if errors.Is(err, journal.ErrNotFound) {
@@ -171,14 +197,14 @@ func (s *Store) ListYears(ctx context.Context) ([]int, error) {
 	if err != nil {
 		return nil, err
 	}
-	folders, err := s.folders(ctx, "year", root.Id, "")
+	folders, err := s.folders(ctx, roleYear, root.Id, "")
 	if err != nil {
 		return nil, err
 	}
 	seen := map[int]bool{}
 	var years []int
 	for _, f := range folders {
-		year, err := strconv.Atoi(f.AppProperties["year"])
+		year, err := strconv.Atoi(f.AppProperties[propertyYear])
 		if err == nil && year >= 1 && year <= 9999 && !seen[year] {
 			years = append(years, year)
 			seen[year] = true
@@ -187,9 +213,11 @@ func (s *Store) ListYears(ctx context.Context) ([]int, error) {
 	sort.Sort(sort.Reverse(sort.IntSlice(years)))
 	return years, nil
 }
+
 func (s *Store) files(ctx context.Context, folderID string) ([]*drive.File, error) {
 	return s.list(ctx, "trashed = false and mimeType = 'text/plain' and "+queryValue(folderID)+" in parents")
 }
+
 func (s *Store) ListYear(ctx context.Context, year int) ([]journal.EntryMeta, error) {
 	folder, err := s.year(ctx, year, false)
 	if errors.Is(err, journal.ErrNotFound) {
@@ -205,7 +233,7 @@ func (s *Store) ListYear(ctx context.Context, year int) ([]journal.EntryMeta, er
 	seen := map[journal.Date]bool{}
 	var result []journal.EntryMeta
 	for _, f := range files {
-		date, err := journal.ParseEntryDate(fmt.Sprintf("entries/%d/%s", year, f.Name))
+		date, err := journal.ParseEntryDate(fmt.Sprintf("entries/%04d/%s", year, f.Name))
 		if err != nil || seen[date] {
 			continue
 		}
@@ -216,6 +244,7 @@ func (s *Store) ListYear(ctx context.Context, year int) ([]journal.EntryMeta, er
 	sort.Slice(result, func(i, j int) bool { return result[i].Date.After(result[j].Date) })
 	return result, nil
 }
+
 func (s *Store) entryFile(ctx context.Context, date journal.Date) (*drive.File, error) {
 	folder, err := s.year(ctx, date.Year, false)
 	if err != nil {
@@ -230,6 +259,7 @@ func (s *Store) entryFile(ctx context.Context, date journal.Date) (*drive.File, 
 	}
 	return files[0], nil
 }
+
 func (s *Store) metadata(ctx context.Context, id string) (*drive.File, error) {
 	file, err := retryRead(ctx, func() (*drive.File, error) { return s.service.Files.Get(id).Fields(fileFields).Context(ctx).Do() })
 	if err != nil {
@@ -240,7 +270,9 @@ func (s *Store) metadata(ctx context.Context, id string) (*drive.File, error) {
 	}
 	return file, nil
 }
+
 func checksum(data []byte) string { sum := md5.Sum(data); return hex.EncodeToString(sum[:]) }
+
 func (s *Store) Get(ctx context.Context, date journal.Date) (journal.Entry, error) {
 	file, err := s.entryFile(ctx, date)
 	if err != nil {
@@ -269,9 +301,10 @@ func (s *Store) Get(ctx context.Context, date journal.Date) (journal.Entry, erro
 	}
 	return journal.Entry{Date: date, Text: string(body), Version: journal.Version(file.Md5Checksum), Exists: true}, nil
 }
+
 func (s *Store) Put(ctx context.Context, date journal.Date, text string, base journal.Version) (journal.Entry, error) {
-	if !date.IsValid() {
-		return journal.Entry{}, journal.ErrInvalidText
+	if !date.IsValid() || date.Year < 1 || date.Year > 9999 {
+		return journal.Entry{}, journal.ErrInvalidDate
 	}
 	if !utf8.ValidString(text) {
 		return journal.Entry{}, journal.ErrInvalidText
@@ -327,7 +360,7 @@ func (s *Store) Put(ctx context.Context, date journal.Date, text string, base jo
 		if folderErr != nil {
 			return journal.Entry{}, folderErr
 		}
-		file, err = s.service.Files.Create(&drive.File{Name: date.String() + ".txt", MimeType: "text/plain", Parents: []string{folder.Id}, AppProperties: map[string]string{"app": appTag, "role": "entry"}}).Media(strings.NewReader(text), googleapi.ContentType("text/plain; charset=utf-8")).Fields(fileFields).Context(ctx).Do()
+		file, err = s.service.Files.Create(&drive.File{Name: date.String() + ".txt", MimeType: textMIME, Parents: []string{folder.Id}, AppProperties: map[string]string{propertyApp: appTag, propertyRole: roleEntry}}).Media(strings.NewReader(text), googleapi.ContentType("text/plain; charset=utf-8")).Fields(fileFields).Context(ctx).Do()
 	}
 	if err != nil {
 		return journal.Entry{}, mapError(err)
@@ -337,6 +370,7 @@ func (s *Store) Put(ctx context.Context, date journal.Date, text string, base jo
 	}
 	return journal.Entry{Date: date, Text: text, Version: journal.Version(file.Md5Checksum), Exists: true}, nil
 }
+
 func (s *Store) Trash(ctx context.Context, date journal.Date) error {
 	unlock, err := s.lock(ctx)
 	if err != nil {
@@ -350,18 +384,30 @@ func (s *Store) Trash(ctx context.Context, date journal.Date) error {
 	_, err = s.service.Files.Update(file.Id, &drive.File{Trashed: true}).Fields("id,trashed").Context(ctx).Do()
 	return mapError(err)
 }
+
 func (s *Store) Previews(ctx context.Context, dates []journal.Date, maxBytes int) (map[journal.Date]string, error) {
 	out := make(map[journal.Date]string)
+	if len(dates) == 0 {
+		return out, nil
+	}
+	files, err := s.previewFiles(ctx, dates)
+	if err != nil {
+		return nil, err
+	}
 	var mu sync.Mutex
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	jobs := make(chan journal.Date)
 	var group sync.WaitGroup
 	var first error
-	for i := 0; i < 4; i++ {
+	for range previewWorkers {
 		group.Go(func() {
 			for date := range jobs {
-				text, err := s.preview(ctx, date, maxBytes)
+				file := files[date]
+				if file == nil {
+					continue
+				}
+				text, err := s.preview(ctx, file, maxBytes)
 				if errors.Is(err, journal.ErrNotFound) {
 					continue
 				}
@@ -394,11 +440,46 @@ func (s *Store) Previews(ctx context.Context, dates []journal.Date, maxBytes int
 	}
 	return out, nil
 }
-func (s *Store) preview(ctx context.Context, date journal.Date, maxBytes int) (string, error) {
-	file, err := s.entryFile(ctx, date)
-	if err != nil {
-		return "", err
+
+// Resolve folders once per batch; keep discovery request-scoped to respect external moves.
+func (s *Store) previewFiles(ctx context.Context, dates []journal.Date) (map[journal.Date]*drive.File, error) {
+	out := make(map[journal.Date]*drive.File, len(dates))
+	root, err := s.root(ctx, false)
+	if errors.Is(err, journal.ErrNotFound) {
+		return out, nil
 	}
+	if err != nil {
+		return nil, err
+	}
+	years := make(map[int]bool)
+	wanted := make(map[journal.Date]bool, len(dates))
+	for _, d := range dates {
+		years[d.Year] = true
+		wanted[d] = true
+	}
+	for year := range years {
+		folder, err := s.folder(ctx, roleYear, root.Id, strconv.Itoa(year), "", "", false)
+		if errors.Is(err, journal.ErrNotFound) {
+			continue
+		}
+		if err != nil {
+			return nil, err
+		}
+		files, err := s.files(ctx, folder.Id)
+		if err != nil {
+			return nil, err
+		}
+		for _, file := range files {
+			date, err := journal.ParseEntryDate(fmt.Sprintf("entries/%04d/%s", year, file.Name))
+			if err == nil && wanted[date] && out[date] == nil {
+				out[date] = file
+			}
+		}
+	}
+	return out, nil
+}
+
+func (s *Store) preview(ctx context.Context, file *drive.File, maxBytes int) (string, error) {
 	if maxBytes <= 0 {
 		return "", nil
 	}
@@ -409,7 +490,7 @@ func (s *Store) preview(ctx context.Context, date journal.Date, maxBytes int) (s
 	defer func() { _ = response.Body.Close() }()
 	// Leading whitespace may be arbitrarily long; inspect a bounded 64 KiB prefix.
 	// Never download the full entry merely to render a page preview.
-	budget := 64 << 10
+	budget := previewReadBytes
 	data, err := io.ReadAll(io.LimitReader(response.Body, int64(budget)))
 	if err != nil {
 		return "", mapError(err)
@@ -432,9 +513,10 @@ func (s *Store) preview(ctx context.Context, date journal.Date, maxBytes int) (s
 	}
 	return journal.PreviewPrefix(string(data), maxBytes), nil
 }
+
 func retryRead[T any](ctx context.Context, call func() (T, error)) (T, error) {
 	var zero T
-	for attempt := 0; attempt < 3; attempt++ {
+	for attempt := 0; attempt < readAttempts; attempt++ {
 		if err := ctx.Err(); err != nil {
 			return zero, err
 		}
@@ -443,8 +525,8 @@ func retryRead[T any](ctx context.Context, call func() (T, error)) (T, error) {
 			return result, nil
 		}
 		var apiErr *googleapi.Error
-		retry := errors.As(err, &apiErr) && (apiErr.Code == 429 || apiErr.Code >= 500 || (apiErr.Code == 403 && rateLimited(apiErr)))
-		if !retry || attempt == 2 {
+		retry := errors.As(err, &apiErr) && (apiErr.Code == http.StatusTooManyRequests || apiErr.Code >= http.StatusInternalServerError || (apiErr.Code == http.StatusForbidden && rateLimited(apiErr)))
+		if !retry || attempt == readAttempts-1 {
 			return zero, err
 		}
 		delay := time.Duration(100*(1<<attempt)+rand.IntN(100)) * time.Millisecond
@@ -458,6 +540,7 @@ func retryRead[T any](ctx context.Context, call func() (T, error)) (T, error) {
 	}
 	return zero, journal.ErrUnavailable
 }
+
 func rateLimited(err *googleapi.Error) bool {
 	for _, item := range err.Errors {
 		if item.Reason == "rateLimitExceeded" || item.Reason == "userRateLimitExceeded" {
@@ -466,6 +549,7 @@ func rateLimited(err *googleapi.Error) bool {
 	}
 	return false
 }
+
 func mapError(err error) error {
 	if err == nil {
 		return nil
@@ -476,13 +560,13 @@ func mapError(err error) error {
 	var e *googleapi.Error
 	if errors.As(err, &e) {
 		switch e.Code {
-		case 401:
+		case http.StatusUnauthorized:
 			return journal.ErrAuthRequired
-		case 404:
+		case http.StatusNotFound:
 			return journal.ErrNotFound
-		case 409, 412:
+		case http.StatusConflict, http.StatusPreconditionFailed:
 			return journal.ErrConflict
-		case 403:
+		case http.StatusForbidden:
 			for _, item := range e.Errors {
 				if item.Reason == "insufficientPermissions" {
 					return journal.ErrAuthRequired
@@ -507,3 +591,5 @@ func (p *Provider) FolderURL(ctx context.Context, c provider.Connection) (string
 	}
 	return "https://drive.google.com/drive/folders/" + url.PathEscape(root.Id), nil
 }
+
+var _ journal.Store = (*Store)(nil)
