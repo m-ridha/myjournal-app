@@ -78,7 +78,7 @@ func TestHomepageIncludesOwnershipVerification(t *testing.T) {
 	h.ServeHTTP(res, httptest.NewRequest(http.MethodGet, "/", nil))
 	body := res.Body.String()
 	end := strings.Index(body, "</head>")
-	if end < 0 || !strings.Contains(body[:end], `<meta name="google-site-verification" content="cZ5rwhKdK0RE8qM3-0wr6T4V96RMU5mjUUCys4EhIdk">`) {
+	if end < 0 || !strings.Contains(body[:end], `<meta name="google-site-verification" content="cZ5rwhKdK0RE8qM3-0wr6T4V96RMU5mjUUCys4EhIdk" />`) {
 		t.Fatal("homepage head missing Search Console verification tag")
 	}
 }

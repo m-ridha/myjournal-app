@@ -4,7 +4,7 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    {{if eq .Page "landing"}}<meta name="google-site-verification" content="cZ5rwhKdK0RE8qM3-0wr6T4V96RMU5mjUUCys4EhIdk">{{end}}
+    {{if eq .Page "landing"}}<meta name="google-site-verification" content="cZ5rwhKdK0RE8qM3-0wr6T4V96RMU5mjUUCys4EhIdk" />{{end}}
     <meta name="description" content="{{if .DescriptionKey}}{{t .DescriptionKey}}{{else if .Description}}{{.Description}}{{else}}{{t "app.description"}}{{end}}">
     <title>{{if .Title}}{{.Title}} · {{t "app.name"}}{{else if .TitleKey}}{{t .TitleKey}} · {{t "app.name"}}{{else}}{{t "app.name"}}{{end}}</title>
     <link rel="icon" type="image/png" sizes="64x64" href="/static/favicons/myjournal-tab-icon.png">
