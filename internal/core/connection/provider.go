@@ -44,6 +44,8 @@ type Registry struct {
 	providers map[string]Provider
 }
 
+var _ Catalog = (*Registry)(nil)
+
 // NewRegistry registers the configured provider implementations by stable ID.
 func NewRegistry(providers ...Provider) *Registry {
 	r := &Registry{providers: make(map[string]Provider, len(providers))}

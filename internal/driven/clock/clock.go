@@ -1,14 +1,15 @@
+// Package clock supplies the system clock adapter.
 package clock
 
-import "time"
+import (
+	"time"
 
-// Clock exposes the current time. The system implementation is intentionally thin.
-type Clock interface {
-	Now() time.Time
-}
+	"github/mridha/myjournal-app/internal/core/journal"
+)
 
+// System returns the current wall-clock time.
 type System struct{}
 
-func (System) Now() time.Time {
-	return time.Now()
-}
+var _ journal.Clock = System{}
+
+func (System) Now() time.Time { return time.Now() }

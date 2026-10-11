@@ -38,6 +38,8 @@ type Store struct {
 	base    journal.Store
 }
 
+var _ journal.OperationStore = (*Store)(nil)
+
 // New constructs a shared decorator coordinator. Nil storage or nonpositive TTL
 // disables caching without affecting the backing journal store.
 func New(backend ByteCache, ttl time.Duration) *Cache {
@@ -263,5 +265,3 @@ func (s *Store) ForOperation() journal.Store {
 	}
 	return s.cache.Wrap(s.account, base)
 }
-
-var _ journal.OperationStore = (*Store)(nil)

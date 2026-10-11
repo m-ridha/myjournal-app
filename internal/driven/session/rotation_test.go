@@ -1,9 +1,10 @@
 package session
 
 import (
-	provider "github/mridha/myjournal-app/internal/core/connection"
 	"testing"
 	"time"
+
+	provider "github/mridha/myjournal-app/internal/core/connection"
 )
 
 func TestKeyRotationRejectsPreviousCookie(t *testing.T) {

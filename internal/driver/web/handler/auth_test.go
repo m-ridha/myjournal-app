@@ -16,6 +16,7 @@ import (
 	"github/mridha/myjournal-app/internal/core/journal"
 	"github/mridha/myjournal-app/internal/driven/session"
 	"github/mridha/myjournal-app/internal/driver/web/api"
+	"github/mridha/myjournal-app/internal/driver/web/authsession"
 )
 
 type loginProvider struct {
@@ -51,7 +52,7 @@ func TestBrowserLoginHandoff(t *testing.T) {
 		t.Fatal("missing pending cookie")
 	}
 	cookie := cookies[0]
-	if !cookie.HttpOnly || !cookie.Secure || cookie.SameSite != http.SameSiteLaxMode || cookie.Path != session.LoginCookiePath || cookie.MaxAge != 600 {
+	if !cookie.HttpOnly || !cookie.Secure || cookie.SameSite != http.SameSiteLaxMode || cookie.Path != authsession.LoginCookiePath || cookie.MaxAge != 600 {
 		t.Fatal("incorrect pending cookie flags")
 	}
 	flow, err := session.DecodeLoginFlow("test-key", cookie.Value)
@@ -79,8 +80,8 @@ func TestBrowserLoginHandoff(t *testing.T) {
 		{"denied", "code=test&state=" + flow.State + "&error=access_denied", cookie, now, 401},
 		{"expired", "code=test&state=" + flow.State, cookie, now.Add(provider.LoginLifetime), 401},
 		{"future issuance", "code=test&state=" + flow.State, cookie, now.Add(-time.Second), 401},
-		{"wrong provider", "code=test&state=" + flow.State, &http.Cookie{Name: session.LoginCookieName, Value: otherValue}, now, 401},
-		{"tampered", "code=test&state=" + flow.State, &http.Cookie{Name: session.LoginCookieName, Value: "invalid"}, now, 401},
+		{"wrong provider", "code=test&state=" + flow.State, &http.Cookie{Name: authsession.LoginCookieName, Value: otherValue}, now, 401},
+		{"tampered", "code=test&state=" + flow.State, &http.Cookie{Name: authsession.LoginCookieName, Value: "invalid"}, now, 401},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			s.now = func() time.Time { return tc.clock }
@@ -107,10 +108,10 @@ func TestBrowserLoginHandoff(t *testing.T) {
 			}
 			cleared := false
 			for _, c := range w.Result().Cookies() {
-				if c.Name == session.LoginCookieName && c.MaxAge < 0 {
+				if c.Name == authsession.LoginCookieName && c.MaxAge < 0 {
 					cleared = true
 				}
-				if tc.want != 302 && c.Name == session.CookieName {
+				if tc.want != 302 && c.Name == authsession.CookieName {
 					t.Fatal("failed login changed session")
 				}
 			}
@@ -139,7 +140,7 @@ func TestLoginExchangeOutagePreservesSession(t *testing.T) {
 	s := &Server{cfg: Options{SessionKey: "key"}, registry: provider.NewRegistry(&unavailableLoginProvider{}), now: func() time.Time { return now }}
 	code, state := "code", flow.State
 	r := httptest.NewRequest(http.MethodGet, "/api/v1/auth/google/callback?code=code&state="+state, nil)
-	r.AddCookie(&http.Cookie{Name: session.LoginCookieName, Value: value})
+	r.AddCookie(&http.Cookie{Name: authsession.LoginCookieName, Value: value})
 	w := httptest.NewRecorder()
 	s.connections = provider.NewService(s.registry, testClock(s.now), rand.Reader)
 	s.CompleteProviderLogin(w, r, "google", api.CompleteProviderLoginParams{Code: &code, State: &state})
@@ -147,7 +148,7 @@ func TestLoginExchangeOutagePreservesSession(t *testing.T) {
 		t.Fatalf("outage status %d", w.Code)
 	}
 	for _, cookie := range w.Result().Cookies() {
-		if cookie.Name == session.CookieName {
+		if cookie.Name == authsession.CookieName {
 			t.Fatal("outage changed existing session")
 		}
 	}

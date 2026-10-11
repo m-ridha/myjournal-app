@@ -6,6 +6,16 @@ run:
 formatters:
   enable:
     - gofmt
+    - gci
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(github/mridha/myjournal-app)
+      custom-order: true
+  exclusions:
+    generated: strict
 
 linters:
   enable:
@@ -117,3 +127,18 @@ linters:
               desc: "Byte-cache storage must not depend on cookie codecs"
             - pkg: github/mridha/myjournal-app/internal/driven/clock
               desc: "Byte-cache storage must not select the system clock"
+        core-production:
+          files:
+            - "!**/*_test.go"
+            - "**/internal/core/**.go"
+          deny:
+            - pkg: github/mridha/myjournal-app/internal/testutil
+              desc: "Production core must not depend on shared test fixtures"
+        startup-config:
+          files:
+            - "!**/*_test.go"
+            - "**/internal/config/**.go"
+          list-mode: strict
+          allow:
+            - $gostd
+            - github/mridha/myjournal-app/internal/core/connection

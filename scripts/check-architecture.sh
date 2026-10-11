@@ -4,7 +4,7 @@ set -eu
 cd "$(dirname "$0")/.."
 canary=
 # Dedicated nested packages keep probes acyclic and verify recursive matching.
-probe_dirs="internal/driven/cache/journal/architectureprobe internal/core/journal/architectureprobe internal/core/connection/architectureprobe internal/driver/web/architectureprobe internal/driven/provider/local/architectureprobe internal/driven/cache/local/lru/architectureprobe"
+probe_dirs="internal/driven/cache/journal/architectureprobe internal/core/journal/architectureprobe internal/core/connection/architectureprobe internal/driver/web/architectureprobe internal/driven/provider/local/architectureprobe internal/driven/cache/local/lru/architectureprobe internal/config/architectureprobe"
 created_dirs=
 cleanup() {
   if [ -n "$canary" ]; then rm -f "$canary"; fi
@@ -64,4 +64,6 @@ internal/driven/provider/local/architectureprobe/architecture_canary.go architec
 internal/driven/provider/local/architectureprobe/architecture_canary.go architectureprobe github/mridha/myjournal-app/internal/driven/session
 internal/driven/cache/local/lru/architectureprobe/architecture_canary.go architectureprobe github/mridha/myjournal-app/internal/driver/web/api
 internal/driven/cache/local/lru/architectureprobe/architecture_canary.go architectureprobe github/mridha/myjournal-app/internal/config
+internal/core/journal/architectureprobe/architecture_canary.go architectureprobe github/mridha/myjournal-app/internal/testutil
+internal/config/architectureprobe/architecture_canary.go architectureprobe github/mridha/myjournal-app/internal/driven/provider/local
 CASES

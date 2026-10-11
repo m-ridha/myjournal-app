@@ -16,6 +16,7 @@ import (
 	googleProvider "github/mridha/myjournal-app/internal/driven/provider/google"
 	localProvider "github/mridha/myjournal-app/internal/driven/provider/local"
 	"github/mridha/myjournal-app/internal/driven/session"
+	"github/mridha/myjournal-app/internal/driver/web/authsession"
 	"github/mridha/myjournal-app/internal/testutil"
 )
 
@@ -251,7 +252,7 @@ func addLocalSessionCookie(t *testing.T, req *http.Request, secret string, issue
 	if err != nil {
 		t.Fatalf("session.Encode() error = %v", err)
 	}
-	req.AddCookie(&http.Cookie{Name: session.CookieName, Value: encoded})
+	req.AddCookie(&http.Cookie{Name: authsession.CookieName, Value: encoded})
 }
 
 func TestEntryPagesUseRequestTimeZone(t *testing.T) {
@@ -364,9 +365,9 @@ func TestPublicPagesSettingsLinkFollowsSession(t *testing.T) {
 					if err != nil {
 						t.Fatal(err)
 					}
-					req.AddCookie(&http.Cookie{Name: session.CookieName, Value: encoded})
+					req.AddCookie(&http.Cookie{Name: authsession.CookieName, Value: encoded})
 				} else if tc.invalid {
-					req.AddCookie(&http.Cookie{Name: session.CookieName, Value: "invalid"})
+					req.AddCookie(&http.Cookie{Name: authsession.CookieName, Value: "invalid"})
 				}
 				res := httptest.NewRecorder()
 				router.ServeHTTP(res, req)
@@ -378,5 +379,17 @@ func TestPublicPagesSettingsLinkFollowsSession(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestEditorRejectsYearZero(t *testing.T) {
+	cfg := config.Config{BaseURL: testutil.LocalBaseURL, SessionKey: "synthetic-test-key"}
+	router := newTestRouter(cfg, provider.NewRegistry(localProvider.New(cfg.BaseURL, "")), clock.System{}, nil)
+	req := httptest.NewRequest(http.MethodGet, "/entries/0000-01-01", nil)
+	addLocalSessionCookie(t, req, cfg.SessionKey)
+	res := httptest.NewRecorder()
+	router.ServeHTTP(res, req)
+	if res.Code != http.StatusNotFound || !strings.Contains(res.Body.String(), "Page not found") {
+		t.Fatal("year zero did not use styled 404")
 	}
 }

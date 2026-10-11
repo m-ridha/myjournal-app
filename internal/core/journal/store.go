@@ -6,6 +6,10 @@ import (
 )
 
 // Store is implemented by each storage provider and by cache adapters.
+// Listings return no partial result after operational failures; missing listing
+// paths produce an empty result. Operational storage failures wrap ErrUnavailable;
+// cancellation and domain errors retain their identities. Mutation coordination
+// guarantees are adapter-specific and do not imply external-writer atomicity.
 type Store interface {
 	ListYears(ctx context.Context) ([]int, error)
 	ListYear(ctx context.Context, year int) ([]EntryMeta, error)

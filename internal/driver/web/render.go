@@ -16,7 +16,9 @@ type Renderer struct {
 	templates *template.Template
 }
 
+// NewRenderer loads the embedded catalog and templates at startup.
 func NewRenderer() (*Renderer, error) { return loadRenderer(assets.FS) }
+
 func loadRenderer(source fs.FS) (*Renderer, error) {
 	catalog, err := i18n.Load(source, "locales/en.json")
 	if err != nil {

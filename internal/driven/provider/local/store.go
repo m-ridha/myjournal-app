@@ -40,27 +40,28 @@ type Store struct {
 	entryInfo func(os.DirEntry) (os.FileInfo, error)
 }
 
+var _ journal.Store = (*Store)(nil)
+
 // NewStore constructs a filesystem store rooted in the development data directory.
 func NewStore(root string) *Store {
 	return &Store{root: root, entryInfo: os.DirEntry.Info}
 }
 
-func (s *Store) ListYears(ctx context.Context) (result []int, err error) {
-	defer func() { err = storageError(err) }()
+func (s *Store) ListYears(ctx context.Context) ([]int, error) {
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return nil, storageError(err)
 	}
 	entries, err := os.ReadDir(filepath.Join(s.root, "entries"))
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, nil
 		}
-		return nil, err
+		return nil, storageError(err)
 	}
 	years := make([]int, 0, len(entries))
 	for _, entry := range entries {
 		if err := ctx.Err(); err != nil {
-			return nil, err
+			return nil, storageError(err)
 		}
 		if !entry.IsDir() {
 			continue
@@ -73,10 +74,9 @@ func (s *Store) ListYears(ctx context.Context) (result []int, err error) {
 	return years, nil
 }
 
-func (s *Store) ListYear(ctx context.Context, year int) (result []journal.EntryMeta, err error) {
-	defer func() { err = storageError(err) }()
+func (s *Store) ListYear(ctx context.Context, year int) ([]journal.EntryMeta, error) {
 	if err := ctx.Err(); err != nil {
-		return nil, err
+		return nil, storageError(err)
 	}
 	path := s.yearDir(year)
 	entries, err := os.ReadDir(path)
@@ -84,12 +84,12 @@ func (s *Store) ListYear(ctx context.Context, year int) (result []journal.EntryM
 		if os.IsNotExist(err) {
 			return nil, nil
 		}
-		return nil, err
+		return nil, storageError(err)
 	}
 	meta := make([]journal.EntryMeta, 0, len(entries))
 	for _, entry := range entries {
 		if err := ctx.Err(); err != nil {
-			return nil, err
+			return nil, storageError(err)
 		}
 		if entry.IsDir() || !strings.HasSuffix(entry.Name(), ".txt") {
 			continue
@@ -110,10 +110,9 @@ func (s *Store) ListYear(ctx context.Context, year int) (result []journal.EntryM
 	return meta, nil
 }
 
-func (s *Store) Get(ctx context.Context, d civil.Date) (result journal.Entry, err error) {
-	defer func() { err = storageError(err) }()
+func (s *Store) Get(ctx context.Context, d civil.Date) (journal.Entry, error) {
 	if err := ctx.Err(); err != nil {
-		return journal.Entry{}, err
+		return journal.Entry{}, storageError(err)
 	}
 	path := filepath.Join(s.yearDir(d.Year), d.String()+".txt")
 	data, err := os.ReadFile(path)
@@ -121,7 +120,7 @@ func (s *Store) Get(ctx context.Context, d civil.Date) (result journal.Entry, er
 		if os.IsNotExist(err) {
 			return journal.Entry{}, journal.ErrNotFound
 		}
-		return journal.Entry{}, err
+		return journal.Entry{}, storageError(err)
 	}
 	if !utf8.Valid(data) {
 		return journal.Entry{}, journal.ErrInvalidText
@@ -137,31 +136,30 @@ func (s *Store) Previews(ctx context.Context, dates []civil.Date, maxBytes int) 
 			continue
 		}
 		if err != nil {
-			return nil, err
+			return nil, storageError(err)
 		}
 		out[d] = journal.PreviewPrefix(entry.Text, maxBytes)
 	}
 	return out, nil
 }
 
-func (s *Store) Put(ctx context.Context, d civil.Date, text string, base journal.Version) (result journal.Entry, err error) {
-	defer func() { err = storageError(err) }()
+func (s *Store) Put(ctx context.Context, d civil.Date, text string, base journal.Version) (journal.Entry, error) {
 	unlock, err := lockMutation(ctx)
 	if err != nil {
-		return journal.Entry{}, err
+		return journal.Entry{}, storageError(err)
 	}
 	defer unlock()
 	if !utf8.ValidString(text) {
 		return journal.Entry{}, journal.ErrInvalidText
 	}
 	if err := ctx.Err(); err != nil {
-		return journal.Entry{}, err
+		return journal.Entry{}, storageError(err)
 	}
 	if err := ensureDir(filepath.Join(s.root, "entries")); err != nil {
-		return journal.Entry{}, err
+		return journal.Entry{}, storageError(err)
 	}
 	if err := ensureDir(s.yearDir(d.Year)); err != nil {
-		return journal.Entry{}, err
+		return journal.Entry{}, storageError(err)
 	}
 	path := filepath.Join(s.yearDir(d.Year), d.String()+".txt")
 	_, statErr := os.Stat(path)
@@ -172,7 +170,7 @@ func (s *Store) Put(ctx context.Context, d civil.Date, text string, base journal
 		}
 		current, err := s.Get(ctx, d)
 		if err != nil {
-			return journal.Entry{}, err
+			return journal.Entry{}, storageError(err)
 		}
 		if current.Version != base {
 			return journal.Entry{}, journal.ErrConflict
@@ -182,54 +180,53 @@ func (s *Store) Put(ctx context.Context, d civil.Date, text string, base journal
 			return journal.Entry{}, journal.ErrConflict
 		}
 	default:
-		return journal.Entry{}, statErr
+		return journal.Entry{}, storageError(statErr)
 	}
 	if err := writeAtomically(ctx, path, []byte(text), os.Rename); err != nil {
-		return journal.Entry{}, err
+		return journal.Entry{}, storageError(err)
 	}
 	return journal.Entry{Date: d, Text: text, Version: journal.Version(hashText(text)), Exists: true}, nil
 }
 
-func (s *Store) Trash(ctx context.Context, d civil.Date) (err error) {
-	defer func() { err = storageError(err) }()
+func (s *Store) Trash(ctx context.Context, d civil.Date) error {
 	unlock, err := lockMutation(ctx)
 	if err != nil {
-		return err
+		return storageError(err)
 	}
 	defer unlock()
 	if err := ctx.Err(); err != nil {
-		return err
+		return storageError(err)
 	}
 	path := filepath.Join(s.yearDir(d.Year), d.String()+".txt")
 	if _, err := os.Stat(path); err != nil {
 		if os.IsNotExist(err) {
 			return journal.ErrNotFound
 		}
-		return err
+		return storageError(err)
 	}
 	trashDir := filepath.Join(s.root, ".trash")
 	if err := ensureDir(trashDir); err != nil {
-		return err
+		return storageError(err)
 	}
 	reserved, err := os.CreateTemp(trashDir, d.String()+"-*.txt")
 	if err != nil {
-		return err
+		return storageError(err)
 	}
 	trashPath := reserved.Name()
 	if err := reserved.Close(); err != nil {
 		_ = os.Remove(trashPath)
-		return err
+		return storageError(err)
 	}
 	if err := ctx.Err(); err != nil {
 		_ = os.Remove(trashPath)
-		return err
+		return storageError(err)
 	}
 	if err := os.Rename(path, trashPath); err != nil {
 		_ = os.Remove(trashPath)
 		if errors.Is(err, os.ErrNotExist) {
 			return journal.ErrNotFound
 		}
-		return err
+		return storageError(err)
 	}
 	return nil
 }
@@ -280,15 +277,14 @@ func writeAtomically(ctx context.Context, path string, data []byte, rename func(
 	return rename(temp.Name(), path)
 }
 
-var _ journal.Store = (*Store)(nil)
-
 // storageError translates filesystem failures while preserving their identity.
 func storageError(err error) error {
 	if err == nil {
 		return nil
 	}
 	var pathErr *os.PathError
-	if errors.As(err, &pathErr) && !errors.Is(err, journal.ErrUnavailable) {
+	var linkErr *os.LinkError
+	if !errors.Is(err, journal.ErrUnavailable) && (errors.As(err, &pathErr) || errors.As(err, &linkErr)) {
 		return fmt.Errorf("%w: %w", journal.ErrUnavailable, err)
 	}
 	return err

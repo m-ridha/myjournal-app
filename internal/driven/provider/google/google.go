@@ -41,6 +41,8 @@ type Provider struct {
 	mutations [lockStripes]chan struct{}
 }
 
+var _ provider.Provider = (*Provider)(nil)
+
 func New(cfg Config) *Provider {
 	if len(cfg.Scopes) == 0 {
 		cfg.Scopes = []string{"openid", "email", "profile", driveScope}
@@ -82,5 +84,3 @@ func (p *Provider) Begin(_ context.Context, request provider.LoginRequest) (stri
 	}
 	return cfg.AuthCodeURL(request.State, options...), nil
 }
-
-var _ provider.Provider = (*Provider)(nil)

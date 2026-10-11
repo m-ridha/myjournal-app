@@ -12,19 +12,20 @@ makes changing cache implementations easier while preserving journal behavior.
 
 ## Decision
 
-`cachestore.Backend` is a consumer-owned, context-aware byte-storage port with
+`cachestore.ByteCache` is a consumer-owned, context-aware byte-storage port with
 Get, Set, Delete and DeletePrefix. It distinguishes misses and capacity rejection
-from failures and requires caller-owned bytes. `internal/adapter/cache/bigcache`
+from failures and requires caller-owned bytes. `internal/driven/cache/local/bigcache`
 implements the port with the installed `github.com/allegro/bigcache` v1.2.1.
 Only `cmd/app` constructs the production adapter; Wire supplies cleanup after
 request draining. No Redis adapter is introduced. By follow-up user decision, the former map/list
-LRU is retained in `internal/adapter/cache/lru` as an optional backup adapter;
+LRU is retained in `internal/driven/cache/local/lru` as an optional backup adapter;
 BigCache remains the only production selection. The LRU implements the same port
 with a 2048-entry default, explicit capacity override, lazy TTL expiry, copied
 bytes and cancelable lock waits. It owns no goroutines and needs no cleanup.
 Its entry-count bound is not a byte-memory limit. Selecting it requires an
 explicit composition-root change; no runtime fallback or environment selector
-is added. Providers remain in their existing directories.
+is added. The journal decorator lives in `internal/driven/cache/journal`; providers live
+under `internal/driven/provider`. ADR 018 records the package migration.
 
 The decorator retains account isolation, serialized snapshots, absolute expiry,
 Get bypass, preview-budget keys, operation forwarding and the scalar generation

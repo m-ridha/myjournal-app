@@ -10,12 +10,12 @@ import (
 	"testing"
 	"time"
 
+	"golang.org/x/oauth2"
+	"google.golang.org/api/googleapi"
+
 	provider "github/mridha/myjournal-app/internal/core/connection"
 	"github/mridha/myjournal-app/internal/driven/session"
 	"github/mridha/myjournal-app/internal/testutil"
-
-	"golang.org/x/oauth2"
-	"google.golang.org/api/googleapi"
 )
 
 func fixture(t *testing.T) (*experiment, *http.Cookie, *int, *bool) {

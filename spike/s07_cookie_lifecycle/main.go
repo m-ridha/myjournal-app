@@ -17,14 +17,15 @@ import (
 	"sync"
 	"time"
 
-	provider "github/mridha/myjournal-app/internal/core/connection"
-	"github/mridha/myjournal-app/internal/driven/session"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/googleapi"
 	"google.golang.org/api/idtoken"
 	"google.golang.org/api/option"
+
+	provider "github/mridha/myjournal-app/internal/core/connection"
+	"github/mridha/myjournal-app/internal/driven/session"
 )
 
 const cookieName = "mj_s7_session"

@@ -14,8 +14,6 @@ import (
 	provider "github/mridha/myjournal-app/internal/core/connection"
 )
 
-const CookieName = "mj_session"
-
 func keyFromSecret(secret string) []byte {
 	out := sha256.Sum256([]byte(secret))
 	return out[:]

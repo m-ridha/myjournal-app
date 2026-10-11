@@ -424,3 +424,49 @@ Reviewed every unchecked item against later findings, public acceptance and v0.1
 - [x] Fresh `make fmt lint test`, shared journal contracts through both adapters,
   `go test -race ./internal/adapter/cache/lru ./internal/cachestore`, and all fifteen
   separate architecture probes passed. `git diff --check` passed.
+
+
+## Hexagonal architecture refactor (2026-10-11)
+
+- [x] Move packages into core/driver/driven, with feature-oriented journal and
+  connection cores. Keep local cache storage under driven/cache/local/{bigcache,lru}
+  and rename the supporting port to cachestore.ByteCache; BigCache stays selected.
+- [x] Extract connection lifecycle/settings policy, session/login models and fixed
+  lifetimes inward; retain HTTP cookie/query adaptation and provider-specific OAuth
+  mechanics outside core. Preserve old-cookie decoding with synthetic fixtures.
+- [x] Construct renderer/catalog and narrow web options explicitly through Wire.
+  Share pure date eligibility and local-origin validation; classify filesystem
+  failures and stop partial-success metadata listings. Remove duplicate Clock.
+- [x] Enforce recursive boundaries in .golangci.yml and prove them with thirty-one
+  temporary depguard violations, including nested acyclic imports. Cleanup passed
+  after both a failed probe setup and the final successful run.
+- [x] Fresh make generate and make fmt lint test pass (zero lint issues, all five
+  browser success markers and all Go packages). Separate make test-architecture
+  passes all thirty-one probes. Race checks pass across core, driven, web and cmd/app.
+  Generated output was reviewed; local documentation links and git diff --check pass.
+
+ADR 018 records the boundaries and compatibility decisions. No new dependencies,
+remote cache, live Google experiments, deployments or performance claims were
+introduced. Full UI acceptance and external-writer limitations remain unchanged.
+Markdown lint is unavailable on PATH; documentation paths/consistency were checked.
+
+
+## Automatic import grouping (2026-10-11)
+
+- [x] Enable the installed golangci-lint gci formatter alongside gofmt. Configure
+  standard-library, third-party and project-prefix groups, alphabetically sorted
+  by import path, including aliases. make fmt now formats all handwritten Go files;
+  make lint rejects grouping drift. Generated files remain generator-owned.
+- [x] Apply formatting repository-wide and record the convention in AGENTS.md.
+  Fresh make fmt lint test passes with zero lint issues, all five browser suites
+  and Go packages. golangci-lint fmt --diff ./... is empty; git diff --check passes.
+- [x] Separate make test-architecture passes all thirty-one probes after formatter
+  configuration, with cleanup verified.
+
+## PR #20 review follow-up (2026-10-11)
+
+Checked the single outstanding [review finding](https://github.com/mridha-work/myjournal-app/pull/20#discussion_r4240673309) against the current source and depguard configuration. The local AGENTS.md and ADR 017 corrections replace intermediate provider/cache paths with internal/driven/provider/{local,google} and internal/driven/cache/local/{bigcache,lru}, and identify the port as cachestore.ByteCache. The architecture table now lists both concrete local cache packages explicitly. Verified directory existence, the ByteCache declaration, the cache-storage depguard pattern, and absence of superseded names in these two guides. Documentation-only review follow-up; git diff --check passed. No remote reply, thread resolution, commit or push was performed.
+
+## Interface assertion placement (2026-10-11)
+
+Moved all eleven existing compile-time interface assertions immediately below their implementing struct declarations. Google Store assertions now sit together in store.go, including the OperationStore contract previously declared in discovery.go. Recorded the placement convention in AGENTS.md. Fresh make fmt lint test passed: zero lint issues, all five browser regression suites and all Go packages. git diff --check passed. Existing staged and unstaged changes were preserved; no commit or push was performed.

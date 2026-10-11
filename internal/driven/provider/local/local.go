@@ -17,6 +17,8 @@ type Provider struct {
 	dataDir string
 }
 
+var _ provider.Provider = (*Provider)(nil)
+
 // New constructs the development adapter from explicit startup configuration.
 func New(baseURL, dataDir string) *Provider {
 	return &Provider{baseURL: baseURL, dataDir: dataDir}
@@ -49,5 +51,3 @@ func (p *Provider) Store(_ context.Context, _ provider.Connection) (journal.Stor
 func (p *Provider) Revoke(_ context.Context, _ provider.Connection) error {
 	return nil
 }
-
-var _ provider.Provider = (*Provider)(nil)

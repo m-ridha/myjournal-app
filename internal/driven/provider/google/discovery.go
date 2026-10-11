@@ -53,5 +53,3 @@ func (s *Store) clearDiscovery() {
 	clear(s.discovery.queries)
 	s.discovery.mu.Unlock()
 }
-
-var _ journal.OperationStore = (*Store)(nil)

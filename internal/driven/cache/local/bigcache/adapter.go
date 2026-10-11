@@ -31,6 +31,8 @@ type Adapter struct {
 	closed bool
 }
 
+var _ cachestore.ByteCache = (*Adapter)(nil)
+
 // New constructs an adapter with modest initial allocation and a byte-queue cap.
 func New(ttl time.Duration) (*Adapter, error) {
 	if ttl <= 0 {
@@ -147,5 +149,3 @@ func (a *Adapter) Close() error {
 	a.closed = true
 	return a.cache.Close()
 }
-
-var _ cachestore.ByteCache = (*Adapter)(nil)

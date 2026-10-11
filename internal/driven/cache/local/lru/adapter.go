@@ -30,6 +30,8 @@ type Adapter struct {
 	lru      list.List
 }
 
+var _ cachestore.ByteCache = (*Adapter)(nil)
+
 // New constructs an LRU with the previous 2048-entry default capacity.
 func New(ttl time.Duration) *Adapter { return NewWithCapacity(ttl, defaultCapacity) }
 
@@ -136,5 +138,3 @@ func (a *Adapter) remove(element *list.Element) {
 	delete(a.items, element.Value.(*item).key)
 	a.lru.Remove(element)
 }
-
-var _ cachestore.ByteCache = (*Adapter)(nil)

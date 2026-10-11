@@ -57,3 +57,21 @@ func TestMetadataFailureDoesNotReturnPartialList(t *testing.T) {
 		}
 	}
 }
+
+func TestFilesystemErrorClassificationPreservesIdentity(t *testing.T) {
+	failure := errors.New("synthetic filesystem failure")
+	for _, err := range []error{
+		&os.PathError{Op: "open", Path: "synthetic", Err: failure},
+		&os.LinkError{Op: "rename", Old: "synthetic-old", New: "synthetic-new", Err: failure},
+	} {
+		got := storageError(err)
+		if !errors.Is(got, journal.ErrUnavailable) || !errors.Is(got, failure) {
+			t.Fatalf("filesystem error identity/classification lost: %T", err)
+		}
+	}
+	for _, err := range []error{context.Canceled, context.DeadlineExceeded, journal.ErrNotFound, journal.ErrConflict, journal.ErrInvalidText} {
+		if got := storageError(err); got != err {
+			t.Fatalf("existing error identity changed: %v", err)
+		}
+	}
+}

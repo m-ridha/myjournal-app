@@ -6,6 +6,7 @@ import (
 	"time"
 )
 
+// LoginLifetime bounds pending browser authorization transactions.
 const LoginLifetime = 10 * time.Minute
 
 // LoginFlow binds a browser's pending authorization to its provider and PKCE secret.
@@ -18,6 +19,8 @@ type LoginFlow struct {
 	IssuedAt   time.Time
 }
 
+// NewLoginFlow generates independent state, PKCE verifier and nonce values.
+// entropySource must supply cryptographically secure entropy in production.
 func NewLoginFlow(providerID string, now time.Time, entropySource io.Reader) (LoginFlow, error) {
 	flow := LoginFlow{ProviderID: providerID, IssuedAt: now.UTC()}
 	for _, target := range []*string{&flow.State, &flow.Verifier, &flow.Nonce} {
@@ -30,6 +33,7 @@ func NewLoginFlow(providerID string, now time.Time, entropySource io.Reader) (Lo
 	return flow, nil
 }
 
+// ValidAt checks the fixed transaction lifetime and canonical token encodings.
 func (f LoginFlow) ValidAt(now time.Time) bool {
 	if f.ProviderID == "" || len(f.ProviderID) > 64 || f.IssuedAt.IsZero() || f.IssuedAt.After(now) || !now.Before(f.IssuedAt.Add(LoginLifetime)) {
 		return false

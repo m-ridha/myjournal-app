@@ -857,3 +857,90 @@ contracts passed through both adapters. `go test -race
 Author review confirmed the old storage semantics, current port contract and
 unchanged BigCache selection. Documentation paths and `git diff --check` passed;
 Markdown tooling remains unavailable as recorded above. No commit or deployment.
+
+
+## Hexagonal boundaries and application lifecycle (2026-10-11)
+
+The approved refactor groups domain/use cases under internal/core, HTTP under
+internal/driver/web, and provider/cache/codec/clock adapters under internal/driven.
+Connection workflows consume a lifecycle Gateway/Catalog port, independently of
+storage construction. Core owns session/login models, fixed lifetimes, binding,
+consent/reconnect eligibility, issuance, disconnect and settings. HTTP retains
+cookie metadata, encryption adaptation, query multiplicity/size checks, redirects
+and safe response mapping. Google signature/claim/refresh behavior is unchanged.
+Synthetic ciphertext generated before model extraction still decodes with the
+same fields and authenticated-purpose isolation. Revocation failures retain the
+session; both HTML/API settings use the shared application workflow.
+
+Wire constructs renderer/catalog with initialization-error propagation and narrow
+web options; cache cleanup remains intact on initialization errors and shutdown.
+BigCache remains selected at driven/cache/local/bigcache; LRU remains optional.
+The journal decorator owns ByteCache with unchanged byte copying, cancellation,
+miss/capacity and prefix-deletion contracts. No remote adapter or runtime selector
+was added. Shared journal contracts continue to run against local, mocked Google
+and both cache adapters. Journal service/editor pages share pure date validation,
+including year-zero rejection. Local operational filesystem failures now wrap
+ErrUnavailable with preserved identities; metadata failures/disappearance abort
+the list rather than presenting partial success. Local-origin validation is shared
+neutral connection policy rather than an adapter dependency on startup config.
+
+Fresh verification: make generate passed using oapi-codegen v2.8.0 and installed
+Wire; generated initialization/cleanup and API changes were inspected. Go 1.27.2
+and golangci-lint v2.14.0 run make fmt lint test successfully, with zero lint issues,
+all five JavaScriptCore success markers and all Go packages passing. The separate
+make test-architecture run passed thirty-one forbidden-import probes and removed
+all temporary source/directories. The new startup-config probe initially hit an
+import cycle through local tests; moving it to a nested package proved depguard
+rejection instead. Cleanup was verified on that failure too. The pre-refactor
+nested core-to-config probe was accepted by lint, establishing the original gap.
+
+`go test -race ./internal/core/... ./internal/driven/... ./internal/driver/web/...
+./cmd/app` passed. Local Markdown links, active source/generator references and
+git diff --check passed. `command -v markdownlint-cli2` returned 1, so no fresh
+Markdown-lint pass is claimed. Inline review checked dependency ownership, cookie
+compatibility, error identities, date boundaries, cache coordination and generated
+cleanup. No reviewer was delegated and no agent commit, push or deployment occurred.
+The main migration was committed externally as 5948fd3 during the work; follow-up
+changes remain in the working tree. ADR 018 records the durable decisions.
+
+This adds automated structural/contract evidence, not live Google, performance,
+accessibility or deployment acceptance. Existing restricted-release status,
+stateless callback replay limits and non-atomic external-writer/deployment-overlap
+risks remain unchanged.
+
+
+Final review follow-up: a focused regression exposed rename failures using
+os.LinkError rather than os.PathError. The adapter now maps both to ErrUnavailable
+while preserving underlying identity; cancellation/not-found/conflict/invalid-text
+identities remain unchanged. The regression failed before the correction and the
+fresh full make fmt lint test run passed afterward (zero lint issues, all browser
+success markers and Go packages). The focused local race check was repeated.
+
+
+## Import grouping enforcement (2026-10-11)
+
+The reported import block was in internal/driver/web/handler/auth_test.go; the
+Google adapter test already grouped imports correctly. gofmt alone preserved
+incorrect group boundaries. Enabled bundled gci with standard/default/project
+prefix sections in .golangci.yml, and changed make fmt to golangci-lint fmt ./....
+No new dependency or tool installation was needed. The configured lint check
+first rejected existing grouping drift, then passed after repository-wide
+formatting. Project aliases stay in the project group and sort by import path.
+Generated code is excluded from formatter rewrites and remains generator-owned.
+AGENTS.md records the convention and repeatable command.
+
+Fresh make fmt lint test passes with zero lint issues, all five browser success
+markers and all Go packages. golangci-lint fmt --diff ./... returns no differences;
+git diff --check passes. Generated Wire/OpenAPI files have no follow-up diff.
+Existing working-tree edits were preserved. No commit or push was performed.
+
+The separate make test-architecture run also passed all thirty-one probes after
+formatter configuration; all temporary probes were removed.
+
+## PR #20 review follow-up (2026-10-11)
+
+Checked the single outstanding [review finding](https://github.com/mridha-work/myjournal-app/pull/20#discussion_r4240673309) against the current source and depguard configuration. The local AGENTS.md and ADR 017 corrections replace intermediate provider/cache paths with internal/driven/provider/{local,google} and internal/driven/cache/local/{bigcache,lru}, and identify the port as cachestore.ByteCache. The architecture table now lists both concrete local cache packages explicitly. Verified directory existence, the ByteCache declaration, the cache-storage depguard pattern, and absence of superseded names in these two guides. Documentation-only review follow-up; git diff --check passed. No remote reply, thread resolution, commit or push was performed.
+
+## Interface assertion placement (2026-10-11)
+
+Moved all eleven existing compile-time interface assertions immediately below their implementing struct declarations. Google Store assertions now sit together in store.go, including the OperationStore contract previously declared in discovery.go. Recorded the placement convention in AGENTS.md. Fresh make fmt lint test passed: zero lint issues, all five browser regression suites and all Go packages. git diff --check passed. Existing staged and unstaged changes were preserved; no commit or push was performed.

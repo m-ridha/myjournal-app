@@ -23,8 +23,6 @@ type ServiceFactory func(context.Context, provider.Session) (*journal.Service, e
 
 var ErrUnauthenticated = errors.New("authentication required")
 
-var _ api.ServerInterface = (*Server)(nil)
-
 // Server implements the generated OpenAPI chi server interface.
 type Server struct {
 	cfg            Options
@@ -34,6 +32,8 @@ type Server struct {
 	messages       i18n.Catalog
 	now            func() time.Time
 }
+
+var _ api.ServerInterface = (*Server)(nil)
 
 func New(cfg Options, registry *provider.Registry, service ServiceFactory, messages i18n.Catalog, clk journal.Clock, connections *provider.Service) *Server {
 	return &Server{connections: connections, cfg: cfg, registry: registry, serviceFactory: service, messages: messages, now: clk.Now}

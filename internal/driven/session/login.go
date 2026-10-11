@@ -4,9 +4,6 @@ import (
 	provider "github/mridha/myjournal-app/internal/core/connection"
 )
 
-const LoginCookieName = "mj_oauth"
-const LoginCookiePath = "/api/v1/auth/"
-
 func EncodeLoginFlow(secret string, flow provider.LoginFlow) (string, error) {
 	return encode(secret, flow, []byte("oauth-login-v1"))
 }

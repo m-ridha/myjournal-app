@@ -122,11 +122,11 @@ func (s *Server) Disconnect(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) loginCookie(value string, maxAge int) *http.Cookie {
-	return &http.Cookie{Name: session.LoginCookieName, Value: value, Path: session.LoginCookiePath, MaxAge: maxAge, HttpOnly: true, SameSite: http.SameSiteLaxMode, Secure: s.cfg.CookieSecure}
+	return &http.Cookie{Name: authsession.LoginCookieName, Value: value, Path: authsession.LoginCookiePath, MaxAge: maxAge, HttpOnly: true, SameSite: http.SameSiteLaxMode, Secure: s.cfg.CookieSecure}
 }
 
 func (s *Server) callbackFlow(r *http.Request, params api.CompleteProviderLoginParams) (provider.LoginFlow, bool) {
-	cookie, err := r.Cookie(session.LoginCookieName)
+	cookie, err := r.Cookie(authsession.LoginCookieName)
 	if err != nil || len(cookie.Value) > authsession.MaxCookieBytes {
 		return provider.LoginFlow{}, false
 	}

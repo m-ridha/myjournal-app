@@ -5,6 +5,7 @@ import "context"
 // Settings is a transport-independent account and navigation view.
 type Settings struct{ AccountName, ProviderName, FolderURL string }
 
+// Settings reads provider navigation without creating storage paths.
 func (s *Service) Settings(ctx context.Context, current Session) (Settings, error) {
 	p, err := s.active(current)
 	if err != nil {

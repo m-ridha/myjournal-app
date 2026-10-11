@@ -20,6 +20,7 @@ import (
 	"github/mridha/myjournal-app/internal/driven/provider/local"
 	"github/mridha/myjournal-app/internal/driven/session"
 	"github/mridha/myjournal-app/internal/driver/web/api"
+	"github/mridha/myjournal-app/internal/driver/web/authsession"
 	"github/mridha/myjournal-app/internal/driver/web/i18n"
 	"github/mridha/myjournal-app/internal/testutil"
 )
@@ -149,7 +150,7 @@ func addLocalSession(t *testing.T, req *http.Request) {
 	if err != nil {
 		t.Fatalf("session.Encode() error = %v", err)
 	}
-	req.AddCookie(&http.Cookie{Name: session.CookieName, Value: encoded})
+	req.AddCookie(&http.Cookie{Name: authsession.CookieName, Value: encoded})
 }
 
 func testCatalog(t *testing.T) i18n.Catalog {

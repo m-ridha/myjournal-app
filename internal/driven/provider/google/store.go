@@ -57,6 +57,9 @@ type Store struct {
 	discovery *operationDiscovery
 }
 
+var _ journal.Store = (*Store)(nil)
+var _ journal.OperationStore = (*Store)(nil)
+
 func (p *Provider) Store(ctx context.Context, c provider.Connection) (journal.Store, error) {
 	stored, err := decodeCredentials(c)
 	if err != nil {
@@ -599,5 +602,3 @@ func (p *Provider) FolderURL(ctx context.Context, c provider.Connection) (string
 	}
 	return "https://drive.google.com/drive/folders/" + url.PathEscape(root.Id), nil
 }
-
-var _ journal.Store = (*Store)(nil)

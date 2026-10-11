@@ -12,7 +12,7 @@ import (
 	"github/mridha/myjournal-app/internal/config"
 	provider "github/mridha/myjournal-app/internal/core/connection"
 	"github/mridha/myjournal-app/internal/core/journal"
-	"github/mridha/myjournal-app/internal/driven/session"
+	"github/mridha/myjournal-app/internal/driver/web/authsession"
 	"github/mridha/myjournal-app/internal/testutil"
 )
 
@@ -64,7 +64,7 @@ func TestDisconnectRevokesBeforeClearingSession(t *testing.T) {
 					t.Fatal("disconnect must return empty 204 and clear session")
 				}
 				cookie := cookies[0]
-				if cookie.Name != session.CookieName || cookie.MaxAge != -1 || cookie.Value != "" || cookie.Path != "/" || !cookie.HttpOnly || !cookie.Secure || cookie.SameSite != http.SameSiteLaxMode {
+				if cookie.Name != authsession.CookieName || cookie.MaxAge != -1 || cookie.Value != "" || cookie.Path != "/" || !cookie.HttpOnly || !cookie.Secure || cookie.SameSite != http.SameSiteLaxMode {
 					t.Fatal("incorrect cookie removal attributes")
 				}
 			}
