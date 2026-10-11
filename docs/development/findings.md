@@ -796,3 +796,64 @@ that existing status region and left the list empty until data arrives. Added
 rendered-template and pending-fetch regression coverage. `make fmt lint test`
 passed (0 lint issues, all browser suites and Go tests). `git diff --check` and
 Markdown lint passed. No deployed browser check was performed.
+
+## BigCache storage adapter (2026-10-11)
+
+Replaced the custom production cache map/list with installed BigCache v1.2.1.
+`cachestore` owns the byte-storage port and journal policy; the concrete adapter
+lives in `internal/adapter/cache/bigcache`. Wire initialization now returns cache
+cleanup through BuildApp, which retains its existing request-draining lifecycle.
+
+Fresh checks: `make generate-wire` passed and its initialization/error/cleanup
+diff was inspected. Focused tests for cachestore, BigCache, Google synthetic
+storage and cmd/app passed. `make fmt lint test` passed with zero lint issues,
+all five JavaScript success markers and all Go packages. Focused race tests passed.
+An initial lint run caught an unchecked test cleanup error, which was corrected
+before the successful full run. No human/live/production acceptance is inferred.
+
+The adapter bounds byte queues to 16 MiB across sixteen shards, not total process
+memory or exactly 2048 entries. It rejects oversized entries before writes and
+checks cancellation during lock waits and prefix deletion. The decorator enforces
+absolute expiry independently of library cleanup and retains the accepted
+invalidation/generation policy. Unexpected cache errors disable reuse for the
+coordinator; backing reads/writes continue with their original results. ADR 017
+records eviction changes, prefix-scan cost and future distributed-coordination
+requirements. Existing progress and installed dependency edits were preserved.
+
+The separate `make test-architecture` run passed all fourteen forbidden-import
+probes, including nested cache-policy and concrete-adapter boundaries. Probe files
+and the temporary nested directory were removed. A final author review checked
+the approved design, generated Wire diff, failure behavior and dependency direction;
+no independent reviewer was delegated, following the user's inline execution choice.
+
+Final formatting check: `git diff --check` passed; documentation paths and
+consistency were reviewed. Markdown lint could not be rerun: `command -v
+markdownlint-cli2` returned 1, and the attempted `npx --no-install markdownlint-cli2`
+invocation returned 127 (`npx` is unavailable). No tools were installed for this.
+
+## Retain the previous LRU as an optional adapter (2026-10-11)
+
+The user revised the earlier single-adapter scope to retain the previous LRU
+implementation as backup/historical code. Restored its map/list storage approach
+in `internal/adapter/cache/lru`, adapted to the existing consumer-owned byte port.
+The default remains 2048 entries, with an explicit capacity override, LRU promotion
+on reads/updates and lazy exact-expiry rejection. Byte ownership, prefix deletion
+and context-aware coordination match the port. Journal policy is shared rather
+than duplicated in this adapter. Its limit bounds entry count, not total bytes;
+it owns no background work and needs no lifecycle cleanup.
+
+Wire and generated composition continue to select BigCache. Switching adapters
+would require an explicit composition-root change; there is no automatic fallback
+or new environment setting. ADR 017 and architecture guidance record the revised
+scope. The existing depguard patterns already cover the LRU directory, and a new
+temporary adapter-to-web probe verifies that boundary.
+
+Tests first failed because the new adapter constructors did not exist, then passed
+with the implementation. Fresh `make fmt lint test` passed with zero lint issues,
+all five JavaScript success markers and all Go packages. Shared journal store
+contracts passed through both adapters. `go test -race
+./internal/adapter/cache/lru ./internal/cachestore` passed. The separate
+`make test-architecture` passed all fifteen probes and removed temporary files.
+Author review confirmed the old storage semantics, current port contract and
+unchanged BigCache selection. Documentation paths and `git diff --check` passed;
+Markdown tooling remains unavailable as recorded above. No commit or deployment.

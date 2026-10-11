@@ -1,0 +1,59 @@
+package local
+
+import (
+	"context"
+	"errors"
+	"os"
+	"path/filepath"
+	"testing"
+	"time"
+
+	"github/mridha/myjournal-app/internal/core/journal"
+)
+
+func TestOperationalErrorsAreUnavailable(t *testing.T) {
+	root := filepath.Join(t.TempDir(), "file")
+	if err := os.WriteFile(root, []byte("synthetic"), 0600); err != nil {
+		t.Fatal(err)
+	}
+	store := NewStore(root)
+	date := journal.Date{Year: 2026, Month: time.October, Day: 11}
+	for name, call := range map[string]func() error{
+		"years": func() error { _, err := store.ListYears(context.Background()); return err },
+		"year":  func() error { _, err := store.ListYear(context.Background(), 2026); return err },
+		"get":   func() error { _, err := store.Get(context.Background(), date); return err },
+		"put":   func() error { _, err := store.Put(context.Background(), date, "synthetic", ""); return err },
+		"trash": func() error { return store.Trash(context.Background(), date) },
+	} {
+		t.Run(name, func(t *testing.T) {
+			if err := call(); !errors.Is(err, journal.ErrUnavailable) {
+				t.Fatalf("got %v, want unavailable", err)
+			}
+		})
+	}
+}
+
+func TestMetadataFailureDoesNotReturnPartialList(t *testing.T) {
+	for _, failure := range []error{errors.New("synthetic metadata failure"), os.ErrNotExist} {
+		store := NewStore(t.TempDir())
+		ctx := context.Background()
+		for _, day := range []int{10, 11} {
+			_, err := store.Put(ctx, journal.Date{Year: 2026, Month: 10, Day: day}, "synthetic", "")
+			if err != nil {
+				t.Fatal(err)
+			}
+		}
+		calls := 0
+		store.entryInfo = func(entry os.DirEntry) (os.FileInfo, error) {
+			calls++
+			if calls == 2 {
+				return nil, failure
+			}
+			return entry.Info()
+		}
+		items, err := store.ListYear(ctx, 2026)
+		if !errors.Is(err, journal.ErrUnavailable) || items != nil {
+			t.Fatal("metadata failure returned partial success")
+		}
+	}
+}

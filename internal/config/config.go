@@ -3,13 +3,12 @@ package config
 import (
 	"encoding/base64"
 	"fmt"
-	"net"
 	"net/url"
 	"os"
 	"strconv"
 	"strings"
 
-	"github/mridha/myjournal-app/internal/provider"
+	provider "github/mridha/myjournal-app/internal/core/connection"
 )
 
 // Config contains the application-level settings used by the server at startup.
@@ -122,18 +121,4 @@ func (c Config) ProviderIDs() []string {
 }
 
 // ValidateLoopbackURL restricts development-only providers to exact loopback hosts.
-func ValidateLoopbackURL(raw string) error {
-	parsed, err := url.Parse(raw)
-	if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Hostname() == "" || parsed.User != nil || parsed.RawQuery != "" || parsed.Fragment != "" || (parsed.Path != "" && parsed.Path != "/") {
-		return fmt.Errorf("requires an absolute localhost APP_BASE_URL")
-	}
-	host := strings.TrimSuffix(strings.ToLower(parsed.Hostname()), ".")
-	if host == "localhost" {
-		return nil
-	}
-	ip := net.ParseIP(host)
-	if ip != nil && ip.IsLoopback() {
-		return nil
-	}
-	return fmt.Errorf("requires an absolute localhost APP_BASE_URL")
-}
+func ValidateLoopbackURL(raw string) error { return provider.ValidateLocalOrigin(raw) }

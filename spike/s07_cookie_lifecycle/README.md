@@ -1,6 +1,6 @@
 # S07: Encrypted cookie and Google token lifecycle
 
-This separate spike reuses `internal/session` AES-GCM encoding and keeps provider/account identity, email label, refresh token, and an existing S02 root folder ID in an encrypted HttpOnly cookie. It does not create or change Drive files. Access tokens are cached in memory under a SHA-256 hash of the refresh token, with a 128-item bound; the browser cookie is sufficient after a restart. The cache stores token values rather than a token source tied to an expired request context.
+This separate spike reuses `internal/driven/session` AES-GCM encoding and keeps provider/account identity, email label, refresh token, and an existing S02 root folder ID in an encrypted HttpOnly cookie. It does not create or change Drive files. Access tokens are cached in memory under a SHA-256 hash of the refresh token, with a 128-item bound; the browser cookie is sufficient after a restart. The cache stores token values rather than a token source tied to an expired request context.
 
 The spike uses distinct `mj_s7_session` and `mj_s7_oauth` cookies and does not change production authentication. State and PKCE verifier are encrypted in a five-minute cookie; the callback checks state, validates the ID token, and requires a verified email. A later sign-in that omits a refresh token preserves the existing token only for the same validated subject. Raw OAuth/Drive errors, cookies, tokens, account values, and callback queries are never logged or displayed.
 

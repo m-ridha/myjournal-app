@@ -27,7 +27,7 @@ make generate-wire     # after Wire edits; requires wire
 
 - Defaults: port 3030, `APP_BASE_URL=http://localhost:3030`, `PROVIDERS=local`, `LOCAL_DATA_DIR=./.devdata`, info logging, insecure cookies on HTTP localhost. Keep listener port and base URL aligned; they are separate settings.
 - `SESSION_KEY` is base64-encoded 32 random bytes. Startup rejects invalid keys, unknown/duplicate providers, and local mode outside exact localhost/loopback hostnames. Never print `.env`.
-- Edit `cmd/app/wire.go`, regenerate `cmd/app/wire_gen.go`, and version both. Edit `docs/api/openapi.yml`, regenerate `internal/web/api/openapi.gen.go`. Never hand-edit generated code or restore top-level generated directories.
+- Edit `cmd/app/wire.go`, regenerate `cmd/app/wire_gen.go`, and version both. Edit `docs/api/openapi.yml`, regenerate `internal/driver/web/api/openapi.gen.go`. Never hand-edit generated code or restore top-level generated directories.
 - The schema declares OpenAPI 3.2.1 and the generated header identifies oapi-codegen v2.8.0. Verify installed compatibility; do not silently downgrade. `make generate` runs both generators; `go generate ./cmd/app` also runs Wire. Inspect generated diffs.
 - `make test` runs JavaScript regressions and `go test ./...`. JavaScript requires Node.js or macOS JavaScriptCore, without npm packages. Preserve the JavaScriptCore success-marker check so asynchronous assertions cannot appear to pass.
 - Lint uses golangci-lint v2.14.0 (v2.13.2 cannot read Go 1.27.2 export data). For documentation-only changes, check links/paths, consistency, and `git diff --check`; runtime tests are unnecessary. Report unavailable tools and exact commands/results; never present historical checks as a fresh run.
@@ -49,21 +49,22 @@ make generate-wire     # after Wire edits; requires wire
 | Path | Responsibility |
 | --- | --- |
 | `cmd/app/` | Configuration, provider registration, Wire composition root |
-| `internal/journal/`, `internal/journal/storetest/` | Domain/use cases, Store/Clock ports, shared contracts |
-| `internal/provider/`, `internal/provider/{local,google}/` | Connection port/registry and storage adapters |
-| `internal/cachestore/`, `internal/clock/` | Bounded cache and system clock adapters |
-| `internal/session/`, `internal/config/` | AES-GCM cookie codec and environment validation |
-| `internal/web/`, `internal/web/handler/`, `internal/web/middleware/` | Router/pages, thin API handlers, focused middleware |
-| `internal/web/api/openapi.gen.go` | Committed generated API code |
-| `internal/i18n/`, `assets/` | Locale catalog, embedded templates/static files |
+| `internal/core/journal/`, `internal/core/journal/storetest/` | Domain/use cases, Store/Clock ports, shared contracts |
+| `internal/core/connection/`, `internal/core/connection/{local,google}/` | Connection port/registry and storage adapters |
+| `internal/driven/cache/journal/` | Journal cache decorator and consumer-owned byte-cache port |
+| `internal/adapter/cache/`, `internal/driven/clock/` | BigCache storage (production), optional historical LRU storage, and system clock adapters |
+| `internal/driven/session/`, `internal/config/` | AES-GCM cookie codec and environment validation |
+| `internal/driver/web/`, `internal/driver/web/handler/`, `internal/driver/web/middleware/` | Router/pages, thin API handlers, focused middleware |
+| `internal/driver/web/api/openapi.gen.go` | Committed generated API code |
+| `internal/driver/web/i18n/`, `assets/` | Locale catalog, embedded templates/static files |
 | `tests/`, `spike/` | Browser regressions and standalone Google experiments |
 
 - Dependencies point inward. Domain code must not import HTTP/chi, rendering, OAuth, Google APIs, filesystem, or database packages. Providers must not import web.
-- `journal.Service` owns open/save/delete/list/calendar. Handlers parse requests and call the injected session-scoped service factory. Only `cmd/app` wires concrete providers, cache adapters, and system clocks into production web/session code.
-- Keep Store/Clock in `internal/journal/store.go`; use `journal.Clock` and `internal/clock.System`, not a new utilities abstraction. Store methods are context-aware and `journal.Version` is opaque. Map wrapped errors with `errors.Is`; do not expose provider details to generic code.
+- `journal.Service` owns open/save/delete/list/calendar. Handlers parse requests and call the injected session-scoped service factory. Only `cmd/app` wires concrete providers, cache adapters, and system clocks into production web/session code. Cache policy consumes `cachestore.ByteCache`; concrete cache storage belongs in `internal/adapter/cache/` (ADR 017).
+- Keep Store/Clock in `internal/core/journal/store.go`; use `journal.Clock` and `internal/driven/clock.System`, not a new utilities abstraction. Store methods are context-aware and `journal.Version` is opaque. Map wrapped errors with `errors.Is`; do not expose provider details to generic code.
 - Preserve shared account-isolated caches, invalidation/generation guards, bounded memory, page-only previews, and Get bypass. Pagination validates pages 1–10000/sizes 1–100 before storage access and retains at most size+1 dates.
 - Optional operation-scoped discovery reuse must start fresh for each journal service call and stay bounded; cache decorators forward the scope without changing shared cache ownership (ADR 015). Keep downloads and pre-upload checks fresh. Targeted invalidation preserves unrelated snapshots only until their original expiry, always invalidates the affected preview, and retains generation guards; never seed caches from potentially out-of-order save acknowledgements.
-- Run shared store contracts for every adapter. Use fixed clocks, temporary directories, and mocked external services. Depguard's production file patterns are verified by make test-architecture (seven temporary violations including nested imports). Driving-side test files may compose real adapters for integration tests; production files may not. Keep this check separate from concurrent builds/lint and preserve cleanup.
+- Run shared store contracts for every adapter. Use fixed clocks, temporary directories, and mocked external services. Depguard's production file patterns are verified by make test-architecture (fifteen temporary violations including nested imports). Driving-side test files may compose real adapters for integration tests; production files may not. Keep this check separate from concurrent builds/lint and preserve cleanup.
 - APIs use `/api/v{version_number}/...`; `/healthz` is unversioned. Browser routes are separate. Use JSON and vanilla JavaScript by explicit user decision (ADR 014). HTMX is excluded from this project; the original HTMX plan is superseded. The migration assessment is historical research, not a backlog. Do not add fragment routes or silently introduce a frontend framework.
 
 ## UI and localization

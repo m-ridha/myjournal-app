@@ -8,7 +8,7 @@ import (
 	"testing"
 
 	"github/mridha/myjournal-app/internal/config"
-	middleware "github/mridha/myjournal-app/internal/web/middleware"
+	middleware "github/mridha/myjournal-app/internal/driver/web/middleware"
 )
 
 type captureHandler struct {

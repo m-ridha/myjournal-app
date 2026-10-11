@@ -283,6 +283,23 @@ This section records scoped live observations; later Railway acceptance establis
 - [x] Review app startup/server logging; sanitize net/http diagnostic fallback, regenerate Wire and verify secret-omission regression. Fresh make fmt lint test passes.
 - [x] Select Railway and verify HTTPS/Console test-user setup and visible query-free logging with no drains. Temporary rollout overlap is explicitly accepted (ADR 016), not proven absent; unrestricted Console publishing remains outside this release.
 
+### Issues for Branding verification attempt in GCP
+
+<https://console.cloud.google.com/auth/branding?project=myjournal-app-509305>
+reference: <https://support.google.com/cloud/answer/13464321?sjid=12620915019931986057-NC>
+
+- [ ] The website of your home page URL "<https://myjournal-ink.up.railway.app>" is not registered to you.
+Verify ownership of your home page, then wait 24 hours before retrying to allow our systems to update.
+- [ ] Your privacy policy page at "<https://myjournal-ink.up.railway.app/privacy>" does not have sufficient content.
+We were unable to confirm your app's compliance. Please update your privacy policy to clearly and sufficiently detail your app's data collection and usage, then retry.
+- [ ] Your home page is behind a login page.
+We were unable to confirm your app's compliance. Please update your home page to allow users to view information about your app without needing to login, then retry.
+- [ ] Your home page does not explain the purpose of your app.
+We were unable to confirm your app's compliance. Please update your home page to clearly outline the purpose of your application, then retry.
+- [x] The app name "myjournal-ink" configured for your OAuth consent screen does not match the app name on your home page.
+We were unable to confirm your app's compliance. Please configure your app with an accurate and up-to-date application name, then retry. Learn more.
+  (updated app name is now "myjournal")
+
 ## Railway release preparation (2026-10-10)
 
 - [x] User selected Railway at <https://myjournal-ink.up.railway.app>; retain ADR 016 residual overlap/lost-update policy.
@@ -382,3 +399,28 @@ Reviewed every unchecked item against later findings, public acceptance and v0.1
 - [x] Use one shared live status for initial HTML and pending entries requests;
   remove the duplicate list placeholder. Template and delayed-fetch regressions
   pass, along with `make fmt lint test` and `git diff --check`.
+
+## Cache storage adapter refactor (2026-10-11)
+
+- [x] Replace production custom map/list LRU storage with installed BigCache
+  v1.2.1 under `internal/adapter/cache/bigcache`, behind the consumer-owned
+  `cachestore.Backend` port. Wire constructs shared storage and supplies cleanup.
+- [x] Preserve account isolation, exact snapshot expiry, Get bypass, operation
+  forwarding, targeted invalidation and scalar generation guards. Cache failures
+  bypass storage without changing journal mutation results; failed invalidation
+  disables further cache reuse. ADR 017 records changed eviction and memory bounds.
+- [x] Fresh `make generate-wire`, focused cache/adapter/provider/application tests,
+  `make fmt lint test`, and `go test -race ./internal/cachestore
+  ./internal/adapter/cache/bigcache` passed. All fourteen architecture probes passed separately; no temporary files remain. No live Google or production checks required
+  or repeated; no performance improvement or distributed coordination claimed.
+
+## Optional historical LRU adapter (2026-10-11)
+
+- [x] By user follow-up, retain the previous map/list LRU storage approach under
+  `internal/adapter/cache/lru`, implementing `cachestore.Backend`. Preserve the
+  2048-entry default, explicit capacity override and lazy expiry; adapt storage to
+  copied bytes, prefix deletion and cancelable coordination. BigCache remains
+  selected in Wire; no runtime fallback or configuration option is introduced.
+- [x] Fresh `make fmt lint test`, shared journal contracts through both adapters,
+  `go test -race ./internal/adapter/cache/lru ./internal/cachestore`, and all fifteen
+  separate architecture probes passed. `git diff --check` passed.

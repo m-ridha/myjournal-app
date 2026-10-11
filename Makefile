@@ -12,8 +12,8 @@ generate: generate-openapi \
 	generate-wire	
 
 generate-openapi:
-	@mkdir -p internal/web/api
-	@oapi-codegen -generate "types,chi-server" -package api -o internal/web/api/openapi.gen.go docs/api/openapi.yml
+	@mkdir -p internal/driver/web/api
+	@oapi-codegen -generate "types,chi-server" -package api -o internal/driver/web/api/openapi.gen.go docs/api/openapi.yml
 
 generate-wire:
 	wire ./...

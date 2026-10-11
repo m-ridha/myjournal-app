@@ -4,6 +4,7 @@ go 1.27.2
 
 require (
 	cloud.google.com/go v0.123.0
+	github.com/allegro/bigcache v1.2.1
 	github.com/go-chi/chi/v5 v5.3.2
 	github.com/google/wire v0.6.0
 	github.com/oapi-codegen/runtime v1.7.0
