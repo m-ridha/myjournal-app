@@ -944,3 +944,7 @@ Checked the single outstanding [review finding](https://github.com/mridha-work/m
 ## Interface assertion placement (2026-10-11)
 
 Moved all eleven existing compile-time interface assertions immediately below their implementing struct declarations. Google Store assertions now sit together in store.go, including the OperationStore contract previously declared in discovery.go. Recorded the placement convention in AGENTS.md. Fresh make fmt lint test passed: zero lint issues, all five browser regression suites and all Go packages. git diff --check passed. Existing staged and unstaged changes were preserved; no commit or push was performed.
+
+## PR workflow formatter prerequisite (2026-10-11)
+
+Moved the pinned golangci-lint installation before Check formatting in .github/workflows/pr-checks.yml: make fmt now depends on that binary. The release workflow already installs it before formatting. Verified step order and fresh make fmt lint test (zero lint issues, five browser suites, all Go packages); git diff --check passed. actionlint is unavailable on PATH. No hosted Actions rerun, commit or push was performed.

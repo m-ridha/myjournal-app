@@ -34,16 +34,16 @@ jobs:
           node-version: '24'
           package-manager-cache: false
 
-      - name: Check formatting
-        run: |
-          make fmt
-          git diff --exit-code -- '*.go'
-
       - name: Install golangci-lint
         uses: golangci/golangci-lint-action@v9
         with:
           version: v2.14.0
           install-only: true
+
+      - name: Check formatting
+        run: |
+          make fmt
+          git diff --exit-code -- '*.go'
 
       - name: Lint
         run: make lint
