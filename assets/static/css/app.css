@@ -814,3 +814,64 @@ html[data-theme="dark"] .icon-moon {
     scroll-behavior: auto !important;
   }
 }
+
+/* Public information pages: a calm reading measure and clear section rhythm. */
+.mj-landing-hero h1 {
+  max-width: 18ch;
+  letter-spacing: -0.025em;
+  text-wrap: balance;
+}
+
+.mj-landing-hero .mj-lead {
+  max-width: 58ch;
+  line-height: 1.75;
+}
+
+.mj-public-copy {
+  padding: clamp(1.5rem, 4vw, 3rem);
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+}
+
+.mj-reading-page {
+  margin-inline: auto;
+  max-width: 48rem;
+}
+
+.mj-public-copy > header,
+.mj-public-copy > section {
+  margin-bottom: 2rem;
+}
+
+.mj-public-copy > p + section {
+  margin-top: 2rem;
+}
+
+.mj-public-copy h2 {
+  font-size: 1.2rem;
+  line-height: 1.4;
+  margin-bottom: 0.65rem;
+}
+
+.mj-public-copy p + p {
+  margin-top: 0.85rem;
+}
+
+.mj-public-copy a {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.mj-public-copy .mj-policy-date {
+  margin-top: 1rem;
+  font-size: 0.875rem;
+}
+
+.mj-public-copy > section:last-child {
+  margin-bottom: 0;
+}
+
+.mj-access-note {
+  margin-top: 1.5rem;
+  max-width: none;
+}

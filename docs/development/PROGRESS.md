@@ -474,3 +474,11 @@ Moved all eleven existing compile-time interface assertions immediately below th
 ## PR workflow formatter prerequisite (2026-10-11)
 
 Moved the pinned golangci-lint installation before Check formatting in .github/workflows/pr-checks.yml: make fmt now depends on that binary. The release workflow already installs it before formatting. Verified step order and fresh make fmt lint test (zero lint issues, five browser suites, all Go packages); git diff --check passed. actionlint is unavailable on PATH. No hosted Actions rerun, commit or push was performed.
+
+## Google branding preparation (2026-10-11)
+
+Expanded public homepage purpose/Drive disclosures and privacy policy (identity, tokens, processing, caches, browser storage, sharing, logs, retention, deletion, Limited Use, support@myjournal.ink). Refined public-page reading width, typography, wrapping and section spacing. Signed-out disclosure regressions failed before implementation and now pass. Fresh make fmt lint test passed with zero lint issues, five browser suites and all Go packages. Desktop and 390px Chrome previews inspected in dark mode; light mode checked separately. Search Console URL-prefix property was added for the Railway URL and its supplied HTML tag added to the homepage head; verification awaits deployment. See [branding checklist](google-branding-verification.md). No release, deployment, final ownership verification or branding submission performed; support mailbox delivery remains unconfirmed.
+
+## Terms and Help pages (2026-10-11)
+
+Added public /terms covering use, writing ownership, responsible use, availability/backups, non-atomic Drive conflicts, disconnect, service changes, privacy and support. Linked Terms from Home and Help. Help now explains saving/recovery, failures, conflicts, limited access, reconnect and trash/sign-out. Privacy, Help and Terms share the same reading-width, typography and spacing classes. Extended signed-out disclosure and session-aware Settings-link tests to /terms; observed failures before implementation, then fresh make fmt lint test passed with zero lint issues, five browser suites and all Go packages. Desktop Terms/Help and 390px Help layouts visually checked in Chrome. git diff --check passed. Terms URL added to branding checklist; no deployment, GCP configuration or submission performed.

@@ -1,10 +1,49 @@
 {{define "privacy"}}
-<article class="mj-page-card">
-  <h1>{{t "privacy.title"}}</h1>
-  <p class="mj-lead">{{t "privacy.description"}}</p>
-
-  <p>{{t "privacy.storage"}}</p>
-
-  <p>{{t "privacy.cookie"}}</p>
+<article class="mj-page-card mj-public-copy mj-reading-page">
+  <header>
+    <p class="mj-kicker">{{t "app.name"}}</p>
+    <h1>{{t "privacy.title"}}</h1>
+    <p class="mj-lead">{{t "privacy.description"}}</p>
+    <p class="mj-policy-date">{{t "privacy.updated"}}</p>
+  </header>
+  <p>{{t "privacy.intro"}}</p>
+  <section>
+    <h2>{{t "privacy.data.title"}}</h2>
+    <p>{{t "privacy.data.body"}}</p>
+  </section>
+  <section>
+    <h2>{{t "privacy.use.title"}}</h2>
+    <p>{{t "privacy.use.body"}}</p>
+  </section>
+  <section>
+    <h2>{{t "privacy.storage.title"}}</h2>
+    <p>{{t "privacy.storage"}}</p>
+  </section>
+  <section>
+    <h2>{{t "privacy.browser.title"}}</h2>
+    <p>{{t "privacy.cookie"}}</p>
+  </section>
+  <section>
+    <h2>{{t "privacy.sharing.title"}}</h2>
+    <p>{{t "privacy.sharing.body"}}</p>
+  </section>
+  <section>
+    <h2>{{t "privacy.logs.title"}}</h2>
+    <p>{{t "privacy.logs.body"}}</p>
+  </section>
+  <section>
+    <h2>{{t "privacy.control.title"}}</h2>
+    <p>{{t "privacy.control.body"}}</p>
+  </section>
+  <section>
+    <h2>{{t "privacy.limited.title"}}</h2>
+    <p>{{t "privacy.limited.body"}}</p>
+    <p><a href="https://developers.google.com/terms/api-services-user-data-policy">{{t "privacy.limited.link"}}</a></p>
+  </section>
+  <section>
+    <h2>{{t "privacy.contact.title"}}</h2>
+    <p>{{t "privacy.contact.body"}} <a href="mailto:support@myjournal.ink">{{t "privacy.contact.email"}}</a>.</p>
+    <p>{{t "privacy.changes"}}</p>
+  </section>
 </article>
 {{end}}
