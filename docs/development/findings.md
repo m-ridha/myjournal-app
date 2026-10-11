@@ -1,5 +1,14 @@
 # Findings Log
 
+## Current status (2026-10-11)
+
+This summary supersedes pending language in the dated evidence below; those records describe what was known at the time, not new work to repeat.
+
+- Google OAuth/Drive registration and storage are implemented. Non-test registration is allowed with a valid HTTPS origin and Secure cookies; GOOGLE_TEST_MODE remains restricted to exact loopback/localhost URLs. Restricted Google Testing acceptance and the first v0.1.0 published-release deployment passed on 2026-10-10 (ADR 016). This is not unrestricted Console publication or branding verification.
+- Theme initialization is already externalized to assets/static/js/theme-init.js, loaded before CSS. Same-origin CSP/security headers and host-only HTTPS HSTS are implemented (ADR 012). There is no remaining inline-theme migration task.
+- Focused Chrome UI acceptance is complete with separately recorded human announcement evidence and device-testing waiver; coverage limits remain in [UI acceptance checks](ui-acceptance-checks.md). Full WCAG certification and blanket Phase 2/3 completion are not asserted.
+- Google branding/ownership submission remains separate; see [branding verification](google-branding-verification.md). Accepted latency/revision-retention limits and non-atomic external-writer/deployment-overlap risks remain documented rather than treated as passed targets. No new Google experiments or deployment are implied by this reconciliation.
+
 ## Favicon (2026-10-08)
 
 - Cleanup: the current favicon is `/static/favicons/myjournal-tab-icon.png`, embedded from `assets/static/favicons/`. Updated the shared layout and removed unused SVG/mask assets at the user's request; paths below describe historical troubleshooting. `make fmt lint test` passed (lint: 0 issues; browser-script regressions and all Go tests passed), and `git diff --check` passed. Verified only the active PNG remains among favicon assets and the layout references its new path.
@@ -956,3 +965,31 @@ Expanded public homepage purpose/Drive disclosures and privacy policy (identity,
 ## Terms and Help pages (2026-10-11)
 
 Added public /terms covering use, writing ownership, responsible use, availability/backups, non-atomic Drive conflicts, disconnect, service changes, privacy and support. Linked Terms from Home and Help. Help now explains saving/recovery, failures, conflicts, limited access, reconnect and trash/sign-out. Privacy, Help and Terms share the same reading-width, typography and spacing classes. Extended signed-out disclosure and session-aware Settings-link tests to /terms; observed failures before implementation, then fresh make fmt lint test passed with zero lint issues, five browser suites and all Go packages. Desktop Terms/Help and 390px Help layouts visually checked in Chrome. git diff --check passed. Terms URL added to branding checklist; no deployment, GCP configuration or submission performed.
+
+## Project development review (2026-10-11)
+
+Reviewed current phase requirements, implementation and release evidence at a5f761f. [Review](project-review-2026-10-11.md) separates remaining UI/branding/live reliability acceptance from optional CI, accessibility coverage and reconnect improvements. Fresh formatter/lint/vet, race-short Go tests, five JavaScript suites, three deployment tests and all 31 sequential architecture probes passed; probes cleaned up. Govulncheck reports zero reachable/imported-package vulnerabilities and one module-only advisory. PR #21 is merged; deployment/ownership/branding acceptance was not reverified. No runtime changes or renewed live Google acceptance performed.
+
+## Native UI acceptance follow-up (2026-10-11)
+
+Used disposable local-provider data for native Chrome 200% zoom, both-theme route reflow and keyboard traversal, conflict recovery (Keep both/Keep mine), and induced failed-save/manual recovery. Sampled custom control/focus colors exceed 3:1. Detailed observations and limits are in [UI acceptance checks](ui-acceptance-checks.md). No runtime changes or new axe scan. Full UI acceptance stays open for human screen-reader announcements, exhaustive state/focus/calendar review and external trash-icon provenance; a human screen-reader check was requested. No commit, push or deployment.
+
+## Human UI acceptance evidence (2026-10-11)
+
+User confirmed spoken Saved, failure and conflict feedback plus the three conflict actions. Also reported “Network data available” during failed save; its origin/order remains unverified and is retained separately. Screen reader/browser versions were not supplied. User identified SVG Repo Trash #335255; its page lists CC0, resolving the missing provenance gate (ADR 004). Basic screen-reader checks now have human-reported evidence; full acceptance still awaits the remaining exhaustive state/focus/calendar review. Documentation only; git diff --check passed. No runtime changes, commit, push or deployment.
+
+## Focused UI acceptance completion (2026-10-11)
+
+Completed the remaining local Chrome error/focus/calendar/confirmation checks in [UI acceptance checks](ui-acceptance-checks.md): real failed load/list/calendar, recovery, replacement Cancel/accept, trash Escape/accept, calendar marker contrast and both-theme keyboard/reflow at 390px and native 200%. Preserved the user's separate screen-reader draft and restored all temporary fixture/viewport/zoom changes. No runtime defects found. Fresh make test-js passed five suites; git diff --check passed. The focused checklist is complete using the separately recorded human announcement evidence and device waiver. This does not mark full Phase 2/3 acceptance or WCAG/cross-browser certification complete. No commit, push or deployment.
+
+## Phase status and earlier automated checks (2026-10-11)
+
+Added dated current-status summaries to PROGRESS, findings and phase-acceptance, superseding historical pending Google-registration and inline-theme language without removing the original evidence. Confirmed startup registration accepts non-test Google with HTTPS-origin/Secure-cookie validation and the shared layout loads external theme-init.js before CSS. Restricted Testing acceptance stays distinct from unrestricted branding/publication and unmet performance guarantees.
+
+Expanded optional accessibility QA to 30 defined scans with signed-in Terms and an isolated signed-out Home/Help/Privacy/Terms/404 matrix, including status/no-redirect/no-Settings assertions and keyboard checks. The expanded browser/axe run was not executed here; Python syntax validation passed. Historical 18-scan evidence remains labeled.
+
+PR checks now run JavaScript plus full race-enabled Go tests and pinned govulncheck v1.8.0, preserving the existing check name and sequential architecture probes; timeout is 30 minutes. Release checks remain. Fresh make fmt lint test passed (zero lint issues, five JS suites and all Go packages); go test -race ./... passed; govulncheck reported zero reachable/imported-package vulnerabilities and one module-only advisory. actionlint v1.7.12 passed both workflows. Local documentation links and git diff --check passed. No hosted Actions run, commit, push or deployment.
+
+## Expanded accessibility matrix verified (2026-10-11)
+
+Fresh owned-server synthetic Playwright/axe run passed all 30 scans with zero violations, 28 route/state keyboard checks and zero page errors (Chrome 155.0.8059.40, axe 4.10.3). Signed-in Terms and isolated signed-out Home/Help/Privacy/Terms/404 passed in both themes. Non-text arrow contrast remains axe-incomplete; independent enabled-arrow measurements passed 13.98–17.40:1. See [UI acceptance checks](ui-acceptance-checks.md) for exact command, coverage and limits. Temporary server/data cleaned up; report stays in /tmp. This supersedes the earlier preparation-only execution status. git diff --check passed. No runtime code changes, commit, push or deployment.

@@ -1,5 +1,14 @@
 # Progress
 
+## Current status (2026-10-11)
+
+This summary supersedes pending language in the dated evidence below; those records describe what was known at the time, not new work to repeat.
+
+- Google OAuth/Drive registration and storage are implemented. Non-test registration is allowed with a valid HTTPS origin and Secure cookies; GOOGLE_TEST_MODE remains restricted to exact loopback/localhost URLs. Restricted Google Testing acceptance and the first v0.1.0 published-release deployment passed on 2026-10-10 (ADR 016). This is not unrestricted Console publication or branding verification.
+- Theme initialization is already externalized to assets/static/js/theme-init.js, loaded before CSS. Same-origin CSP/security headers and host-only HTTPS HSTS are implemented (ADR 012). There is no remaining inline-theme migration task.
+- Focused Chrome UI acceptance is complete with separately recorded human announcement evidence and device-testing waiver; coverage limits remain in [UI acceptance checks](ui-acceptance-checks.md). Full WCAG certification and blanket Phase 2/3 completion are not asserted.
+- Google branding/ownership submission remains separate; see [branding verification](google-branding-verification.md). Accepted latency/revision-retention limits and non-atomic external-writer/deployment-overlap risks remain documented rather than treated as passed targets. No new Google experiments or deployment are implied by this reconciliation.
+
 ## Phase 0: Bootstrap
 
 - [x] Create project skeleton and Go module wiring
@@ -73,7 +82,7 @@ Validation result: `make fmt lint test` passed successfully in the current works
 - [x] Private pages redirect without a valid session; entry APIs reject missing or invalid sessions
 - [x] Services are constructed from the decoded session provider/account rather than a fixed local connection
 - [x] Startup rejects invalid environment values, malformed session keys, unknown providers, and non-loopback local mode
-- [x] Production Google provider selection is rejected pending live acceptance; GOOGLE_TEST_MODE permits localhost-only integrated testing (2026-10-10)
+- [x] Initial production Google rejection guarded pending live acceptance (2026-10-10); subsequently superseded by HTTPS-origin/Secure-cookie validation and restricted release acceptance. GOOGLE_TEST_MODE remains localhost/loopback-only.
 - [x] Fix draft recovery, snapshot-based save acknowledgement, dirty tracking, empty-edit backup, failed-save retry, and guarded storage access; add account-scoped drafts and explicit legacy recovery (2026-10-08)
 - [x] Wire Settings sign-out with account-scoped/legacy draft cleanup and cross-tab notification; account scope excludes labels and credentials
 - [x] User confirmed Failed logout recovery browser checklist works (2026-10-09); commit/push to PR remains user-managed
@@ -110,7 +119,7 @@ Validation result: `make fmt lint test` passed successfully in the current works
 - [x] Adopt JSON API and vanilla JavaScript; exclude HTMX by user decision, record ADR 014, and preserve migration research as historical documentation (2026-10-09)
 - [x] Fix dark Disconnect contrast and calendar group naming; add optional repeatable accessibility QA with 18 passing scans, arrow contrast measurements, and keyboard reachability/focus checks (2026-10-10)
 - [x] Compare Monochrome source with current UI and local history; document visual inspiration rather than a copied theme port in ADR 004, preserving comparison limitations and separate icon-source follow-up (2026-10-10)
-- [ ] Full Phase 2/3 UI acceptance: native 200% zoom, screen-reader announcements, remaining focus/non-text contrast review and external trash-icon provenance remain unverified; core security/API work is complete for the restricted release (see ui-acceptance-checks.md).
+- [x] Focused Chrome UI checklist: native 200% zoom, keyboard/error-state focus, sampled non-text contrast, human-reported screen-reader announcements and external trash-icon provenance have recorded evidence (2026-10-11; see ui-acceptance-checks.md). This does not mark full Phase 2/3 acceptance or accessibility certification complete.
 
 ## Restructuring addendum
 
@@ -129,7 +138,7 @@ Validation result: `make fmt lint test` passed successfully in the current works
 
 ## Current limitations and follow-ups
 
-- Full UI acceptance remains open: native zoom/screen-reader checks, remaining focus/non-text contrast review and external icon provenance; see [UI acceptance](ui-acceptance-checks.md).
+- Focused Chrome UI checks are complete with recorded limitations and human-reported announcement evidence; full Phase 2/3 completion and accessibility certification are not asserted. See [UI acceptance](ui-acceptance-checks.md).
 - Google Console remains Testing. Restricted test-user releases are accepted; unrestricted publication/verification is not claimed.
 - Checksum comparison/upload and entry creation are non-atomic across external writers/processes. ADR 016 records accepted platform-overlap risk; deliberate multiple writers remain unsupported.
 - Exploratory latency and Drive version measurements are recorded with limits. Original performance targets are not marked passed; the user accepted the gap for this restricted release.
@@ -288,7 +297,7 @@ This section records scoped live observations; later Railway acceptance establis
 <https://console.cloud.google.com/auth/branding?project=myjournal-app-509305>
 reference: <https://support.google.com/cloud/answer/13464321?sjid=12620915019931986057-NC>
 
-- [ ] The website of your home page URL "<https://myjournal-ink.up.railway.app>" is not registered to you.
+- [x] The website of your home page URL "<https://myjournal-ink.up.railway.app>" is not registered to you.
 Verify ownership of your home page, then wait 24 hours before retrying to allow our systems to update.
 - [ ] Your privacy policy page at "<https://myjournal-ink.up.railway.app/privacy>" does not have sufficient content.
 We were unable to confirm your app's compliance. Please update your privacy policy to clearly and sufficiently detail your app's data collection and usage, then retry.
@@ -482,3 +491,31 @@ Expanded public homepage purpose/Drive disclosures and privacy policy (identity,
 ## Terms and Help pages (2026-10-11)
 
 Added public /terms covering use, writing ownership, responsible use, availability/backups, non-atomic Drive conflicts, disconnect, service changes, privacy and support. Linked Terms from Home and Help. Help now explains saving/recovery, failures, conflicts, limited access, reconnect and trash/sign-out. Privacy, Help and Terms share the same reading-width, typography and spacing classes. Extended signed-out disclosure and session-aware Settings-link tests to /terms; observed failures before implementation, then fresh make fmt lint test passed with zero lint issues, five browser suites and all Go packages. Desktop Terms/Help and 390px Help layouts visually checked in Chrome. git diff --check passed. Terms URL added to branding checklist; no deployment, GCP configuration or submission performed.
+
+## Project development review (2026-10-11)
+
+Reviewed current phase requirements, implementation and release evidence at a5f761f. [Review](project-review-2026-10-11.md) separates remaining UI/branding/live reliability acceptance from optional CI, accessibility coverage and reconnect improvements. Fresh formatter/lint/vet, race-short Go tests, five JavaScript suites, three deployment tests and all 31 sequential architecture probes passed; probes cleaned up. Govulncheck reports zero reachable/imported-package vulnerabilities and one module-only advisory. PR #21 is merged; deployment/ownership/branding acceptance was not reverified. No runtime changes or renewed live Google acceptance performed.
+
+## Native UI acceptance follow-up (2026-10-11)
+
+Used disposable local-provider data for native Chrome 200% zoom, both-theme route reflow and keyboard traversal, conflict recovery (Keep both/Keep mine), and induced failed-save/manual recovery. Sampled custom control/focus colors exceed 3:1. Detailed observations and limits are in [UI acceptance checks](ui-acceptance-checks.md). No runtime changes or new axe scan. Full UI acceptance stays open for human screen-reader announcements, exhaustive state/focus/calendar review and external trash-icon provenance; a human screen-reader check was requested. No commit, push or deployment.
+
+## Human UI acceptance evidence (2026-10-11)
+
+User confirmed spoken Saved, failure and conflict feedback plus the three conflict actions. Also reported “Network data available” during failed save; its origin/order remains unverified and is retained separately. Screen reader/browser versions were not supplied. User identified SVG Repo Trash #335255; its page lists CC0, resolving the missing provenance gate (ADR 004). Basic screen-reader checks now have human-reported evidence; full acceptance still awaits the remaining exhaustive state/focus/calendar review. Documentation only; git diff --check passed. No runtime changes, commit, push or deployment.
+
+## Focused UI acceptance completion (2026-10-11)
+
+Completed the remaining local Chrome error/focus/calendar/confirmation checks in [UI acceptance checks](ui-acceptance-checks.md): real failed load/list/calendar, recovery, replacement Cancel/accept, trash Escape/accept, calendar marker contrast and both-theme keyboard/reflow at 390px and native 200%. Preserved the user's separate screen-reader draft and restored all temporary fixture/viewport/zoom changes. No runtime defects found. Fresh make test-js passed five suites; git diff --check passed. The focused checklist is complete using the separately recorded human announcement evidence and device waiver. This does not mark full Phase 2/3 acceptance or WCAG/cross-browser certification complete. No commit, push or deployment.
+
+## Phase status and earlier automated checks (2026-10-11)
+
+Added dated current-status summaries to PROGRESS, findings and phase-acceptance, superseding historical pending Google-registration and inline-theme language without removing the original evidence. Confirmed startup registration accepts non-test Google with HTTPS-origin/Secure-cookie validation and the shared layout loads external theme-init.js before CSS. Restricted Testing acceptance stays distinct from unrestricted branding/publication and unmet performance guarantees.
+
+Expanded optional accessibility QA to 30 defined scans with signed-in Terms and an isolated signed-out Home/Help/Privacy/Terms/404 matrix, including status/no-redirect/no-Settings assertions and keyboard checks. The expanded browser/axe run was not executed here; Python syntax validation passed. Historical 18-scan evidence remains labeled.
+
+PR checks now run JavaScript plus full race-enabled Go tests and pinned govulncheck v1.8.0, preserving the existing check name and sequential architecture probes; timeout is 30 minutes. Release checks remain. Fresh make fmt lint test passed (zero lint issues, five JS suites and all Go packages); go test -race ./... passed; govulncheck reported zero reachable/imported-package vulnerabilities and one module-only advisory. actionlint v1.7.12 passed both workflows. Local documentation links and git diff --check passed. No hosted Actions run, commit, push or deployment.
+
+## Expanded accessibility matrix verified (2026-10-11)
+
+Fresh owned-server synthetic Playwright/axe run passed all 30 scans with zero violations, 28 route/state keyboard checks and zero page errors (Chrome 155.0.8059.40, axe 4.10.3). Signed-in Terms and isolated signed-out Home/Help/Privacy/Terms/404 passed in both themes. Non-text arrow contrast remains axe-incomplete; independent enabled-arrow measurements passed 13.98–17.40:1. See [UI acceptance checks](ui-acceptance-checks.md) for exact command, coverage and limits. Temporary server/data cleaned up; report stays in /tmp. This supersedes the earlier preparation-only execution status. git diff --check passed. No runtime code changes, commit, push or deployment.
