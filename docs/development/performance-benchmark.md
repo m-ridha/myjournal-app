@@ -5,7 +5,7 @@
 Measure before changing performance-sensitive production code. Start with request counts and local overhead; report live API latency separately. Do not interpret fake Drive timings as Google latency or release acceptance.
 
 ```sh
-go test ./internal/provider/google -run '^$' -bench '^BenchmarkDriveBaseline$' -benchmem -benchtime=20x -count=6
+go test ./internal/driven/provider/google -run '^$' -bench '^BenchmarkDriveBaseline$' -benchmem -benchtime=20x -count=6
 ```
 
 The benchmark executes the real journal service, cache, Drive adapter, and generated Google HTTP client against the existing fake Drive HTTP server. It provisions 30 January 2020 entries with identical 1,920-byte synthetic text before timing, using one listing page (fake page size 1000). No credentials, real account, or external network are used. Four preview workers remain enabled. Cold means a new data cache with an already-used local HTTP client; it is not process-cold. Warm browsing is explicitly primed. Editor opens bypass the data cache. Cache capacity is 2048 and TTL is two minutes.

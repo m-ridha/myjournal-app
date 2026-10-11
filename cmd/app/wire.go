@@ -5,6 +5,7 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
 	"log"
 	"log/slog"
@@ -16,16 +17,16 @@ import (
 
 	"github.com/google/wire"
 
-	"github/mridha/myjournal-app/internal/cachestore"
-	"github/mridha/myjournal-app/internal/clock"
 	"github/mridha/myjournal-app/internal/config"
-	"github/mridha/myjournal-app/internal/journal"
-	"github/mridha/myjournal-app/internal/provider"
-	googleProvider "github/mridha/myjournal-app/internal/provider/google"
-	localProvider "github/mridha/myjournal-app/internal/provider/local"
-	"github/mridha/myjournal-app/internal/session"
-	"github/mridha/myjournal-app/internal/web"
-	webHandler "github/mridha/myjournal-app/internal/web/handler"
+	provider "github/mridha/myjournal-app/internal/core/connection"
+	"github/mridha/myjournal-app/internal/core/journal"
+	"github/mridha/myjournal-app/internal/driven/cache/journal"
+	cacheAdapter "github/mridha/myjournal-app/internal/driven/cache/local/bigcache"
+	"github/mridha/myjournal-app/internal/driven/clock"
+	googleProvider "github/mridha/myjournal-app/internal/driven/provider/google"
+	localProvider "github/mridha/myjournal-app/internal/driven/provider/local"
+	"github/mridha/myjournal-app/internal/driver/web"
+	webHandler "github/mridha/myjournal-app/internal/driver/web/handler"
 )
 
 // App is the runtime composition built in the cmd/app layer.
@@ -43,6 +44,9 @@ func BuildApp(cfg config.Config) (*App, func(), error) {
 		newJournalCache,
 		newServiceFactory,
 		web.NewRouter,
+		web.NewRenderer,
+		newWebOptions,
+		newConnectionService,
 		newHTTPServer,
 		newApp,
 	))
@@ -52,12 +56,17 @@ func newClock() journal.Clock {
 	return clock.System{}
 }
 
-func newJournalCache() *cachestore.Cache {
-	return cachestore.New(2 * time.Minute)
+func newJournalCache() (*cachestore.Cache, func(), error) {
+	const ttl = 2 * time.Minute
+	backend, err := cacheAdapter.New(ttl)
+	if err != nil {
+		return nil, nil, fmt.Errorf("initialize journal cache: %w", err)
+	}
+	return cachestore.New(backend, ttl), func() { _ = backend.Close() }, nil
 }
 
 func newServiceFactory(registry *provider.Registry, cache *cachestore.Cache, clk journal.Clock) webHandler.ServiceFactory {
-	return func(ctx context.Context, current session.Session) (*journal.Service, error) {
+	return func(ctx context.Context, current provider.Session) (*journal.Service, error) {
 		p, ok := registry.Get(current.ProviderID)
 		if !ok {
 			return nil, fmt.Errorf("session provider is not configured")
@@ -153,4 +162,12 @@ func newApp(logger *slog.Logger, registry *provider.Registry, server *http.Serve
 		Logger:   logger,
 		Registry: registry,
 	}
+}
+
+func newConnectionService(registry *provider.Registry, clk journal.Clock) *provider.Service {
+	return provider.NewService(registry, clk, rand.Reader)
+}
+func newWebOptions(cfg config.Config) web.Options {
+	origin, _ := url.Parse(cfg.BaseURL)
+	return web.Options{Session: webHandler.Options{SessionKey: cfg.SessionKey, CookieSecure: cfg.CookieSecure}, HTTPS: origin != nil && origin.Scheme == "https"}
 }

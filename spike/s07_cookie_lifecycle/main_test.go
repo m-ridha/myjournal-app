@@ -10,12 +10,12 @@ import (
 	"testing"
 	"time"
 
-	"github/mridha/myjournal-app/internal/provider"
-	"github/mridha/myjournal-app/internal/session"
-	"github/mridha/myjournal-app/internal/testutil"
-
 	"golang.org/x/oauth2"
 	"google.golang.org/api/googleapi"
+
+	provider "github/mridha/myjournal-app/internal/core/connection"
+	"github/mridha/myjournal-app/internal/driven/session"
+	"github/mridha/myjournal-app/internal/testutil"
 )
 
 func fixture(t *testing.T) (*experiment, *http.Cookie, *int, *bool) {
@@ -52,7 +52,7 @@ func fixture(t *testing.T) (*experiment, *http.Cookie, *int, *bool) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	v, err := session.Encode(e.secret, session.Session{Connection: provider.Connection{ProviderID: "google", AccountID: "synthetic-sub", AccountEmail: "synthetic@example.test", Credentials: string(b)}, IssuedAt: e.now()})
+	v, err := session.Encode(e.secret, provider.Session{Connection: provider.Connection{ProviderID: "google", AccountID: "synthetic-sub", AccountEmail: "synthetic@example.test", Credentials: string(b)}, IssuedAt: e.now()})
 	if err != nil {
 		t.Fatal(err)
 	}

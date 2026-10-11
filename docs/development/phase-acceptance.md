@@ -25,12 +25,12 @@ Goal: business rules work behind ports, with a reliable development provider.
 - Newest-first lazy pagination across years; safe bounds; page-only previews and one-item lookahead.
 - Calendar grids and entry/today/future markers using the same date authority, with Monday first.
 - Provider registry/config validation and development-only local registration.
-- Shared bounded account-isolated cache, concurrent invalidation correctness, TTL/LRU behavior, and Get bypass.
+- Shared bounded account-isolated cache, concurrent invalidation correctness, precise TTL expiry and bounded BigCache eviction (ADR 017; replaces the custom 2048-entry LRU), and Get bypass.
 - Shared store contracts for local and cache-wrapped storage; later Google storage uses the same suite.
 - Atomic local replacement, concurrency protection across stores targeting the same files, and collision-safe repeated trash.
 - Inward dependencies verified with temporary depguard violations for core/driving/driven rules; remove the canaries afterward.
 
-Local atomic replacement, same-process mutation protection across store instances, and collision-safe repeated trash are implemented and regression-tested (2026-10-09). The lock serializes all local mutations; separate processes and external filesystem writers are not coordinated. UTF-8 validation, byte-safe meaningful-line previews, and local/cache-wrapped store contracts are also implemented. Accepted date/recovery behavior must remain intact. Depguard matching is now verified by seven temporary forbidden-import probes via make test-architecture, including nested packages and concrete clock/cache wiring. Test-only adapter composition is explicitly exempt from the driving-side rule (2026-10-09).
+Local atomic replacement, same-process mutation protection across store instances, and collision-safe repeated trash are implemented and regression-tested (2026-10-09). The lock serializes all local mutations; separate processes and external filesystem writers are not coordinated. UTF-8 validation, byte-safe meaningful-line previews, and local/cache-wrapped store contracts are also implemented. Accepted date/recovery behavior must remain intact. Depguard matching is now verified by thirty-one temporary forbidden-import probes via make test-architecture, including nested packages and concrete clock/cache wiring. Test-only adapter composition is explicitly exempt from the driving-side rule (2026-10-09).
 
 ## Phase 3: complete local flow
 

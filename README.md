@@ -39,7 +39,7 @@ The [editor recovery checklist](docs/development/editor-recovery-checks.md) and 
 
 ## Architecture
 
-`internal/journal` owns domain rules and storage/clock ports. Local and Google providers implement adapters; the web layer handles JSON APIs under `/api/v1` and browser pages. `cmd/app` composes dependencies with Wire. Embedded assets use `html/template`, local CSS, scripts and SVGs. See AGENTS.md for boundaries and durable conventions.
+`internal/core/journal` owns domain rules and storage/clock ports. Local and Google providers implement adapters; the web layer handles JSON APIs under `/api/v1` and browser pages. `cmd/app` composes dependencies with Wire. Embedded assets use `html/template`, local CSS, scripts and SVGs. See AGENTS.md for boundaries and durable conventions.
 
 ## Google integration testing
 

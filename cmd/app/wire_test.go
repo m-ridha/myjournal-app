@@ -106,3 +106,15 @@ func TestGoogleHTTPSRegistration(t *testing.T) {
 		})
 	}
 }
+
+func TestJournalCacheLifecycle(t *testing.T) {
+	cache, cleanup, err := newJournalCache()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if cache == nil || cleanup == nil {
+		t.Fatal("missing shared cache or cleanup")
+	}
+	cleanup()
+	cleanup()
+}

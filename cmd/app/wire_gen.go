@@ -8,17 +8,18 @@ package main
 
 import (
 	"context"
+	"crypto/rand"
 	"fmt"
-	"github/mridha/myjournal-app/internal/cachestore"
-	"github/mridha/myjournal-app/internal/clock"
 	"github/mridha/myjournal-app/internal/config"
-	"github/mridha/myjournal-app/internal/journal"
-	"github/mridha/myjournal-app/internal/provider"
-	"github/mridha/myjournal-app/internal/provider/google"
-	"github/mridha/myjournal-app/internal/provider/local"
-	"github/mridha/myjournal-app/internal/session"
-	"github/mridha/myjournal-app/internal/web"
-	"github/mridha/myjournal-app/internal/web/handler"
+	"github/mridha/myjournal-app/internal/core/connection"
+	"github/mridha/myjournal-app/internal/core/journal"
+	"github/mridha/myjournal-app/internal/driven/cache/journal"
+	"github/mridha/myjournal-app/internal/driven/cache/local/bigcache"
+	"github/mridha/myjournal-app/internal/driven/clock"
+	"github/mridha/myjournal-app/internal/driven/provider/google"
+	"github/mridha/myjournal-app/internal/driven/provider/local"
+	"github/mridha/myjournal-app/internal/driver/web"
+	"github/mridha/myjournal-app/internal/driver/web/handler"
 	"log"
 	"log/slog"
 	"net/http"
@@ -40,13 +41,24 @@ func BuildApp(cfg config.Config) (*App, func(), error) {
 	if err != nil {
 		return nil, nil, err
 	}
+	options := newWebOptions(cfg)
 	clock := newClock()
-	cache := newJournalCache()
+	cache, cleanup, err := newJournalCache()
+	if err != nil {
+		return nil, nil, err
+	}
 	serviceFactory := newServiceFactory(registry, cache, clock)
-	handler := web.NewRouter(cfg, registry, clock, serviceFactory)
+	renderer, err := web.NewRenderer()
+	if err != nil {
+		cleanup()
+		return nil, nil, err
+	}
+	service := newConnectionService(registry, clock)
+	handler := web.NewRouter(options, registry, clock, serviceFactory, renderer, service)
 	server := newHTTPServer(cfg, handler)
 	app := newApp(logger, registry, server)
 	return app, func() {
+		cleanup()
 	}, nil
 }
 
@@ -56,19 +68,24 @@ func BuildApp(cfg config.Config) (*App, func(), error) {
 type App struct {
 	Server   *http.Server
 	Logger   *slog.Logger
-	Registry *provider.Registry
+	Registry *connection.Registry
 }
 
 func newClock() journal.Clock {
 	return clock.System{}
 }
 
-func newJournalCache() *cachestore.Cache {
-	return cachestore.New(2 * time.Minute)
+func newJournalCache() (*cachestore.Cache, func(), error) {
+	const ttl = 2 * time.Minute
+	backend, err := bigcache.New(ttl)
+	if err != nil {
+		return nil, nil, fmt.Errorf("initialize journal cache: %w", err)
+	}
+	return cachestore.New(backend, ttl), func() { _ = backend.Close() }, nil
 }
 
-func newServiceFactory(registry *provider.Registry, cache *cachestore.Cache, clk journal.Clock) handler.ServiceFactory {
-	return func(ctx context.Context, current session.Session) (*journal.Service, error) {
+func newServiceFactory(registry *connection.Registry, cache *cachestore.Cache, clk journal.Clock) handler.ServiceFactory {
+	return func(ctx context.Context, current connection.Session) (*journal.Service, error) {
 		p, ok := registry.Get(current.ProviderID)
 		if !ok {
 			return nil, fmt.Errorf("session provider is not configured")
@@ -95,17 +112,17 @@ func newLogger(cfg config.Config) *slog.Logger {
 	return slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: level}))
 }
 
-func newProviderRegistry(cfg config.Config) (*provider.Registry, error) {
+func newProviderRegistry(cfg config.Config) (*connection.Registry, error) {
 	selected := cfg.ProviderIDs()
 	if len(selected) == 0 {
 		return nil, fmt.Errorf("PROVIDERS must contain at least one provider")
 	}
 
-	providers := make([]provider.Provider, 0, len(selected))
+	providers := make([]connection.Provider, 0, len(selected))
 	seen := make(map[string]struct{}, len(selected))
 	for _, name := range selected {
 		switch name = strings.TrimSpace(name); name {
-		case provider.LocalID:
+		case connection.LocalID:
 			if _, ok := seen[name]; ok {
 				return nil, fmt.Errorf("PROVIDERS contains duplicate provider %q", name)
 			}
@@ -114,7 +131,7 @@ func newProviderRegistry(cfg config.Config) (*provider.Registry, error) {
 			}
 			providers = append(providers, local.New(cfg.BaseURL, cfg.LocalDataDir))
 			seen[name] = struct{}{}
-		case provider.GoogleID:
+		case connection.GoogleID:
 			if _, ok := seen[name]; ok {
 				return nil, fmt.Errorf("PROVIDERS contains duplicate provider %q", name)
 			}
@@ -143,7 +160,7 @@ func newProviderRegistry(cfg config.Config) (*provider.Registry, error) {
 			return nil, fmt.Errorf("PROVIDERS contains an unsupported provider")
 		}
 	}
-	return provider.NewRegistry(providers...), nil
+	return connection.NewRegistry(providers...), nil
 }
 
 func newHTTPServer(cfg config.Config, handler2 http.Handler) *http.Server {
@@ -158,10 +175,19 @@ func newHTTPServer(cfg config.Config, handler2 http.Handler) *http.Server {
 	}
 }
 
-func newApp(logger *slog.Logger, registry *provider.Registry, server *http.Server) *App {
+func newApp(logger *slog.Logger, registry *connection.Registry, server *http.Server) *App {
 	return &App{
 		Server:   server,
 		Logger:   logger,
 		Registry: registry,
 	}
+}
+
+func newConnectionService(registry *connection.Registry, clk journal.Clock) *connection.Service {
+	return connection.NewService(registry, clk, rand.Reader)
+}
+
+func newWebOptions(cfg config.Config) web.Options {
+	origin, _ := url.Parse(cfg.BaseURL)
+	return web.Options{Session: handler.Options{SessionKey: cfg.SessionKey, CookieSecure: cfg.CookieSecure}, HTTPS: origin != nil && origin.Scheme == "https"}
 }

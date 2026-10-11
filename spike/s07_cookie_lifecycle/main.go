@@ -17,14 +17,15 @@ import (
 	"sync"
 	"time"
 
-	"github/mridha/myjournal-app/internal/provider"
-	"github/mridha/myjournal-app/internal/session"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/googleapi"
 	"google.golang.org/api/idtoken"
 	"google.golang.org/api/option"
+
+	provider "github/mridha/myjournal-app/internal/core/connection"
+	"github/mridha/myjournal-app/internal/driven/session"
 )
 
 const cookieName = "mj_s7_session"
@@ -163,7 +164,7 @@ func (e *experiment) login(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "login unavailable", http.StatusInternalServerError)
 		return
 	}
-	encoded, err := session.Encode(e.secret+":s7-oauth", session.Session{Connection: provider.Connection{Credentials: string(b)}, IssuedAt: e.now()})
+	encoded, err := session.Encode(e.secret+":s7-oauth", provider.Session{Connection: provider.Connection{Credentials: string(b)}, IssuedAt: e.now()})
 	if err != nil {
 		http.Error(w, "login unavailable", http.StatusInternalServerError)
 		return
@@ -239,7 +240,7 @@ func (e *experiment) callback(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "session unavailable", http.StatusInternalServerError)
 		return
 	}
-	encoded, err := session.Encode(e.secret, session.Session{Connection: provider.Connection{ProviderID: "google", AccountID: payload.Subject, AccountEmail: email, Credentials: string(b)}, IssuedAt: e.now()})
+	encoded, err := session.Encode(e.secret, provider.Session{Connection: provider.Connection{ProviderID: "google", AccountID: payload.Subject, AccountEmail: email, Credentials: string(b)}, IssuedAt: e.now()})
 	if err != nil {
 		http.Error(w, "session unavailable", http.StatusInternalServerError)
 		return
@@ -256,14 +257,14 @@ func (e *experiment) callback(w http.ResponseWriter, r *http.Request) {
 	_, _ = fmt.Fprintf(w, "session_cookie_set: true\nrefresh_token_returned: %t\nexisting_refresh_token_preserved: %t\nid_token_valid: true\ndrive_root_read_succeeded: true\nset_cookie_bytes: %d\ncookie_under_3800_bytes: true\ncookie_httponly: true\ncookie_samesite_lax: true\ncookie_secure: %t\ncookie_lifetime_days: 30\nNext: open http://localhost:3030/check\n", returned, !returned, len(cookie.String()), e.secure)
 }
 
-func (e *experiment) readSession(r *http.Request) (session.Session, error) {
+func (e *experiment) readSession(r *http.Request) (provider.Session, error) {
 	c, err := r.Cookie(cookieName)
 	if err != nil {
-		return session.Session{}, errors.New("missing cookie")
+		return provider.Session{}, errors.New("missing cookie")
 	}
 	s, err := session.Decode(e.secret, c.Value)
 	if err != nil || s.ProviderID != "google" || s.AccountID == "" || s.AccountEmail == "" || !validAge(e.now(), s.IssuedAt, lifetime) {
-		return session.Session{}, errors.New("invalid session")
+		return provider.Session{}, errors.New("invalid session")
 	}
 	return s, nil
 }

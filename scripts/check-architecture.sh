@@ -3,7 +3,18 @@
 set -eu
 cd "$(dirname "$0")/.."
 canary=
-trap 'if [ -n "$canary" ]; then rm -f "$canary"; fi' EXIT HUP INT TERM
+# Dedicated nested packages keep probes acyclic and verify recursive matching.
+probe_dirs="internal/driven/cache/journal/architectureprobe internal/core/journal/architectureprobe internal/core/connection/architectureprobe internal/driver/web/architectureprobe internal/driven/provider/local/architectureprobe internal/driven/cache/local/lru/architectureprobe internal/config/architectureprobe"
+created_dirs=
+cleanup() {
+  if [ -n "$canary" ]; then rm -f "$canary"; fi
+  for dir in $created_dirs; do rmdir "$dir"; done
+}
+trap cleanup EXIT HUP INT TERM
+for dir in $probe_dirs; do
+  mkdir "$dir"
+  created_dirs="$dir $created_dirs"
+done
 while read -r file package forbidden; do
   canary="$file"
   if [ -e "$canary" ]; then
@@ -24,11 +35,35 @@ while read -r file package forbidden; do
   rm "$canary"
   canary=
 done <<'CASES'
-internal/journal/architecture_canary.go journal net/http
-internal/journal/storetest/architecture_canary.go storetest net/http/httptest
-internal/web/architecture_canary.go web github/mridha/myjournal-app/internal/provider/local
-internal/web/handler/architecture_canary.go handler github/mridha/myjournal-app/internal/clock
-internal/session/architecture_canary.go session github/mridha/myjournal-app/internal/cachestore
-internal/provider/local/architecture_canary.go local github/mridha/myjournal-app/internal/web/api
-internal/provider/google/architecture_canary.go google github/mridha/myjournal-app/internal/web/api
+internal/core/journal/architecture_canary.go journal net/http
+internal/core/journal/storetest/architecture_canary.go storetest net/http/httptest
+internal/driver/web/architecture_canary.go web github/mridha/myjournal-app/internal/driven/provider/local
+internal/driver/web/handler/architecture_canary.go handler github/mridha/myjournal-app/internal/driven/clock
+internal/driven/session/architecture_canary.go session github/mridha/myjournal-app/internal/driven/cache/journal
+internal/driven/provider/local/architecture_canary.go local github/mridha/myjournal-app/internal/driver/web/api
+internal/driven/provider/google/architecture_canary.go google github/mridha/myjournal-app/internal/driver/web/api
+internal/core/journal/architecture_canary.go journal github.com/allegro/bigcache
+internal/core/journal/storetest/architecture_canary.go storetest github/mridha/myjournal-app/internal/driven/cache/local/bigcache
+internal/driver/web/handler/architecture_canary.go handler github/mridha/myjournal-app/internal/driven/cache/local/bigcache
+internal/driven/session/architecture_canary.go session github.com/allegro/bigcache
+internal/driven/cache/journal/architectureprobe/architecture_canary.go architectureprobe github/mridha/myjournal-app/internal/driven/cache/local/bigcache
+internal/driven/cache/journal/architecture_canary.go cachestore github.com/allegro/bigcache
+internal/driven/cache/local/bigcache/architecture_canary.go bigcache github/mridha/myjournal-app/internal/driver/web/api
+internal/driven/cache/local/lru/architecture_canary.go lru github/mridha/myjournal-app/internal/driver/web/api
+internal/core/journal/architectureprobe/architecture_canary.go architectureprobe github/mridha/myjournal-app/internal/config
+internal/core/journal/architectureprobe/architecture_canary.go architectureprobe github/mridha/myjournal-app/internal/core/connection
+internal/core/journal/architectureprobe/architecture_canary.go architectureprobe github/mridha/myjournal-app/internal/driver/web/api
+internal/core/connection/architectureprobe/architecture_canary.go architectureprobe github/mridha/myjournal-app/internal/driven/session
+internal/core/connection/architectureprobe/architecture_canary.go architectureprobe github/mridha/myjournal-app/internal/config
+internal/core/connection/architectureprobe/architecture_canary.go architectureprobe net/http
+internal/driver/web/architectureprobe/architecture_canary.go architectureprobe github/mridha/myjournal-app/internal/config
+internal/driver/web/architectureprobe/architecture_canary.go architectureprobe github/mridha/myjournal-app/internal/driven/cache/local/lru
+internal/driven/cache/journal/architectureprobe/architecture_canary.go architectureprobe github/mridha/myjournal-app/internal/config
+internal/driven/cache/journal/architectureprobe/architecture_canary.go architectureprobe github/mridha/myjournal-app/internal/driver/web/api
+internal/driven/provider/local/architectureprobe/architecture_canary.go architectureprobe github/mridha/myjournal-app/internal/config
+internal/driven/provider/local/architectureprobe/architecture_canary.go architectureprobe github/mridha/myjournal-app/internal/driven/session
+internal/driven/cache/local/lru/architectureprobe/architecture_canary.go architectureprobe github/mridha/myjournal-app/internal/driver/web/api
+internal/driven/cache/local/lru/architectureprobe/architecture_canary.go architectureprobe github/mridha/myjournal-app/internal/config
+internal/core/journal/architectureprobe/architecture_canary.go architectureprobe github/mridha/myjournal-app/internal/testutil
+internal/config/architectureprobe/architecture_canary.go architectureprobe github/mridha/myjournal-app/internal/driven/provider/local
 CASES

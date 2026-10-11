@@ -283,6 +283,23 @@ This section records scoped live observations; later Railway acceptance establis
 - [x] Review app startup/server logging; sanitize net/http diagnostic fallback, regenerate Wire and verify secret-omission regression. Fresh make fmt lint test passes.
 - [x] Select Railway and verify HTTPS/Console test-user setup and visible query-free logging with no drains. Temporary rollout overlap is explicitly accepted (ADR 016), not proven absent; unrestricted Console publishing remains outside this release.
 
+### Issues for Branding verification attempt in GCP
+
+<https://console.cloud.google.com/auth/branding?project=myjournal-app-509305>
+reference: <https://support.google.com/cloud/answer/13464321?sjid=12620915019931986057-NC>
+
+- [ ] The website of your home page URL "<https://myjournal-ink.up.railway.app>" is not registered to you.
+Verify ownership of your home page, then wait 24 hours before retrying to allow our systems to update.
+- [ ] Your privacy policy page at "<https://myjournal-ink.up.railway.app/privacy>" does not have sufficient content.
+We were unable to confirm your app's compliance. Please update your privacy policy to clearly and sufficiently detail your app's data collection and usage, then retry.
+- [ ] Your home page is behind a login page.
+We were unable to confirm your app's compliance. Please update your home page to allow users to view information about your app without needing to login, then retry.
+- [ ] Your home page does not explain the purpose of your app.
+We were unable to confirm your app's compliance. Please update your home page to clearly outline the purpose of your application, then retry.
+- [x] The app name "myjournal-ink" configured for your OAuth consent screen does not match the app name on your home page.
+We were unable to confirm your app's compliance. Please configure your app with an accurate and up-to-date application name, then retry. Learn more.
+  (updated app name is now "myjournal")
+
 ## Railway release preparation (2026-10-10)
 
 - [x] User selected Railway at <https://myjournal-ink.up.railway.app>; retain ADR 016 residual overlap/lost-update policy.
@@ -382,3 +399,78 @@ Reviewed every unchecked item against later findings, public acceptance and v0.1
 - [x] Use one shared live status for initial HTML and pending entries requests;
   remove the duplicate list placeholder. Template and delayed-fetch regressions
   pass, along with `make fmt lint test` and `git diff --check`.
+
+## Cache storage adapter refactor (2026-10-11)
+
+- [x] Replace production custom map/list LRU storage with installed BigCache
+  v1.2.1 under `internal/adapter/cache/bigcache`, behind the consumer-owned
+  `cachestore.Backend` port. Wire constructs shared storage and supplies cleanup.
+- [x] Preserve account isolation, exact snapshot expiry, Get bypass, operation
+  forwarding, targeted invalidation and scalar generation guards. Cache failures
+  bypass storage without changing journal mutation results; failed invalidation
+  disables further cache reuse. ADR 017 records changed eviction and memory bounds.
+- [x] Fresh `make generate-wire`, focused cache/adapter/provider/application tests,
+  `make fmt lint test`, and `go test -race ./internal/cachestore
+  ./internal/adapter/cache/bigcache` passed. All fourteen architecture probes passed separately; no temporary files remain. No live Google or production checks required
+  or repeated; no performance improvement or distributed coordination claimed.
+
+## Optional historical LRU adapter (2026-10-11)
+
+- [x] By user follow-up, retain the previous map/list LRU storage approach under
+  `internal/adapter/cache/lru`, implementing `cachestore.Backend`. Preserve the
+  2048-entry default, explicit capacity override and lazy expiry; adapt storage to
+  copied bytes, prefix deletion and cancelable coordination. BigCache remains
+  selected in Wire; no runtime fallback or configuration option is introduced.
+- [x] Fresh `make fmt lint test`, shared journal contracts through both adapters,
+  `go test -race ./internal/adapter/cache/lru ./internal/cachestore`, and all fifteen
+  separate architecture probes passed. `git diff --check` passed.
+
+
+## Hexagonal architecture refactor (2026-10-11)
+
+- [x] Move packages into core/driver/driven, with feature-oriented journal and
+  connection cores. Keep local cache storage under driven/cache/local/{bigcache,lru}
+  and rename the supporting port to cachestore.ByteCache; BigCache stays selected.
+- [x] Extract connection lifecycle/settings policy, session/login models and fixed
+  lifetimes inward; retain HTTP cookie/query adaptation and provider-specific OAuth
+  mechanics outside core. Preserve old-cookie decoding with synthetic fixtures.
+- [x] Construct renderer/catalog and narrow web options explicitly through Wire.
+  Share pure date eligibility and local-origin validation; classify filesystem
+  failures and stop partial-success metadata listings. Remove duplicate Clock.
+- [x] Enforce recursive boundaries in .golangci.yml and prove them with thirty-one
+  temporary depguard violations, including nested acyclic imports. Cleanup passed
+  after both a failed probe setup and the final successful run.
+- [x] Fresh make generate and make fmt lint test pass (zero lint issues, all five
+  browser success markers and all Go packages). Separate make test-architecture
+  passes all thirty-one probes. Race checks pass across core, driven, web and cmd/app.
+  Generated output was reviewed; local documentation links and git diff --check pass.
+
+ADR 018 records the boundaries and compatibility decisions. No new dependencies,
+remote cache, live Google experiments, deployments or performance claims were
+introduced. Full UI acceptance and external-writer limitations remain unchanged.
+Markdown lint is unavailable on PATH; documentation paths/consistency were checked.
+
+
+## Automatic import grouping (2026-10-11)
+
+- [x] Enable the installed golangci-lint gci formatter alongside gofmt. Configure
+  standard-library, third-party and project-prefix groups, alphabetically sorted
+  by import path, including aliases. make fmt now formats all handwritten Go files;
+  make lint rejects grouping drift. Generated files remain generator-owned.
+- [x] Apply formatting repository-wide and record the convention in AGENTS.md.
+  Fresh make fmt lint test passes with zero lint issues, all five browser suites
+  and Go packages. golangci-lint fmt --diff ./... is empty; git diff --check passes.
+- [x] Separate make test-architecture passes all thirty-one probes after formatter
+  configuration, with cleanup verified.
+
+## PR #20 review follow-up (2026-10-11)
+
+Checked the single outstanding [review finding](https://github.com/mridha-work/myjournal-app/pull/20#discussion_r4240673309) against the current source and depguard configuration. The local AGENTS.md and ADR 017 corrections replace intermediate provider/cache paths with internal/driven/provider/{local,google} and internal/driven/cache/local/{bigcache,lru}, and identify the port as cachestore.ByteCache. The architecture table now lists both concrete local cache packages explicitly. Verified directory existence, the ByteCache declaration, the cache-storage depguard pattern, and absence of superseded names in these two guides. Documentation-only review follow-up; git diff --check passed. No remote reply, thread resolution, commit or push was performed.
+
+## Interface assertion placement (2026-10-11)
+
+Moved all eleven existing compile-time interface assertions immediately below their implementing struct declarations. Google Store assertions now sit together in store.go, including the OperationStore contract previously declared in discovery.go. Recorded the placement convention in AGENTS.md. Fresh make fmt lint test passed: zero lint issues, all five browser regression suites and all Go packages. git diff --check passed. Existing staged and unstaged changes were preserved; no commit or push was performed.
+
+## PR workflow formatter prerequisite (2026-10-11)
+
+Moved the pinned golangci-lint installation before Check formatting in .github/workflows/pr-checks.yml: make fmt now depends on that binary. The release workflow already installs it before formatting. Verified step order and fresh make fmt lint test (zero lint issues, five browser suites, all Go packages); git diff --check passed. actionlint is unavailable on PATH. No hosted Actions rerun, commit or push was performed.

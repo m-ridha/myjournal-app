@@ -6,6 +6,16 @@ run:
 formatters:
   enable:
     - gofmt
+    - gci
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+        - prefix(github/mridha/myjournal-app)
+      custom-order: true
+  exclusions:
+    generated: strict
 
 linters:
   enable:
@@ -24,43 +34,111 @@ linters:
       rules:
         core:
           files:
-            - "**/internal/journal/**.go"
+            - "**/internal/core/**.go"
+          list-mode: strict
+          allow:
+            - $gostd
+            - cloud.google.com/go/civil
+            - github/mridha/myjournal-app/internal/core
+            - github/mridha/myjournal-app/internal/testutil
           deny:
             - pkg: net/http
-              desc: "The core domain must not import HTTP packages"
-            - pkg: github.com/go-chi/chi/v5
-              desc: "The core domain must not import the web router"
+              desc: "Core policy must not depend on HTTP"
             - pkg: html/template
-              desc: "The core domain must not know about rendering"
+              desc: "Core policy must not depend on rendering"
             - pkg: os
-              desc: "The core domain must not touch the filesystem directly"
+              desc: "Core policy must not access the filesystem"
             - pkg: database/sql
-              desc: "The core domain must not know about a database"
-            - pkg: golang.org/x/oauth2
-              desc: "The core domain must not know about OAuth"
-            - pkg: google.golang.org/api
-              desc: "The core domain must not know about Google APIs"
-
+              desc: "Core policy must not access databases"
+            - pkg: github/mridha/myjournal-app/internal/driver
+              desc: "Core must not import driving adapters"
+            - pkg: github/mridha/myjournal-app/internal/driven
+              desc: "Core must not import driven adapters"
+            - pkg: github/mridha/myjournal-app/internal/config
+              desc: "Core must not import startup configuration"
+        journal-isolation:
+          files:
+            - "**/internal/core/journal/**.go"
+          deny:
+            - pkg: github/mridha/myjournal-app/internal/core/connection
+              desc: "Journal policy is independent of connection workflows"
         driving-side:
           files:
             - "!**/*_test.go"
-            - "**/internal/web/**.go"
-            - "**/internal/session/**.go"
-            - "**/internal/provider/provider.go"
-          deny:
-            - pkg: github/mridha/myjournal-app/internal/provider/google
-              desc: "Only cmd/app may import a concrete provider implementation"
-            - pkg: github/mridha/myjournal-app/internal/provider/local
-              desc: "Only cmd/app may import a concrete provider implementation"
-            - pkg: github/mridha/myjournal-app/internal/cachestore
-              desc: "Only cmd/app wires the cache; web talks to journal.Service"
-            - pkg: github/mridha/myjournal-app/internal/clock
-              desc: "Only cmd/app wires the system clock; web uses journal.Clock"
-
+            - "**/internal/driver/**.go"
+          list-mode: strict
+          allow:
+            - $gostd
+            - cloud.google.com/go/civil
+            - github.com/go-chi/chi/v5
+            - github.com/oapi-codegen/runtime
+            - github/mridha/myjournal-app/assets
+            - github/mridha/myjournal-app/internal/core
+            - github/mridha/myjournal-app/internal/driver
+            - github/mridha/myjournal-app/internal/driven/session
         driven-side:
           files:
-            - "**/internal/provider/google/**.go"
-            - "**/internal/provider/local/**.go"
+            - "!**/*_test.go"
+            - "**/internal/driven/**.go"
           deny:
-            - pkg: github/mridha/myjournal-app/internal/web
-              desc: "A provider must never import the web layer"
+            - pkg: github/mridha/myjournal-app/internal/driver
+              desc: "Driven adapters must not import driving adapters"
+            - pkg: github/mridha/myjournal-app/internal/config
+              desc: "Driven adapters receive explicit configuration"
+        cache-policy:
+          files:
+            - "!**/*_test.go"
+            - "**/internal/driven/cache/journal/**.go"
+          list-mode: strict
+          allow:
+            - $gostd
+            - cloud.google.com/go/civil
+            - github/mridha/myjournal-app/internal/core/journal
+            - github/mridha/myjournal-app/internal/driven/cache/journal
+        session-codec:
+          files:
+            - "!**/*_test.go"
+            - "**/internal/driven/session/**.go"
+          list-mode: strict
+          allow:
+            - $gostd
+            - github/mridha/myjournal-app/internal/core/connection
+        providers:
+          files:
+            - "!**/*_test.go"
+            - "**/internal/driven/provider/**.go"
+          deny:
+            - pkg: github/mridha/myjournal-app/internal/driven/cache
+              desc: "Only the composition root wires journal caches"
+            - pkg: github/mridha/myjournal-app/internal/driven/session
+              desc: "Providers consume connection models, not cookie codecs"
+            - pkg: github/mridha/myjournal-app/internal/driven/clock
+              desc: "Only the composition root selects clocks"
+        cache-storage:
+          files:
+            - "!**/*_test.go"
+            - "**/internal/driven/cache/local/**.go"
+          deny:
+            - pkg: github/mridha/myjournal-app/internal/core/connection
+              desc: "Byte-cache storage must not depend on connection policy"
+            - pkg: github/mridha/myjournal-app/internal/driven/provider
+              desc: "Byte-cache storage must not construct journal providers"
+            - pkg: github/mridha/myjournal-app/internal/driven/session
+              desc: "Byte-cache storage must not depend on cookie codecs"
+            - pkg: github/mridha/myjournal-app/internal/driven/clock
+              desc: "Byte-cache storage must not select the system clock"
+        core-production:
+          files:
+            - "!**/*_test.go"
+            - "**/internal/core/**.go"
+          deny:
+            - pkg: github/mridha/myjournal-app/internal/testutil
+              desc: "Production core must not depend on shared test fixtures"
+        startup-config:
+          files:
+            - "!**/*_test.go"
+            - "**/internal/config/**.go"
+          list-mode: strict
+          allow:
+            - $gostd
+            - github/mridha/myjournal-app/internal/core/connection
