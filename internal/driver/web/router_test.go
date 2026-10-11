@@ -71,6 +71,18 @@ func TestLandingPageRendersTemplate(t *testing.T) {
 	}
 }
 
+func TestHomepageIncludesOwnershipVerification(t *testing.T) {
+	cfg := config.Config{BaseURL: testutil.LocalBaseURL, SessionKey: "0123456789abcdef0123456789abcdef"}
+	h := newTestRouter(cfg, provider.NewRegistry(), clock.System{}, nil)
+	res := httptest.NewRecorder()
+	h.ServeHTTP(res, httptest.NewRequest(http.MethodGet, "/", nil))
+	body := res.Body.String()
+	end := strings.Index(body, "</head>")
+	if end < 0 || !strings.Contains(body[:end], `<meta name="google-site-verification" content="cZ5rwhKdK0RE8qM3-0wr6T4V96RMU5mjUUCys4EhIdk">`) {
+		t.Fatal("homepage head missing Search Console verification tag")
+	}
+}
+
 func TestPrivatePagesRedirectWithoutSession(t *testing.T) {
 	cfg := config.Config{BaseURL: testutil.LocalBaseURL, SessionKey: "0123456789abcdef0123456789abcdef"}
 	h := newTestRouter(cfg, provider.NewRegistry(localProvider.New(testutil.LocalBaseURL, "")), clock.System{}, nil)
@@ -355,7 +367,7 @@ func TestPublicPagesSettingsLinkFollowsSession(t *testing.T) {
 		{name: "invalid cookie", invalid: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			for _, path := range []string{"/privacy", "/help"} {
+			for _, path := range []string{"/privacy", "/help", "/terms"} {
 				req := httptest.NewRequest(http.MethodGet, path, nil)
 				if !tc.issuedAt.IsZero() {
 					encoded, err := session.Encode(cfg.SessionKey, provider.Session{
@@ -391,5 +403,36 @@ func TestEditorRejectsYearZero(t *testing.T) {
 	router.ServeHTTP(res, req)
 	if res.Code != http.StatusNotFound || !strings.Contains(res.Body.String(), "Page not found") {
 		t.Fatal("year zero did not use styled 404")
+	}
+}
+
+func TestPublicBrandingDisclosuresWithoutSession(t *testing.T) {
+	cfg := config.Config{BaseURL: testutil.LocalBaseURL, SessionKey: "0123456789abcdef0123456789abcdef"}
+	h := newTestRouter(cfg, provider.NewRegistry(), clock.System{}, nil)
+	for path, required := range map[string][]string{
+		"/":        {"myjournal", "one plain-text entry per day", `href="/privacy"`, "drive.file"},
+		"/terms":   {"Terms of Service", "Your writing", "Availability", "support@myjournal.ink", `href="/privacy"`},
+		"/help":    {"Saving and recovery", "Conflicting changes", "Disconnect", "support@myjournal.ink"},
+		"/privacy": {"Privacy policy", "Data we access", "How we use", "30 days", "Railway", "Limited Use", "Disconnect", "support@myjournal.ink"},
+	} {
+		t.Run(path, func(t *testing.T) {
+			res := httptest.NewRecorder()
+			h.ServeHTTP(res, httptest.NewRequest(http.MethodGet, path, nil))
+			if res.Code != http.StatusOK {
+				t.Fatalf("status = %d", res.Code)
+			}
+			body := res.Body.String()
+			start := strings.Index(body, `<main`)
+			end := strings.Index(body, `</main>`)
+			if start < 0 || end < start {
+				t.Fatal("missing main content")
+			}
+			body = body[start:end]
+			for _, want := range required {
+				if !strings.Contains(body, want) {
+					t.Errorf("public content missing %q", want)
+				}
+			}
+		})
 	}
 }

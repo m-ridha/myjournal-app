@@ -122,6 +122,10 @@ func NewRouter(cfg Options, registry *provider.Registry, clk journal.Clock, serv
 		_, err := currentSession(r, cfg.Session.SessionKey, registry, clk.Now())
 		renderer.renderPage(w, pageData{TitleKey: "privacy.title", DescriptionKey: "privacy.description", SignedIn: err == nil, Page: "privacy"})
 	})
+	r.Get("/terms", func(w http.ResponseWriter, r *http.Request) {
+		_, err := currentSession(r, cfg.Session.SessionKey, registry, clk.Now())
+		renderer.renderPage(w, pageData{TitleKey: "terms.title", DescriptionKey: "terms.description", SignedIn: err == nil, Page: "terms"})
+	})
 	r.Get("/help", func(w http.ResponseWriter, r *http.Request) {
 		_, err := currentSession(r, cfg.Session.SessionKey, registry, clk.Now())
 		renderer.renderPage(w, pageData{TitleKey: "help.title", DescriptionKey: "help.description", SignedIn: err == nil, Page: "help"})

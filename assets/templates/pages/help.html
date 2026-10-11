@@ -1,15 +1,43 @@
 {{define "help"}}
-<article class="mj-page-card">
-  <h1>{{t "help.title"}}</h1>
-  <p class="mj-lead">{{t "help.description"}}</p>
-
-  <h2>{{t "help.howItWorks.title"}}</h2>
-  <p>{{t "help.howItWorks.body"}}</p>
-
-  <h2>{{t "help.access.title"}}</h2>
-  <p>{{t "help.access.body"}}</p>
-
-  <h2>{{t "help.reconnect.title"}}</h2>
-  <p>{{t "help.reconnect.body"}}</p>
+<article class="mj-page-card mj-public-copy mj-reading-page">
+  <header>
+    <p class="mj-kicker">{{t "app.name"}}</p>
+    <h1>{{t "help.title"}}</h1>
+    <p class="mj-lead">{{t "help.description"}}</p>
+  </header>
+  <section>
+    <h2>{{t "help.howItWorks.title"}}</h2>
+    <p>{{t "help.howItWorks.body"}}</p>
+  </section>
+  <section>
+    <h2>{{t "help.saving.title"}}</h2>
+    <p>{{t "help.saving.body"}}</p>
+  </section>
+  <section>
+    <h2>{{t "help.failure.title"}}</h2>
+    <p>{{t "help.failure.body"}}</p>
+  </section>
+  <section>
+    <h2>{{t "help.conflicts.title"}}</h2>
+    <p>{{t "help.conflicts.body"}}</p>
+  </section>
+  <section>
+    <h2>{{t "help.access.title"}}</h2>
+    <p>{{t "help.access.body"}}</p>
+  </section>
+  <section>
+    <h2>{{t "help.reconnect.title"}}</h2>
+    <p>{{t "help.reconnect.body"}}</p>
+  </section>
+  <section>
+    <h2>{{t "help.delete.title"}}</h2>
+    <p>{{t "help.delete.body"}}</p>
+  </section>
+  <section>
+    <h2>{{t "help.contact.title"}}</h2>
+    <p>{{t "help.contact.body"}}</p>
+    <p><a href="mailto:support@myjournal.ink">{{t "privacy.contact.email"}}</a></p>
+    <p><a href="/privacy">{{t "help.privacyLink"}}</a> · <a href="/terms">{{t "help.termsLink"}}</a></p>
+  </section>
 </article>
 {{end}}
