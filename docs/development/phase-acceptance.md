@@ -37,7 +37,7 @@ Goal: business rules work behind ports, with a reliable development provider.
 - Newest-first lazy API pagination across years; safe bounds; page-only previews and one-item lookahead. The browser Entries view is limited to the configured latest-entry count (currently 10), with Calendar for older notes (user decision, 2026-10-12).
 - Calendar grids and entry/today/future markers using the same date authority, with Monday first.
 - Provider registry/config validation and development-only local registration.
-- Shared bounded account-isolated cache, concurrent invalidation correctness, precise TTL expiry and bounded BigCache eviction (ADR 017; replaces the custom 2048-entry LRU), and two-minute full-entry snapshots with explicit recovery/conflict fresh-read bypass (ADR 020).
+- Shared bounded account-isolated cache, concurrent invalidation correctness, precise TTL expiry and bounded BigCache eviction (ADR 017; replaces the custom 2048-entry LRU), and two-minute full-entry/absence snapshots shared bidirectionally by previews and detail reads, complete content/UTF-8/checksum validation, and explicit recovery/conflict fresh-read bypass (ADR 020).
 - Shared store contracts for local and cache-wrapped storage; later Google storage uses the same suite.
 - Atomic local replacement, concurrency protection across stores targeting the same files, and collision-safe repeated trash.
 - Inward dependencies verified with temporary depguard violations for core/driving/driven rules; remove the canaries afterward.

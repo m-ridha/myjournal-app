@@ -235,14 +235,14 @@ func TestCancelledInvalidationDisablesReuse(t *testing.T) {
 
 func TestSnapshotKindAndExactExpiry(t *testing.T) {
 	now := time.Date(2026, 10, 11, 0, 0, 0, 0, time.UTC)
-	data, err := encodeSnapshot("preview", "text", now.Add(time.Minute))
+	data, err := encodeSnapshot("entry", entryResult{Missing: true}, now.Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if _, err := decodeSnapshot(data, "years", now); err == nil {
 		t.Fatal("accepted wrong snapshot kind")
 	}
-	value, err := decodeSnapshot(data, "preview", now.Add(time.Minute))
+	value, err := decodeSnapshot(data, "entry", now.Add(time.Minute))
 	if err != nil || value != nil {
 		t.Fatalf("exact expiry: %v %v", value, err)
 	}

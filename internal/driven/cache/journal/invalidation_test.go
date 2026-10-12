@@ -68,8 +68,8 @@ type delayedPreviewStore struct {
 	started, release chan struct{}
 }
 
-func (s *delayedPreviewStore) Previews(ctx context.Context, dates []journal.Date, max int) (map[journal.Date]string, error) {
-	out, err := s.fakeStore.Previews(ctx, dates, max)
+func (s *delayedPreviewStore) Get(ctx context.Context, date journal.Date) (journal.Entry, error) {
+	out, err := s.fakeStore.Get(ctx, date)
 	s.once.Do(func() { close(s.started); <-s.release })
 	return out, err
 }

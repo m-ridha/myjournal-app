@@ -16,15 +16,11 @@ import (
 
 type slowReadStore struct {
 	journal.Store
-	get     func(context.Context, civil.Date) (journal.Entry, error)
-	preview func(context.Context, []civil.Date, int) (map[civil.Date]string, error)
+	get func(context.Context, civil.Date) (journal.Entry, error)
 }
 
 func (s slowReadStore) Get(ctx context.Context, d civil.Date) (journal.Entry, error) {
 	return s.get(ctx, d)
-}
-func (s slowReadStore) Previews(ctx context.Context, d []civil.Date, n int) (map[civil.Date]string, error) {
-	return s.preview(ctx, d, n)
 }
 
 func TestOverlappingGetsAreSharedWithSnapshotsDisabled(t *testing.T) {
@@ -150,18 +146,14 @@ func TestOverlappingPreviewDatesAndBudgets(t *testing.T) {
 		var calls atomic.Int32
 		release := make(chan struct{})
 		cache := New(nil, 0)
-		base := slowReadStore{preview: func(ctx context.Context, dates []civil.Date, n int) (map[civil.Date]string, error) {
+		base := slowReadStore{get: func(ctx context.Context, d civil.Date) (journal.Entry, error) {
 			calls.Add(1)
 			select {
 			case <-release:
 			case <-ctx.Done():
-				return nil, ctx.Err()
+				return journal.Entry{}, ctx.Err()
 			}
-			out := map[civil.Date]string{}
-			for _, d := range dates {
-				out[d] = journal.PreviewPrefix("synthetic", n)
-			}
-			return out, nil
+			return journal.Entry{Date: d, Text: "synthetic", Exists: true}, nil
 		}}
 		d1 := civil.Date{Year: 2020, Month: 1, Day: 1}
 		d2 := civil.Date{Year: 2020, Month: 1, Day: 2}
@@ -180,8 +172,8 @@ func TestOverlappingPreviewDatesAndBudgets(t *testing.T) {
 			}()
 		}
 		synctest.Wait()
-		if calls.Load() != 4 {
-			t.Fatalf("calls=%d want 4 (3 dates plus separate budget)", calls.Load())
+		if calls.Load() != 3 {
+			t.Fatalf("calls=%d want 3 (shared across budgets)", calls.Load())
 		}
 		close(release)
 		for range 3 {
@@ -344,7 +336,7 @@ func TestColdPreviewConcurrencyAndLatency(t *testing.T) {
 		t.Run(fmt.Sprint(count), func(t *testing.T) {
 			synctest.Test(t, func(t *testing.T) {
 				var active, peak atomic.Int32
-				base := slowReadStore{preview: func(ctx context.Context, dates []civil.Date, n int) (map[civil.Date]string, error) {
+				base := slowReadStore{get: func(ctx context.Context, date civil.Date) (journal.Entry, error) {
 					current := active.Add(1)
 					defer active.Add(-1)
 					for previous := peak.Load(); current > previous; previous = peak.Load() {
@@ -355,9 +347,9 @@ func TestColdPreviewConcurrencyAndLatency(t *testing.T) {
 					select {
 					case <-time.After(100 * time.Millisecond):
 					case <-ctx.Done():
-						return nil, ctx.Err()
+						return journal.Entry{}, ctx.Err()
 					}
-					return map[civil.Date]string{dates[0]: "synthetic"}, nil
+					return journal.Entry{Date: date, Text: "synthetic", Exists: true}, nil
 				}}
 				dates := make([]civil.Date, count)
 				for i := range dates {
@@ -380,40 +372,47 @@ func TestColdPreviewConcurrencyAndLatency(t *testing.T) {
 }
 
 func TestOldEntryFlightCannotRefillAfterSave(t *testing.T) {
-	synctest.Test(t, func(t *testing.T) {
-		ctx := context.Background()
-		date := civil.Date{Year: 2020, Month: 1, Day: 1}
-		release := make(chan struct{})
-		var calls atomic.Int32
-		base := slowReadStore{Store: newFakeStore(), get: func(ctx context.Context, d civil.Date) (journal.Entry, error) {
-			if calls.Add(1) == 1 {
-				select {
-				case <-release:
-				case <-ctx.Done():
-					return journal.Entry{}, ctx.Err()
+	for _, missing := range []bool{false, true} {
+		t.Run(fmt.Sprintf("missing=%t", missing), func(t *testing.T) {
+			synctest.Test(t, func(t *testing.T) {
+				ctx := context.Background()
+				date := civil.Date{Year: 2020, Month: 1, Day: 1}
+				release := make(chan struct{})
+				var calls atomic.Int32
+				base := slowReadStore{Store: newFakeStore(), get: func(ctx context.Context, d civil.Date) (journal.Entry, error) {
+					if calls.Add(1) == 1 {
+						select {
+						case <-release:
+						case <-ctx.Done():
+							return journal.Entry{}, ctx.Err()
+						}
+						if missing {
+							return journal.Entry{}, journal.ErrNotFound
+						}
+						return journal.Entry{Date: d, Text: "old", Version: "v1", Exists: true}, nil
+					}
+					return journal.Entry{Date: d, Text: "new", Version: "v2", Exists: true}, nil
+				}}
+				cache := New(newTestBackend(), 2*time.Minute)
+				store := cache.Wrap("account", base)
+				done := make(chan error, 1)
+				go func() { _, err := store.Get(ctx, date); done <- err }()
+				synctest.Wait()
+				if _, err := store.Put(ctx, date, "new", "v1"); err != nil {
+					t.Fatal(err)
 				}
-				return journal.Entry{Date: d, Text: "old", Version: "v1", Exists: true}, nil
-			}
-			return journal.Entry{Date: d, Text: "new", Version: "v2", Exists: true}, nil
-		}}
-		cache := New(newTestBackend(), 2*time.Minute)
-		store := cache.Wrap("account", base)
-		done := make(chan error, 1)
-		go func() { _, err := store.Get(ctx, date); done <- err }()
-		synctest.Wait()
-		if _, err := store.Put(ctx, date, "new", "v1"); err != nil {
-			t.Fatal(err)
-		}
-		close(release)
-		if err := <-done; err != nil {
-			t.Fatal(err)
-		}
-		value, err := store.Get(ctx, date)
-		if err != nil || value.Text != "new" || calls.Load() != 2 {
-			t.Fatalf("entry=%+v calls=%d err=%v", value, calls.Load(), err)
-		}
-		if _, err := store.Get(ctx, date); err != nil || calls.Load() != 2 {
-			t.Fatal("new content was not cached")
-		}
-	})
+				close(release)
+				if err := <-done; (missing && !errors.Is(err, journal.ErrNotFound)) || (!missing && err != nil) {
+					t.Fatal(err)
+				}
+				value, err := store.Get(ctx, date)
+				if err != nil || value.Text != "new" || calls.Load() != 2 {
+					t.Fatalf("entry=%+v calls=%d err=%v", value, calls.Load(), err)
+				}
+				if _, err := store.Get(ctx, date); err != nil || calls.Load() != 2 {
+					t.Fatal("new content was not cached")
+				}
+			})
+		})
+	}
 }

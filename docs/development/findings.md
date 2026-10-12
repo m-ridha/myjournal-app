@@ -12,6 +12,13 @@ This summary supersedes pending language in the dated evidence below; those reco
 - English and Bahasa Indonesia are implemented with public language preferences, a globe/code header pill, an always-visible Settings gear and Help; Privacy is reached from Help. Account actions still require a valid session. Earlier English-only and conditional-Settings notes are historical.
 - Current footer/release/logging and date-format behavior is consolidated in [the implementation summary](#footer-release-metadata-and-date-formatting-2026-10-12). Final footer visuals and Docker/deployed-version checks remain unverified; no new release is implied.
 
+## Shared entry/preview content (2026-10-13)
+
+- Complete-file tests cover meaningful text beyond 64 KiB, the 1 MiB boundary/overflow, invalid trailing UTF-8, missing/mismatched checksum and retry after failed validation. Both raw Google and decorated storage pass shared Store contracts.
+- Operation-local read discovery preserves deterministic duplicate selection and pagination. Two reads use four metadata requests with paginated retained listings, six with an oversized listing, and eight with exhausted query capacity. Bounds remain 16 queries/1000 files; oversized results can be fetched again. A later mutation still detects an externally changed checksum.
+- The identical-batch coordinator remains after removal increased metadata work across competing operation views; [ADR 019](adr/019-overlapping-journal-reads.md#shared-content-follow-up-2026-10-13) records the decision. There is no separate retained preview cache. Positive and negative stale-fill guards, fresh-flight isolation, capacity bypass and mutation invalidation are regression-tested.
+- Request counts, downloaded bytes and controlled concurrency/timing belong in the [performance record](performance-benchmark.md#shared-entry-and-preview-content-2026-10-13). Live Drive latency, external-writer atomicity and cross-process invalidation are not established by these tests.
+
 ## Favicon (2026-10-08)
 
 - Cleanup: the current favicon is `/static/favicons/myjournal-tab-icon.png`, embedded from `assets/static/favicons/`. Updated the shared layout and removed unused SVG/mask assets at the user's request; paths below describe historical troubleshooting. `make fmt lint test` passed (lint: 0 issues; browser-script regressions and all Go tests passed), and `git diff --check` passed. Verified only the active PNG remains among favicon assets and the layout references its new path.

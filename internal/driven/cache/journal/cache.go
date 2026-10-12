@@ -26,7 +26,6 @@ type cacheKey struct {
 	kind    string
 	year    int
 	date    civil.Date
-	maxSize int
 }
 
 // Cache coordinates disposable snapshots and overlapping reads across Store wrappers.
@@ -43,7 +42,7 @@ type Cache struct {
 	readEpochs     [64]atomic.Uint64
 }
 
-// Store decorates a journal.Store with account-scoped cached indexes and previews.
+// Store decorates a journal.Store with account-scoped cached indexes and full entries.
 type Store struct {
 	cache   *Cache
 	account string
@@ -111,17 +110,17 @@ func (s *Store) GetFresh(ctx context.Context, d civil.Date) (journal.Entry, erro
 	return sharedRead(ctx, s, cacheKey{account: s.account, kind: "fresh-entry", date: d}, func(ctx context.Context) (journal.Entry, error) { return s.base.Get(ctx, d) })
 }
 
+// Previews shares batch orchestration so identical lists use one operation view.
+// The only retained content and per-date download flight belong to Get.
 func (s *Store) Previews(ctx context.Context, dates []civil.Date, maxBytes int) (map[civil.Date]string, error) {
-	if s.account == "" || maxBytes <= 0 {
-		return s.base.Previews(ctx, dates, maxBytes)
+	if s.account == "" {
+		return s.previews(ctx, dates, maxBytes)
 	}
 	ordered := append([]civil.Date(nil), dates...)
 	sort.Slice(ordered, func(i, j int) bool { return ordered[i].Before(ordered[j]) })
 	ordered = slices.Compact(ordered)
 	digest := sha256.Sum256(fmt.Append(nil, ordered))
 	key := fmt.Sprintf("%s:%x:%d:%d", namespace(s.account), digest, maxBytes, s.cache.readEpoch(s.account).Load())
-	// One batch keeps identical requests in one operation view; individual flights
-	// inside it also share dates with different overlapping batches.
 	value, err := s.cache.previewBatches.do(ctx, key, func(ctx context.Context) (any, error) { return s.previews(ctx, ordered, maxBytes) })
 	if err != nil {
 		return nil, err
@@ -130,13 +129,9 @@ func (s *Store) Previews(ctx context.Context, dates []civil.Date, maxBytes int) 
 }
 
 func (s *Store) previews(ctx context.Context, dates []civil.Date, maxBytes int) (map[civil.Date]string, error) {
-	if s.account == "" || maxBytes <= 0 {
-		return s.base.Previews(ctx, dates, maxBytes)
-	}
 	out := make(map[civil.Date]string, len(dates))
 	var mu sync.Mutex
 	group, ctx := errgroup.WithContext(ctx)
-	// Keep provider work bounded while sharing individual dates across batches.
 	group.SetLimit(previewWorkers)
 	seen := make(map[civil.Date]bool, len(dates))
 	for _, date := range dates {
@@ -145,20 +140,16 @@ func (s *Store) previews(ctx context.Context, dates []civil.Date, maxBytes int) 
 		}
 		seen[date] = true
 		group.Go(func() error {
-			key := cacheKey{account: s.account, kind: "preview", date: date, maxSize: maxBytes}
-			value, err := cachedRead(ctx, s, key, func(ctx context.Context) (previewResult, error) {
-				previews, err := s.base.Previews(ctx, []civil.Date{date}, maxBytes)
-				text, exists := previews[date]
-				return previewResult{text: text, exists: exists}, err
-			})
+			entry, err := s.Get(ctx, date)
+			if errors.Is(err, journal.ErrNotFound) {
+				return nil
+			}
 			if err != nil {
 				return err
 			}
-			if value.exists {
-				mu.Lock()
-				out[date] = value.text
-				mu.Unlock()
-			}
+			mu.Lock()
+			out[date] = journal.PreviewPrefix(entry.Text, maxBytes)
+			mu.Unlock()
 			return nil
 		})
 	}
@@ -168,39 +159,20 @@ func (s *Store) previews(ctx context.Context, dates []civil.Date, maxBytes int) 
 	return out, nil
 }
 
-type previewResult struct {
-	text   string
-	exists bool
-}
-
 // cachedRead fills snapshots inside the flight, before its result is published.
 func cachedRead[T any](ctx context.Context, s *Store, key cacheKey, load func(context.Context) (T, error)) (T, error) {
 	value, _, ok := s.cache.get(ctx, key)
 	if ok {
-		if key.kind == "preview" {
-			return any(previewResult{text: value.(string), exists: true}).(T), nil
-		}
 		return value.(T), nil
 	}
 	return sharedRead(ctx, s, key, func(ctx context.Context) (T, error) {
-		// A prior flight may have filled the cache between the miss and admission.
 		value, generation, ok := s.cache.get(ctx, key)
 		if ok {
-			if key.kind == "preview" {
-				return any(previewResult{text: value.(string), exists: true}).(T), nil
-			}
 			return value.(T), nil
 		}
 		items, err := load(ctx)
 		if err == nil {
-			if key.kind == "preview" {
-				preview := any(items).(previewResult)
-				if preview.exists {
-					s.cache.set(ctx, key, preview.text, generation)
-				}
-			} else {
-				s.cache.set(ctx, key, items, generation)
-			}
+			s.cache.set(ctx, key, items, generation)
 		}
 		return items, err
 	})
@@ -347,10 +319,6 @@ func (c *Cache) invalidateDate(ctx context.Context, account string, date civil.D
 		return
 	}
 	if err := c.backend.Delete(ctx, (cacheKey{account: account, kind: "entry", date: date}).string()); err != nil {
-		c.disabled.Store(true)
-		return
-	}
-	if err := c.backend.DeletePrefix(ctx, previewPrefix(account, date)); err != nil {
 		c.disabled.Store(true)
 		return
 	}

@@ -19,6 +19,7 @@ import (
 	"unicode/utf8"
 
 	"golang.org/x/oauth2"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/googleapi"
 	"google.golang.org/api/option"
@@ -31,10 +32,9 @@ const folderMIME = "application/vnd.google-apps.folder"
 const appTag = "myjournal-v1"
 const fileFields = "id,name,mimeType,parents,appProperties,createdTime,modifiedTime,md5Checksum,trashed"
 const (
-	maxContentBytes  = 1 << 20
-	previewReadBytes = 64 << 10
-	previewWorkers   = 4
-	readAttempts     = 3
+	maxContentBytes = 1 << 20
+	previewWorkers  = 4
+	readAttempts    = 3
 )
 
 const (
@@ -288,6 +288,28 @@ func (s *Store) entryFile(ctx context.Context, date journal.Date) (*drive.File, 
 	return files[0], nil
 }
 
+// readEntryFile reuses a complete year listing only within this read operation.
+// Mutation lookup remains separate and never borrows this broad listing.
+func (s *Store) readEntryFile(ctx context.Context, date journal.Date) (*drive.File, error) {
+	if s.discovery == nil {
+		return s.entryFile(ctx, date)
+	}
+	folder, err := s.year(ctx, date.Year, false)
+	if err != nil {
+		return nil, err
+	}
+	files, err := s.files(ctx, folder.Id)
+	if err != nil {
+		return nil, err
+	}
+	for _, file := range files {
+		if file.Name == date.String()+".txt" {
+			return file, nil
+		}
+	}
+	return nil, journal.ErrNotFound
+}
+
 func (s *Store) metadata(ctx context.Context, id string) (*drive.File, error) {
 	file, err := retryRead(ctx, func() (*drive.File, error) { return s.service.Files.Get(id).Fields(fileFields).Context(ctx).Do() })
 	if err != nil {
@@ -302,7 +324,7 @@ func (s *Store) metadata(ctx context.Context, id string) (*drive.File, error) {
 func checksum(data []byte) string { sum := md5.Sum(data); return hex.EncodeToString(sum[:]) }
 
 func (s *Store) Get(ctx context.Context, date journal.Date) (journal.Entry, error) {
-	file, err := s.entryFile(ctx, date)
+	file, err := s.readEntryFile(ctx, date)
 	if err != nil {
 		return journal.Entry{}, err
 	}
@@ -418,132 +440,42 @@ func (s *Store) Trash(ctx context.Context, date journal.Date) error {
 }
 
 func (s *Store) Previews(ctx context.Context, dates []journal.Date, maxBytes int) (map[journal.Date]string, error) {
-	out := make(map[journal.Date]string)
+	out := make(map[journal.Date]string, len(dates))
 	if len(dates) == 0 {
 		return out, nil
 	}
-	files, err := s.previewFiles(ctx, dates)
-	if err != nil {
-		return nil, err
+	// Direct callers get one operation view; decorators already supply one.
+	scoped := s
+	if scoped.discovery == nil {
+		scoped = s.ForOperation().(*Store)
 	}
 	var mu sync.Mutex
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-	jobs := make(chan journal.Date)
-	var group sync.WaitGroup
-	var first error
-	for range min(previewWorkers, len(dates)) {
-		group.Go(func() {
-			for date := range jobs {
-				file := files[date]
-				if file == nil {
-					continue
-				}
-				text, err := s.preview(ctx, file, maxBytes)
-				if errors.Is(err, journal.ErrNotFound) {
-					continue
-				}
-				mu.Lock()
-				if err != nil {
-					if first == nil {
-						first = err
-						cancel()
-					}
-				} else {
-					out[date] = text
-				}
-				mu.Unlock()
-			}
-		})
-	}
+	group, ctx := errgroup.WithContext(ctx)
+	group.SetLimit(previewWorkers)
+	seen := make(map[journal.Date]bool, len(dates))
 	for _, date := range dates {
-		select {
-		case jobs <- date:
-		case <-ctx.Done():
-		}
-	}
-	close(jobs)
-	group.Wait()
-	if first != nil {
-		return nil, first
-	}
-	if err := ctx.Err(); err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-// Resolve folders once per batch; keep discovery request-scoped to respect external moves.
-func (s *Store) previewFiles(ctx context.Context, dates []journal.Date) (map[journal.Date]*drive.File, error) {
-	out := make(map[journal.Date]*drive.File, len(dates))
-	root, err := s.root(ctx, false)
-	if errors.Is(err, journal.ErrNotFound) {
-		return out, nil
-	}
-	if err != nil {
-		return nil, err
-	}
-	years := make(map[int]bool)
-	wanted := make(map[journal.Date]bool, len(dates))
-	for _, d := range dates {
-		years[d.Year] = true
-		wanted[d] = true
-	}
-	for year := range years {
-		folder, err := s.folder(ctx, roleYear, root.Id, strconv.Itoa(year), "", "", false)
-		if errors.Is(err, journal.ErrNotFound) {
+		if seen[date] {
 			continue
 		}
-		if err != nil {
-			return nil, err
-		}
-		files, err := s.files(ctx, folder.Id)
-		if err != nil {
-			return nil, err
-		}
-		for _, file := range files {
-			date, err := journal.ParseEntryDate(fmt.Sprintf("entries/%04d/%s", year, file.Name))
-			if err == nil && wanted[date] && out[date] == nil {
-				out[date] = file
+		seen[date] = true
+		group.Go(func() error {
+			entry, err := scoped.Get(ctx, date)
+			if errors.Is(err, journal.ErrNotFound) {
+				return nil
 			}
-		}
+			if err != nil {
+				return err
+			}
+			mu.Lock()
+			out[date] = journal.PreviewPrefix(entry.Text, maxBytes)
+			mu.Unlock()
+			return nil
+		})
+	}
+	if err := group.Wait(); err != nil {
+		return nil, err
 	}
 	return out, nil
-}
-
-func (s *Store) preview(ctx context.Context, file *drive.File, maxBytes int) (string, error) {
-	if maxBytes <= 0 {
-		return "", nil
-	}
-	response, err := retryRead(ctx, func() (*http.Response, error) { return s.service.Files.Get(file.Id).Context(ctx).Download() })
-	if err != nil {
-		return "", mapError(err)
-	}
-	defer func() { _ = response.Body.Close() }()
-	// Leading whitespace may be arbitrarily long; inspect a bounded 64 KiB prefix.
-	// Never download the full entry merely to render a page preview.
-	budget := previewReadBytes
-	data, err := io.ReadAll(io.LimitReader(response.Body, int64(budget)))
-	if err != nil {
-		return "", mapError(err)
-	}
-	if !utf8.Valid(data) {
-		if len(data) != budget {
-			return "", journal.ErrInvalidText
-		}
-		valid := false
-		for trim := 1; trim <= 3 && trim <= len(data); trim++ {
-			if utf8.Valid(data[:len(data)-trim]) && !utf8.FullRune(data[len(data)-trim:]) {
-				data = data[:len(data)-trim]
-				valid = true
-				break
-			}
-		}
-		if !valid {
-			return "", journal.ErrInvalidText
-		}
-	}
-	return journal.PreviewPrefix(string(data), maxBytes), nil
 }
 
 func retryRead[T any](ctx context.Context, call func() (T, error)) (T, error) {

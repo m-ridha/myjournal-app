@@ -1,6 +1,6 @@
 # Progress
 
-## Current status (2026-10-12)
+## Current status (2026-10-13)
 
 This summary supersedes pending language in the dated evidence below; those records describe what was known at the time, not new work to repeat.
 
@@ -11,6 +11,12 @@ This summary supersedes pending language in the dated evidence below; those reco
 
 - English and Bahasa Indonesia are implemented with public language preferences, a globe/code header pill, an always-visible Settings gear and Help; Privacy is reached from Help. Account actions still require a valid session. Earlier English-only and conditional-Settings notes are historical.
 - Current footer/release/logging and date-format behavior is consolidated in [the implementation summary](#footer-release-metadata-and-date-formatting-2026-10-12). Final footer visuals and Docker/deployed-version checks remain unverified; no new release is implied.
+
+## Shared entry/preview cache (2026-10-13)
+
+- Implemented the approved shared-content design: previews and details reuse full entries and confirmed absence, with two-minute TTL, ten decorated preview workers, targeted invalidation and independent fresh recovery reads. See [ADR 020](adr/020-entry-content-cache.md).
+- Validation: `make fmt lint test`, targeted core/cache/Google/web race checks, all 31 architecture probes, and 38 local Chrome accessibility scans plus keyboard checks passed. Synthetic browser navigation covered blank/save/list/detail/trash and existing retry/conflict flows. Automated accessibility coverage retains its documented limits.
+- Synthetic correctness, capacity, discovery and request-count evidence is recorded in [findings](findings.md#shared-entrypreview-content-2026-10-13) and [performance measurements](performance-benchmark.md#shared-entry-and-preview-content-2026-10-13). Live Drive timing and deployment remain separate; no performance target is newly accepted.
 
 ## Phase 0: Bootstrap
 

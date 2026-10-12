@@ -218,7 +218,7 @@ func TestCacheIsSharedPerAccountAndIsolatedAcrossAccounts(t *testing.T) {
 	}
 }
 
-func TestPreviewCacheIncludesSizeLimit(t *testing.T) {
+func TestPreviewBudgetsShareEntryContent(t *testing.T) {
 	base := newFakeStore()
 	date := civil.Date{Year: 2026, Month: 9, Day: 20}
 	base.contents[date] = journal.Entry{Date: date, Text: "preview text", Version: "v1", Exists: true}
@@ -235,8 +235,8 @@ func TestPreviewCacheIncludesSizeLimit(t *testing.T) {
 	if short[date] != "prev" || long[date] != "preview " {
 		t.Fatalf("previews = %q and %q, want %q and %q", short[date], long[date], "prev", "preview ")
 	}
-	if base.calls != 2 {
-		t.Fatalf("underlying Previews calls = %d, want 2 for different size limits", base.calls)
+	if base.calls != 1 {
+		t.Fatalf("underlying Get calls = %d, want 1 across different preview budgets", base.calls)
 	}
 }
 
