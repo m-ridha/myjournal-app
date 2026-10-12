@@ -86,7 +86,7 @@ func TestHomepageIncludesOwnershipVerification(t *testing.T) {
 func TestPrivatePagesRedirectWithoutSession(t *testing.T) {
 	cfg := config.Config{BaseURL: testutil.LocalBaseURL, SessionKey: "0123456789abcdef0123456789abcdef"}
 	h := newTestRouter(cfg, provider.NewRegistry(localProvider.New(testutil.LocalBaseURL, "")), clock.System{}, nil)
-	for _, path := range []string{"/entries", "/entries/today", "/entries/2026-09-20", "/calendar", "/settings"} {
+	for _, path := range []string{"/entries", "/entries/today", "/entries/2026-09-20", "/calendar"} {
 		t.Run(path, func(t *testing.T) {
 			req := httptest.NewRequest(http.MethodGet, path, nil)
 			res := httptest.NewRecorder()
@@ -350,7 +350,7 @@ func TestAPIPanicReturnsGenericEnvelope(t *testing.T) {
 	}
 }
 
-func TestPublicPagesSettingsLinkFollowsSession(t *testing.T) {
+func TestPublicPagesAlwaysExposeSettings(t *testing.T) {
 	now := time.Date(2026, 10, 10, 12, 0, 0, 0, time.UTC)
 	cfg := config.Config{BaseURL: testutil.LocalBaseURL, SessionKey: "public-page-test-key"}
 	registry := provider.NewRegistry(localProvider.New(cfg.BaseURL, ""))
@@ -361,10 +361,10 @@ func TestPublicPagesSettingsLinkFollowsSession(t *testing.T) {
 		invalid      bool
 		wantSettings bool
 	}{
-		{name: "signed out"},
+		{name: "signed out", wantSettings: true},
 		{name: "valid session", issuedAt: now, wantSettings: true},
-		{name: "expired session", issuedAt: now.Add(-provider.Lifetime)},
-		{name: "invalid cookie", invalid: true},
+		{name: "expired session", issuedAt: now.Add(-provider.Lifetime), wantSettings: true},
+		{name: "invalid cookie", invalid: true, wantSettings: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			for _, path := range []string{"/privacy", "/help", "/terms"} {

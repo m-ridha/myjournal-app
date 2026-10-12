@@ -81,7 +81,7 @@ func newLocaleRouter(cfg Options, registry *provider.Registry, clk journal.Clock
 	})
 
 	registerDiscoveryRoutes(r, cfg.BaseURL)
-	registerLanguageRoute(r, cfg, registry, clk, renderer)
+	registerLanguageRoute(r, cfg, renderer)
 
 	// Web routes
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
@@ -134,7 +134,7 @@ func newLocaleRouter(cfg Options, registry *provider.Registry, clk journal.Clock
 	r.Get("/settings", func(w http.ResponseWriter, r *http.Request) {
 		current, err := currentSession(r, cfg.Session.SessionKey, registry, clk.Now())
 		if err != nil {
-			http.Redirect(w, r, "/", http.StatusSeeOther)
+			renderer.renderPage(w, pageData{TitleKey: "settings.title", Page: "settings"})
 			return
 		}
 		settings, folderErr := connections.Settings(r.Context(), current)

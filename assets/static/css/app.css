@@ -1027,3 +1027,28 @@ html[data-theme="dark"] .icon-moon {
 .mj-language-trigger [data-language-value] {
   flex: 1;
 }
+
+.mj-header-language {
+  position: relative;
+  margin: 0;
+}
+
+.mj-header-language .mj-header-icon {
+  width: auto;
+  padding-inline: 0.85rem;
+  gap: 0.5rem;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.mj-header-language .mj-language-options {
+  inset-inline-start: auto;
+  inset-inline-end: 0;
+  width: 12rem;
+}
+
+.mj-header-language [hidden] {
+  display: none;
+}

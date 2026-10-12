@@ -225,5 +225,8 @@
   "date.month.9": "September",
   "date.month.10": "October",
   "date.month.11": "November",
-  "date.month.12": "December"
+  "date.month.12": "December",
+  "settings.signInHelp": "Sign in to manage your account connection.",
+  "settings.signIn": "Sign in",
+  "nav.changeLanguage": "Change language; current language: English"
 }

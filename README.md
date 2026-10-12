@@ -10,7 +10,7 @@ Contributor instructions are in [AGENTS.md](AGENTS.md). See [progress](docs/deve
 - Manual save and idle autosave, per-tab draft recovery, conflict-resolution controls and confirmed trash.
 - Paginated previews, calendar navigation, light/dark themes and account settings.
 - Google sign-in and Drive storage, with a local provider for development.
-- English and Bahasa Indonesia interfaces, selectable in Settings. Your choice stays in this browser after sign-out; English is the default.
+- English and Bahasa Indonesia interfaces, selectable from the header or Settings, including before sign-in. Your choice stays in this browser after sign-out; English is the default.
 
 The app is online-only. Browser drafts provide recovery rather than offline synchronization. Checksum comparisons are non-atomic; simultaneous external Drive edits are unsupported. See [ADR 016](docs/development/adr/016-restricted-google-release.md) for deployment and writer constraints.
 

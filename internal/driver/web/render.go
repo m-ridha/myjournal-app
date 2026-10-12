@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"io/fs"
 	"net/http"
+	"strings"
 
 	"github/mridha/myjournal-app/assets"
 	"github/mridha/myjournal-app/internal/driver/web/i18n"
@@ -38,7 +39,7 @@ func loadLocaleRenderer(source fs.FS, locale string) (*Renderer, error) {
 	if err != nil {
 		return nil, err
 	}
-	templates, err := template.New("base").Funcs(template.FuncMap{"t": catalog.Text}).ParseFS(source, "templates/layouts/*.html", "templates/pages/*.html")
+	templates, err := template.New("base").Funcs(template.FuncMap{"t": catalog.Text, "upper": strings.ToUpper}).ParseFS(source, "templates/layouts/*.html", "templates/pages/*.html")
 	if err != nil {
 		return nil, err
 	}

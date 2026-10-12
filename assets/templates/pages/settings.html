@@ -33,6 +33,7 @@
 
   <section aria-labelledby="connection-heading">
     <h2 id="connection-heading">{{t "settings.connection"}}</h2>
+    {{if .SignedIn}}
     <dl class="mj-settings-list">
       <div class="mj-setting-row">
         <dt>{{t "settings.account"}}</dt>
@@ -49,6 +50,10 @@
       <button class="mj-btn mj-btn-secondary mj-danger" type="button" data-disconnect>{{t "settings.disconnect"}}</button>
       <p role="status" aria-live="polite" data-sign-out-status></p>
     </div>
+    {{else}}
+    <p>{{t "settings.signInHelp"}}</p>
+    <p><a href="/">{{t "settings.signIn"}}</a></p>
+    {{end}}
   </section>
 
 </article>

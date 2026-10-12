@@ -225,5 +225,8 @@
   "date.month.9": "September",
   "date.month.10": "Oktober",
   "date.month.11": "November",
-  "date.month.12": "Desember"
+  "date.month.12": "Desember",
+  "settings.signInHelp": "Masuk untuk mengelola koneksi akun Anda.",
+  "settings.signIn": "Masuk",
+  "nav.changeLanguage": "Ubah bahasa; bahasa saat ini: Bahasa Indonesia"
 }

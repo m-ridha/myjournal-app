@@ -63,8 +63,8 @@ func TestLanguageSelection(t *testing.T) {
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	res := httptest.NewRecorder()
 	h.ServeHTTP(res, req)
-	if res.Code != 303 || res.Header().Get("Location") != "/" || len(res.Result().Cookies()) != 0 {
-		t.Fatal("signed-out language update must require a session")
+	if res.Code != 303 || res.Header().Get("Location") != "/settings" || len(res.Result().Cookies()) != 1 {
+		t.Fatal("signed-out language preference must be saved")
 	}
 	req = httptest.NewRequest(http.MethodGet, "/api/v1/unknown", nil)
 	req.AddCookie(&http.Cookie{Name: "mj_language", Value: "id"})
@@ -128,6 +128,41 @@ func TestLanguageRequestsRemainIsolated(t *testing.T) {
 					t.Fatalf("request language %s leaked another catalog", locale)
 				}
 			})
+		}
+	}
+}
+
+func TestSignedOutSettingsAndHeader(t *testing.T) {
+	cfg := config.Config{BaseURL: testutil.LocalBaseURL, SessionKey: "0123456789abcdef0123456789abcdef"}
+	h := newTestRouter(cfg, provider.NewRegistry(localProvider.New(testutil.LocalBaseURL, "")), clock.System{}, nil)
+	for _, path := range []string{"/", "/settings", "/help"} {
+		req := httptest.NewRequest(http.MethodGet, path, nil)
+		res := httptest.NewRecorder()
+		h.ServeHTTP(res, req)
+		if res.Code != 200 {
+			t.Fatalf("GET %s = %d, want 200", path, res.Code)
+		}
+		body := res.Body.String()
+		start := strings.Index(body, "<header class=\"mj-header\">")
+		end := strings.Index(body, "</header>")
+		header := body[start:end]
+		if strings.Contains(header, `href="/privacy"`) || !strings.Contains(header, `href="/settings"`) || !strings.Contains(header, "data-header-language") {
+			t.Fatalf("GET %s missing stable header language/settings or retains Privacy", path)
+		}
+		if path == "/settings" && (strings.Contains(body, "data-sign-out") || strings.Contains(body, "data-disconnect") || !strings.Contains(body, "Sign in to manage your account connection.")) {
+			t.Fatal("signed-out Settings must offer preferences without account controls")
+		}
+		if path == "/help" && !strings.Contains(body, `href="/privacy"`) {
+			t.Fatal("Help must retain Privacy entry point")
+		}
+	}
+	for _, tc := range []struct{ path, want string }{{"/help", "/help"}, {"/entries/2026-10-01", "/entries/2026-10-01"}, {"https://evil.example", "/settings"}, {"//evil.example", "/settings"}, {"/api/v1/auth/local/callback", "/settings"}} {
+		req := httptest.NewRequest(http.MethodPost, "/settings/language", strings.NewReader(url.Values{"language": {"id"}, "returnTo": {tc.path}}.Encode()))
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+		res := httptest.NewRecorder()
+		h.ServeHTTP(res, req)
+		if res.Code != 303 || res.Header().Get("Location") != tc.want {
+			t.Errorf("returnTo %q location=%q status=%d, want %q", tc.path, res.Header().Get("Location"), res.Code, tc.want)
 		}
 	}
 }

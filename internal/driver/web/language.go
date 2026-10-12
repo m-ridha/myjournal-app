@@ -2,21 +2,17 @@ package web
 
 import (
 	"net/http"
+	"strings"
+	"time"
 
 	"github.com/go-chi/chi/v5"
-
-	provider "github/mridha/myjournal-app/internal/core/connection"
-	"github/mridha/myjournal-app/internal/core/journal"
 )
 
 const languageCookieName = "mj_language"
 const languagePreferenceSeconds = 365 * 24 * 60 * 60
 
-func registerLanguageRoute(r chi.Router, cfg Options, registry *provider.Registry, clk journal.Clock, renderer *Renderer) {
+func registerLanguageRoute(r chi.Router, cfg Options, renderer *Renderer) {
 	r.Post("/settings/language", func(w http.ResponseWriter, r *http.Request) {
-		if !requireSession(w, r, cfg.Session.SessionKey, registry, clk.Now()) {
-			return
-		}
 		r.Body = http.MaxBytesReader(w, r.Body, 1024)
 		if err := r.ParseForm(); err != nil {
 			http.Error(w, renderer.catalog.Text("errors.invalidRequest"), http.StatusBadRequest)
@@ -28,6 +24,20 @@ func registerLanguageRoute(r chi.Router, cfg Options, registry *provider.Registr
 			return
 		}
 		http.SetCookie(w, &http.Cookie{Name: languageCookieName, Value: values[0], Path: "/", MaxAge: languagePreferenceSeconds, HttpOnly: true, Secure: cfg.HTTPS, SameSite: http.SameSiteLaxMode})
-		http.Redirect(w, r, "/settings", http.StatusSeeOther)
+		http.Redirect(w, r, languageReturnPath(r.PostFormValue("returnTo")), http.StatusSeeOther)
 	})
+}
+
+// Only return to browser pages, never an external origin or auth/API endpoint.
+func languageReturnPath(path string) string {
+	switch path {
+	case "/", "/settings", "/help", "/privacy", "/terms", "/entries", "/calendar":
+		return path
+	}
+	if strings.HasPrefix(path, "/entries/") {
+		if _, err := time.Parse(time.DateOnly, strings.TrimPrefix(path, "/entries/")); err == nil {
+			return path
+		}
+	}
+	return "/settings"
 }

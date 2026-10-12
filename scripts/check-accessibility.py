@@ -22,7 +22,7 @@ async def audit(page, axe_script, label):
         return {violations: r.violations, incomplete: r.incomplete,
             passes: r.passes.map(p => p.id)};
     }""")
-    arrows = await page.locator('.mj-icon-btn:enabled').evaluate_all("""buttons => {
+    arrows = await page.locator('.mj-icon-btn:enabled, [data-header-language] [data-language-trigger]').evaluate_all("""buttons => {
         const rgb = value => (value.match(/[0-9.]+/g) || []).map(Number);
         const luminance = color => rgb(color).slice(0, 3).map(v => {
             v /= 255; return v <= .04045 ? v / 12.92 : ((v + .055) / 1.055) ** 2.4;
@@ -39,7 +39,16 @@ async def audit(page, axe_script, label):
         });
     }""")
     assert all(arrow['ratio'] >= 4.5 for arrow in arrows), arrows
-    return {"label": label, "arrow_contrast": arrows, **result}
+    controlled_menus = await page.locator('[data-language-trigger]').evaluate_all("""buttons => buttons.map(button => {
+        const id = button.getAttribute('aria-controls');
+        const menu = document.getElementById(id);
+        return {id, count: document.querySelectorAll('#' + id).length,
+            role: menu && menu.getAttribute('role'),
+            below: !menu || menu.hidden || menu.getBoundingClientRect().top >= button.getBoundingClientRect().bottom};
+    })""")
+    assert all(menu['count'] == 1 and menu['role'] == 'listbox' and menu['below']
+               for menu in controlled_menus), controlled_menus
+    return {"label": label, "arrow_contrast": arrows, "controlled_menus": controlled_menus, **result}
 
 
 async def check_keyboard(page):
@@ -133,16 +142,22 @@ async def run_browser(base, axe_script):
         for theme in ['light', 'dark']:
             await public_page.goto(base + '/')
             await public_page.evaluate('(theme) => localStorage.setItem("mj-theme", theme)', theme)
-            for path in ['/', '/help', '/privacy', '/terms', '/invalid-page']:
+            for path in ['/', '/settings', '/help', '/privacy', '/terms', '/invalid-page']:
                 response = await public_page.goto(base + path)
                 assert response.status == (404 if path == '/invalid-page' else 200), path
                 assert public_page.url == base + path, public_page.url
-                await expect(public_page.get_by_role('link', name='Settings', exact=True)).to_have_count(0)
+                await expect(public_page.get_by_role('link', name='Settings', exact=True)).to_be_visible()
+                if path == '/settings':
+                    await expect(public_page.locator('[data-sign-out], [data-disconnect]')).to_have_count(0)
                 if path == '/':
                     await expect(public_page.get_by_role('link', name='Continue with Local Dev', exact=True)).to_be_visible()
                 label = 'signed-out/' + theme + path
                 scans.append(await audit(public_page, axe_script, label))
                 keyboard[label] = await check_keyboard(public_page)
+                if path == '/settings':
+                    await public_page.locator('[data-header-language] [data-language-trigger]').click()
+                    scans.append(await audit(public_page, axe_script, label + '/language-open'))
+                    await public_page.keyboard.press('Escape')
         await public_context.close()
 
         report = {'browser': browser.version, 'axe': await page.evaluate('axe.version'),
