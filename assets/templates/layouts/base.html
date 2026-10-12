@@ -75,6 +75,8 @@
           {{template "terms" .}}
         {{else if eq .Page "privacy"}}
           {{template "privacy" .}}
+        {{else if eq .Page "signinfailed"}}
+          {{template "signinfailed" .}}
         {{else if eq .Page "notfound"}}
           {{template "notfound" .}}
         {{else}}

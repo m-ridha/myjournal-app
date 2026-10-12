@@ -226,5 +226,11 @@
   "nav.changeLanguage": "Change language; current language: English",
   "footer.github": "GitHub profile of developer",
   "footer.copyright": "Copyright © 2026",
-  "entries.recentDescription": "Your last {listLimit} entries. Find older entries in the calendar."
+  "entries.recentDescription": "Your last {listLimit} entries. Find older entries in the calendar.",
+  "signInFailed.title": "Sign-in wasn’t completed",
+  "signInFailed.description": "Sign-in may have been cancelled, required permissions may be missing, or the attempt may have expired.",
+  "signInFailed.permission": "myjournal needs Google Drive permission to open and save your journal files.",
+  "signInFailed.retry": "Go back to home and try signing in again. On Google’s permission screen, select the requested Google Drive permission before continuing. If it still fails, try again later.",
+  "signInFailed.preserved": "This failed attempt has not signed you out of an existing connection or cleared your browser drafts.",
+  "signInFailed.home": "Back to home"
 }

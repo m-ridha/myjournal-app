@@ -116,3 +116,17 @@ func TestEntriesLimitIsSharedWithLocalizedDescription(t *testing.T) {
 		})
 	}
 }
+
+func TestSignInRecoveryPageLocales(t *testing.T) {
+	renderer := testRenderer(t)
+	for locale, heading := range map[string]string{"en": "Sign-in wasn’t completed", "id": "Proses masuk belum selesai"} {
+		t.Run(locale, func(t *testing.T) {
+			response := httptest.NewRecorder()
+			renderer.languages[locale].renderPage(response, pageData{Page: "signinfailed", TitleKey: "signInFailed.title"})
+			body := response.Body.String()
+			if response.Code != http.StatusOK || !strings.Contains(body, heading) || !strings.Contains(body, `href="/">`+renderer.languages[locale].catalog.Text("signInFailed.home")) {
+				t.Fatal("missing localized recovery heading or home action")
+			}
+		})
+	}
+}

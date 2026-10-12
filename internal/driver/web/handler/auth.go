@@ -3,8 +3,11 @@ package handler
 import (
 	"errors"
 	"log/slog"
+	"mime"
 	"net/http"
 	"net/url"
+	"strconv"
+	"strings"
 	"time"
 
 	provider "github/mridha/myjournal-app/internal/core/connection"
@@ -49,7 +52,7 @@ func (s *Server) StartProviderLogin(w http.ResponseWriter, r *http.Request, prov
 func (s *Server) CompleteProviderLogin(w http.ResponseWriter, r *http.Request, providerName api.CompleteProviderLoginParamsProvider, params api.CompleteProviderLoginParams) {
 	p, ok := s.registry.Get(string(providerName))
 	if !ok {
-		api.WriteError(w, http.StatusNotFound, s.message("errors.providerUnavailable"))
+		s.writeLoginFailure(w, r, http.StatusNotFound, s.message("errors.providerUnavailable"))
 		return
 	}
 
@@ -59,7 +62,7 @@ func (s *Server) CompleteProviderLogin(w http.ResponseWriter, r *http.Request, p
 		flow, valid := s.callbackFlow(r, params)
 		if !valid {
 			logLoginRejection(provider.LoginTransaction)
-			api.WriteError(w, http.StatusUnauthorized, s.message("errors.signInFailed"))
+			s.writeLoginFailure(w, r, http.StatusUnauthorized, s.message("errors.signInFailed"))
 			return
 		}
 		input.Pending = &flow
@@ -76,21 +79,21 @@ func (s *Server) CompleteProviderLogin(w http.ResponseWriter, r *http.Request, p
 			logLoginRejection(rejection.Stage)
 		}
 		if errors.Is(err, journal.ErrUnavailable) {
-			api.WriteError(w, http.StatusBadGateway, s.message("errors.signInUnavailable"))
+			s.writeLoginFailure(w, r, http.StatusBadGateway, s.message("errors.signInUnavailable"))
 		} else {
-			api.WriteError(w, http.StatusUnauthorized, s.message("errors.signInFailed"))
+			s.writeLoginFailure(w, r, http.StatusUnauthorized, s.message("errors.signInFailed"))
 		}
 		return
 	}
 
 	encoded, err := session.Encode(s.cfg.SessionKey, stored)
 	if err != nil {
-		api.WriteError(w, http.StatusInternalServerError, s.message("errors.session"))
+		s.writeLoginFailure(w, r, http.StatusInternalServerError, s.message("errors.session"))
 		return
 	}
 
 	if len(encoded) > authsession.MaxEncodedBytes {
-		api.WriteError(w, http.StatusInternalServerError, s.message("errors.session"))
+		s.writeLoginFailure(w, r, http.StatusInternalServerError, s.message("errors.session"))
 		return
 	}
 	http.SetCookie(w, authsession.Cookie(encoded, stored.IssuedAt, s.cfg.CookieSecure))
@@ -153,4 +156,25 @@ func logLoginRejection(stage provider.LoginStage) {
 	case provider.LoginTransaction, provider.LoginExchange, provider.LoginClaims, provider.LoginGrant, provider.LoginAccount, provider.LoginRefresh:
 		slog.Warn("sign-in rejected", "stage", stage)
 	}
+}
+
+// Browser callbacks recover at a fixed, query-free page. API clients retain JSON errors.
+func (s *Server) writeLoginFailure(w http.ResponseWriter, r *http.Request, status int, message string) {
+	w.Header().Set("Cache-Control", "no-store")
+	w.Header().Set("Vary", "Accept")
+	for _, item := range strings.Split(r.Header.Get("Accept"), ",") {
+		mediaType, params, err := mime.ParseMediaType(strings.TrimSpace(item))
+		if err != nil || mediaType != "text/html" {
+			continue
+		}
+		if quality, ok := params["q"]; ok {
+			q, err := strconv.ParseFloat(quality, 64)
+			if err != nil || !(q > 0 && q <= 1) {
+				continue
+			}
+		}
+		http.Redirect(w, r, "/sign-in-failed", http.StatusSeeOther)
+		return
+	}
+	api.WriteError(w, status, message)
 }

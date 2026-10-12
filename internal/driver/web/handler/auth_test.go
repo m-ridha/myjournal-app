@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/rand"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"net/http/httptest"
@@ -166,5 +167,80 @@ func TestLoginDiagnosticsAllowOnlyKnownStages(t *testing.T) {
 	logLoginRejection(provider.LoginClaims)
 	if !strings.Contains(output.String(), `"stage":"claims"`) || strings.Contains(output.String(), "synthetic-sensitive-value") {
 		t.Fatal("unexpected diagnostic")
+	}
+}
+
+// Denied consent must never reach exchange; grant rejection must not create a session.
+type rejectedLoginProvider struct{ loginProvider }
+
+func (p *rejectedLoginProvider) Complete(context.Context, provider.LoginCallback) (provider.Connection, error) {
+	p.calls++
+	return provider.Connection{}, &provider.LoginError{Stage: provider.LoginGrant, Err: journal.ErrAuthRequired}
+}
+
+func TestBrowserLoginFailureRecovery(t *testing.T) {
+	for _, denied := range []bool{true, false} {
+		t.Run(fmt.Sprint(denied), func(t *testing.T) {
+			now := time.Now().UTC()
+			flow, err := provider.NewLoginFlow("google", now, rand.Reader)
+			if err != nil {
+				t.Fatal(err)
+			}
+			encoded, err := session.EncodeLoginFlow("key", flow)
+			if err != nil {
+				t.Fatal(err)
+			}
+			p := &rejectedLoginProvider{}
+			s := &Server{cfg: Options{SessionKey: "key"}, registry: provider.NewRegistry(p), now: func() time.Time { return now }}
+			s.connections = provider.NewService(s.registry, testClock(s.now), rand.Reader)
+			query := "code=synthetic-code&state=" + flow.State
+			if denied {
+				query = "error=access_denied&state=" + flow.State
+			}
+			r := httptest.NewRequest(http.MethodGet, "/api/v1/auth/google/callback?"+query, nil)
+			r.Header.Set("Accept", "text/html,application/xhtml+xml;q=0.9")
+			r.AddCookie(&http.Cookie{Name: authsession.LoginCookieName, Value: encoded})
+			code, state := "synthetic-code", flow.State
+			w := httptest.NewRecorder()
+			s.CompleteProviderLogin(w, r, "google", api.CompleteProviderLoginParams{Code: &code, State: &state})
+			if w.Code != http.StatusSeeOther || w.Header().Get("Location") != "/sign-in-failed" {
+				t.Fatalf("status=%d location=%q", w.Code, w.Header().Get("Location"))
+			}
+			if strings.Contains(w.Body.String(), flow.State) || strings.Contains(w.Body.String(), "synthetic-code") {
+				t.Fatal("callback secrets reflected")
+			}
+			cleared := false
+			for _, cookie := range w.Result().Cookies() {
+				if cookie.Name == authsession.CookieName {
+					t.Fatal("failure changed session")
+				}
+				if cookie.Name == authsession.LoginCookieName && cookie.MaxAge < 0 {
+					cleared = true
+				}
+			}
+			if !cleared {
+				t.Fatal("pending login cookie retained")
+			}
+			if denied && p.calls != 0 {
+				t.Fatal("cancel reached exchange")
+			}
+			if !denied && p.calls != 1 {
+				t.Fatal("grant rejection not exercised")
+			}
+		})
+	}
+}
+
+func TestLoginFailureContentNegotiation(t *testing.T) {
+	for _, accept := range []string{"", "application/json", "text/html;q=0", "text/html;q=invalid"} {
+		t.Run(accept, func(t *testing.T) {
+			r := httptest.NewRequest(http.MethodGet, "/api/v1/auth/google/callback", nil)
+			r.Header.Set("Accept", accept)
+			w := httptest.NewRecorder()
+			(&Server{}).writeLoginFailure(w, r, http.StatusUnauthorized, "synthetic failure")
+			if w.Code != http.StatusUnauthorized || !strings.HasPrefix(w.Header().Get("Content-Type"), "application/json") {
+				t.Fatalf("status=%d type=%q", w.Code, w.Header().Get("Content-Type"))
+			}
+		})
 	}
 }

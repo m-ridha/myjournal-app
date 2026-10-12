@@ -99,7 +99,7 @@ async def run_browser(base, axe_script):
         for theme in ['light', 'dark']:
             await page.evaluate('(theme) => localStorage.setItem("mj-theme", theme)', theme)
             for path in ['/entries/today', '/entries', '/calendar', '/settings',
-                         '/help', '/privacy', '/terms', '/invalid-page']:
+                         '/help', '/privacy', '/terms', '/sign-in-failed', '/invalid-page']:
                 await page.goto(base + path)
                 if path == '/entries/today':
                     await page.wait_for_function("!document.querySelector('[data-entry-text]').readOnly")
@@ -142,7 +142,7 @@ async def run_browser(base, axe_script):
         for theme in ['light', 'dark']:
             await public_page.goto(base + '/')
             await public_page.evaluate('(theme) => localStorage.setItem("mj-theme", theme)', theme)
-            for path in ['/', '/settings', '/help', '/privacy', '/terms', '/invalid-page']:
+            for path in ['/', '/settings', '/help', '/privacy', '/terms', '/sign-in-failed', '/invalid-page']:
                 response = await public_page.goto(base + path)
                 assert response.status == (404 if path == '/invalid-page' else 200), path
                 assert public_page.url == base + path, public_page.url

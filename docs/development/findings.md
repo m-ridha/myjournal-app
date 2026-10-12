@@ -1117,8 +1117,16 @@ Cache preview concurrency is now ten by user decision. Synthetic 100 ms download
 
 `internal/driver/web/render.go` owns `recentEntriesLimit` (currently 10). Change this constant within the API-supported range 1–100 to change browser requests, response-size validation and both localized descriptions together. Templates expose it through `data-list-limit`; locale strings use `{listLimit}`. API pagination limits remain unchanged. A non-default five-entry JavaScript regression checks the configurable request/response path, and renderer tests check both locales.
 
-Fresh `make fmt lint test`, cache race checks and `git diff --check` passed. Changes are uncommitted; no deployment or live Drive measurement was performed.
+Fresh `make fmt lint test`, cache race checks and `git diff --check` passed at this checkpoint; no deployment or live Drive measurement was performed.
 
-The browser limit was subsequently reduced to 10 by the user. Active README, acceptance/browsing guidance and JavaScript fixtures now reflect ten; earlier twenty-entry QA and benchmark records remain historical evidence. Production JavaScript and localized descriptions already derive the limit from the rendered page and needed no adjustment.
+Changing only the rendering constant from twenty to ten required no production JavaScript or translation changes: both already consume the rendered value. JavaScript fixtures were aligned to ten and retain an independent five-entry case; earlier twenty-entry benchmarks remain valid evidence for their original workload.
 
 Pre-PR review found no blocking issue. Fresh `make fmt lint test`, `go vet ./...`, `go test -race -short ./...`, all 31 architecture probes and `git diff --check` passed. The reviewed branch includes bounded shared reads, operation-local discovery reuse, ten preview workers and the configurable ten-entry browser view. Live Drive speed/throttling and cross-process guarantees remain unverified.
+
+## Browser sign-in failure recovery (2026-10-12)
+
+Cancelled Google consent, rejected required grants and other callback failures accepting HTML now redirect with 303 to `/sign-in-failed`. The EN/ID recovery page explains cancellation, missing permissions and expiry, describes the Drive requirement and provides Back to home for retry. Existing connections and browser drafts remain intact; the pending OAuth cookie is cleared for registered remote-provider callbacks. State/PKCE/nonce checks and provider token-grant verification remain unchanged. No arbitrary callback errors, codes or state values are rendered or forwarded. JSON clients retain existing error envelopes/statuses; the OpenAPI description/303 response is updated and generator output was checked (no generated diff).
+
+The page uses shared typography/theme/navigation, permits language switching back to itself, sends no-store/noindex headers and stays out of the sitemap. Accessibility QA now includes it for signed-in and signed-out contexts in both themes. Fresh `make fmt lint test`, web race checks, and 38 Chrome axe scans plus keyboard checks passed. Automated coverage includes denied consent without exchange, rejected grants without session creation, pending-cookie clearing, preserved session cookies, query-free redirects, JSON fallback, public rendering and both locales. Earlier provider tests continue to verify missing Drive grants are rejected. Axe incomplete checks remain human review items; this is not full accessibility certification. No live Google consent flow or deployment was performed.
+
+All 31 architecture probes and final `git diff --check` also passed; temporary QA server/data/binary and architecture probes were cleaned up. Changes remain uncommitted.

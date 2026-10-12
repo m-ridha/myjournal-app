@@ -226,5 +226,11 @@
   "nav.changeLanguage": "Ubah bahasa; bahasa saat ini: Bahasa Indonesia",
   "footer.github": "Profil GitHub pengembang",
   "footer.copyright": "Copyright © 2026",
-  "entries.recentDescription": "{listLimit} entri terbaru Anda. Temukan entri lama di kalender."
+  "entries.recentDescription": "{listLimit} entri terbaru Anda. Temukan entri lama di kalender.",
+  "signInFailed.title": "Proses masuk belum selesai",
+  "signInFailed.description": "Proses masuk mungkin dibatalkan, izin yang diperlukan belum diberikan, atau percobaan masuk telah kedaluwarsa.",
+  "signInFailed.permission": "myjournal memerlukan izin Google Drive untuk membuka dan menyimpan berkas jurnal Anda.",
+  "signInFailed.retry": "Kembali ke beranda dan coba masuk lagi. Pada layar izin Google, pilih izin Google Drive yang diminta sebelum melanjutkan. Jika masih gagal, coba lagi nanti.",
+  "signInFailed.preserved": "Percobaan yang gagal ini tidak mengeluarkan Anda dari koneksi yang sudah ada atau menghapus draf di browser.",
+  "signInFailed.home": "Kembali ke beranda"
 }

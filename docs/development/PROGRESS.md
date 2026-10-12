@@ -577,27 +577,9 @@ Replaced EN/ID template conditionals with {{upper .Locale}}, backed by strings.T
 
 ## Footer, release metadata and date formatting (2026-10-12)
 
-### Implemented behavior
+Implemented the responsive footer with a local CC0 GitHub icon, build-time release labels, version fields in structured logs, and translated EN/ID date formatting. Release labels support the approved optional suffix policy. Local builds omit the version; the deployment archive supplies RELEASE_VERSION.
 
-- The footer keeps `Built for quiet writing.` independently centered on wide screens, with version and fixed 2026 copyright at the right. At 1100px and narrower, the details form a centered second line. Flex alignment centers the GitHub icon with the copyright text.
-- The profile link uses a local currentColor SVG from [SVG Repo #394174](https://www.svgrepo.com/svg/394174/github), listed as CC0 when checked on 2026-10-12. The downloaded asset was inspected for SVG/path-only geometry. It has translated accessible labels, a tooltip, a 24px minimum target and visible keyboard focus. No external font, script or page request is added.
-- Versions render as plain text; there is no link to the private repository’s release page. Empty versions omit both the label and its separator. Local `make run` does not read a version file or provide a VERSION override.
-- The release workflow writes the validated tag to `RELEASE_VERSION` only in its temporary source archive. No such file or directory is stored in the repository, and there is no gitignore rule for it. Docker reads the optional file, validates a present value, and embeds it through `-X main.version`; an absent file yields an empty version. Wire supplies the embedded value to both locale renderers.
-- Go, Docker and the release workflow use the same strict-core/flexible-suffix pattern: `vX.Y.Z`, optionally followed by dot-separated ASCII alphanumeric/hyphen identifiers. Core numbers reject leading zeros; suffix numbers may contain them. Examples include `v0.3.0-staging`, `v0.5.1-closed-beta` and `v1.2.3-beta.01`. Build metadata with `+` is not accepted. This is a project label policy, not strict SemVer validation.
-- GitHub releases marked prerelease remain skipped. A regular published release with a suffix targets the existing production Railway service; a staging suffix does not select another environment. Readiness, main ancestry, code checks and deployment verification remain required.
-- The composition-root logger attaches nonempty `main.version` using `slog.Logger.With`. Request logs, derived loggers and application failures inherit it; main installs an info-level logger before configuration loading, then replaces it with the configured logger. Empty local versions omit the field.
-- Date formatting reuses translated `date.weekday.*` and `date.month.*` names. English uses ordinal days (`Thursday, October 1st 2026`); Indonesian uses a zero-padded day (`Kamis, 01 Oktober 2026`). The old `format.date` locale key is removed. Other locales still use the English Go-layout fallback; a shared formatting group or locale-owned pattern was discussed but not implemented.
-
-### Recorded evidence and remaining checks
-
-- Implementation checkpoints recorded passing `make fmt lint test` (zero lint issues, six JavaScript suites and all Go packages). Tests cover both locales, version labels/separator omission, invalid versions and version inheritance in logs. Workflow Bash and Docker shell checks covered stable/suffixed/malformed/empty/missing metadata, and confirmed identical regex patterns. These are recorded implementation results, not newly rerun checks for this documentation edit.
-- Earlier footer QA used a synthetic `v1.2.3` binary: Chrome confirmed exact desktop tagline centering at 1512px and a two-line 390px layout without horizontal overflow. Screenshot: `/private/tmp/myjournal-footer-desktop-20261012.png`. That check preceded the final icon/alignment and version-link changes; it does not establish the final visual result or a deployed release version.
-- Three offline deployment lifecycle tests and the sequential 31-probe architecture check passed during the initial footer implementation. The temporary QA server, binary and browser tab were cleaned up.
-- Final footer visual/browser and native screen-reader checks have not been repeated. Docker daemon access was unavailable during initial QA; no Docker image build, production deployment or live release-version log check has been performed for this work.
-
-These consolidated notes supersede the intermediate footer/version experiments from this session. Documentation reconciliation checked current code and repository state; `git diff --check` passed. No runtime tests were rerun for documentation-only edits.
-
-Commit preparation (2026-10-12): fresh make fmt lint test passed with zero lint issues; three offline deployment-helper tests and sequential make test-architecture (31 probes, cleanup complete) passed. git diff --check passed. User authorized committing the current working-tree changes on chore/adding-version-tag-and-ui-improvement. No push, deployment, Docker image build or new browser acceptance was performed.
+Recorded implementation checks passed. Final footer visuals after the icon/alignment changes, Docker image builds and deployed-version checks remain outstanding. See [findings and evidence](findings.md#footer-release-metadata-and-date-formatting-2026-10-12) for source/license checks, validation history and limitations.
 
 ## Bounded overlapping journal reads (2026-10-12)
 
@@ -629,30 +611,18 @@ Recent Entries final verification: sequential `make test-architecture` passed al
 
 ## Cold Entries follow-up (2026-10-12)
 
-The inline Open calendar link and successful-load announcement were removed by user request. The description still mentions Calendar, available through header navigation; loading, errors and Retry retain accessible feedback.
+Completed operation-local year-folder discovery reuse and bounded parallel previews. Removed the extra inline Calendar link and successful-load announcement; loading/error/Retry feedback remains.
 
-Google discovery now derives year-specific folder matches from a complete broad year-folder result already retained within the same operation. Missing or oversized uncached results still use the original query. This removes redundant metadata requests without retaining discovery across operations or changing mutation checks. Cache-decorated previews now permit eight concurrent downloads; direct Google batches retain four workers and avoid idle singleton workers.
-
-Controlled synthetic measurements (not live Drive timings):
-
-| Workload | Metadata calls | Content downloads |
-| --- | ---: | ---: |
-| Cold eight-entry, two-year list | 4 (previously 6) | 8 |
-| Immediate warm list | 0 | 0 |
-| List after updating one visible entry | 3 | 1 |
-
-With a synthetic 100 ms download delay, eight previews dropped from two waves/200 ms to one wave/100 ms; twenty dropped from five waves/500 ms to three/300 ms. Peak concurrency was eight. These results do not establish live Drive speed or throttling behavior. The reported seven-second cold/post-save latency remains unmeasured against Google after this change. Post-save discovery and the invalidated preview remain external work; progressive previews would require a separate API/UI design.
-
-Fresh validation passed: `make fmt lint test`, focused cache/Google/web race checks, all 31 architecture probes, and 34 Chrome axe scans plus keyboard checks. Accessibility automation retains its documented coverage limits. No live Drive measurement, deployment, commit or push was performed.
+Automated and local accessibility checks passed. Live Drive latency after these changes remains unmeasured, and post-save browsing still requires external work. See [cold-load findings](findings.md#cold-entries-follow-up-2026-10-12) for controlled measurements and remaining bottlenecks.
 
 ## Entries limit and preview concurrency (2026-10-12)
 
-Cache preview concurrency is now ten by user decision. Synthetic 100 ms downloads take one wave for eight previews and two for twenty; this is not live Drive latency evidence. The Google direct-batch limit remains four.
+Completed the configurable browser list limit, now ten entries, and raised cache preview concurrency to ten. Requests, response validation and both localized descriptions derive from the same rendering constant. Earlier twenty-entry QA records remain historical.
 
-`internal/driver/web/render.go` owns `recentEntriesLimit` (currently 10). Change this constant within the API-supported range 1–100 to change browser requests, response-size validation and both localized descriptions together. Templates expose it through `data-list-limit`; locale strings use `{listLimit}`. API pagination limits remain unchanged. A non-default five-entry JavaScript regression checks the configurable request/response path, and renderer tests check both locales.
+Pre-PR checks passed and the changes were committed/pushed in [PR #26](https://github.com/mridha-work/myjournal-app/pull/26). See [configuration and concurrency findings](findings.md#entries-limit-and-preview-concurrency-2026-10-12) for implementation details and evidence.
 
-Fresh `make fmt lint test`, cache race checks and `git diff --check` passed. Changes are uncommitted; no deployment or live Drive measurement was performed.
+## Browser sign-in failure recovery (2026-10-12)
 
-The browser limit was subsequently reduced to 10 by the user. Active README, acceptance/browsing guidance and JavaScript fixtures now reflect ten; earlier twenty-entry QA and benchmark records remain historical evidence. Production JavaScript and localized descriptions already derive the limit from the rendered page and needed no adjustment.
+Implemented the public EN/ID `/sign-in-failed` recovery page with Back to home. Browser callback failures redirect there; API clients retain JSON errors. OAuth validation, existing connections and drafts are preserved.
 
-Pre-PR review found no blocking issue. Fresh `make fmt lint test`, `go vet ./...`, `go test -race -short ./...`, all 31 architecture probes and `git diff --check` passed. The reviewed branch includes bounded shared reads, operation-local discovery reuse, ten preview workers and the configurable ten-entry browser view. Live Drive speed/throttling and cross-process guarantees remain unverified.
+Formatting, lint, tests, web race checks, 31 architecture probes and 38 local accessibility scans passed. Live Google consent has not been retested, and these changes remain uncommitted. See [security and validation findings](findings.md#browser-sign-in-failure-recovery-2026-10-12).
