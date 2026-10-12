@@ -93,6 +93,12 @@ func newLocaleRouter(cfg Options, registry *provider.Registry, clk journal.Clock
 		_, localLogin := registry.Get(provider.LocalID)
 		renderer.renderPage(w, pageData{TitleKey: "landing.title", DescriptionKey: "landing.description", SignedIn: false, Page: "landing", GoogleLogin: googleLogin, LocalLogin: localLogin})
 	})
+	r.Get("/sign-in-failed", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
+		w.Header().Set("X-Robots-Tag", "noindex")
+		_, err := currentSession(r, cfg.Session.SessionKey, registry, clk.Now())
+		renderer.renderPage(w, pageData{TitleKey: "signInFailed.title", Page: "signinfailed", SignedIn: err == nil})
+	})
 	r.Get("/entries/today", func(w http.ResponseWriter, r *http.Request) {
 		current, err := currentSession(r, cfg.Session.SessionKey, registry, clk.Now())
 		if err != nil {

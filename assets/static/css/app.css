@@ -615,6 +615,7 @@ html[data-theme="dark"] .icon-moon {
 }
 
 .mj-entry-row {
+  color: var(--mj-text);
   display: grid;
   grid-template-columns: 7.25rem 1fr;
   gap: 1rem;
@@ -625,8 +626,18 @@ html[data-theme="dark"] .icon-moon {
   transition: border-color 120ms ease, transform 120ms ease;
 }
 
-.mj-entry-row:hover {
-  border-color: var(--mj-border-strong);
+.mj-entry-row:hover,
+.mj-entry-row:focus-visible {
+  border-color: var(--mj-text);
+}
+
+.mj-entry-row:focus-visible {
+  outline: 2px solid var(--mj-text);
+  outline-offset: 3px;
+}
+
+.mj-entry-link {
+  color: var(--mj-link);
 }
 
 .mj-entry-row time {

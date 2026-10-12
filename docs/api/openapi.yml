@@ -199,6 +199,8 @@ paths:
         mismatched callbacks are rejected before provider exchange. The pending
         cookie is cleared; failed login preserves any existing session.
         Local development callbacks are exempt from OAuth parameters.
+        Failed callbacks accepting text/html redirect with 303 to the query-free
+        /sign-in-failed recovery page; other clients retain JSON error responses.
       security: []
       operationId: completeProviderLogin
       parameters:
@@ -208,6 +210,8 @@ paths:
       responses:
         '302':
           description: Redirect to authenticated app page
+        '303':
+          description: Browser sign-in failure redirects to /sign-in-failed
         '401':
           $ref: '#/components/responses/Unauthorized'
         '400':

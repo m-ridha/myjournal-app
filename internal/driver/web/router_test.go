@@ -441,3 +441,16 @@ func TestPublicBrandingDisclosuresWithoutSession(t *testing.T) {
 		})
 	}
 }
+
+func TestSignInRecoveryPageIsPublicAndDoesNotReflectCallback(t *testing.T) {
+	cfg := config.Config{BaseURL: testutil.LocalBaseURL, SessionKey: "0123456789abcdef0123456789abcdef"}
+	router := newTestRouter(cfg, provider.NewRegistry(localProvider.New(testutil.LocalBaseURL, "")), clock.System{}, nil)
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, httptest.NewRequest(http.MethodGet, "/sign-in-failed?code=synthetic-secret&error=untrusted-value", nil))
+	if response.Code != http.StatusOK || !strings.HasPrefix(response.Header().Get("Content-Type"), "text/html") || response.Header().Get("X-Robots-Tag") != "noindex" || response.Header().Get("Cache-Control") != "no-store" {
+		t.Fatalf("status=%d headers=%v", response.Code, response.Header())
+	}
+	if strings.Contains(response.Body.String(), "synthetic-secret") || strings.Contains(response.Body.String(), "untrusted-value") {
+		t.Fatal("untrusted callback data reflected")
+	}
+}

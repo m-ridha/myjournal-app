@@ -19,7 +19,7 @@ function setup(search='',initial=payload(),calendarMode=false,listLimit=10) {
  const calendar=element(),label=element(),grid=element(),prev=element(),next=element(),today=element();
  calendar.querySelector=s=>({'[data-calendar-month]':label,'[data-calendar-grid]':grid,'[data-calendar-prev]':prev,'[data-calendar-next]':next,'[data-calendar-today]':today}[s]||null);
  if(calendarMode){delete fields['[data-entry-list]'];fields['[data-calendar]']=calendar;}
- const events={};globalThis.document={documentElement:{lang:'en'},body:{dataset:{messages:'{}',today:'2026-10-09'}},querySelector:s=>fields[s]||null,addEventListener:(name,fn)=>{events[name]=fn;},createElement:()=>element()};
+ const events={};globalThis.document={documentElement:{lang:'en'},body:{dataset:{messages:'{}',today:'2026-10-09'}},querySelector:s=>fields[s]||null,addEventListener:(name,fn)=>{events[name]=fn;},createElement:tag=>Object.assign(element(),{tagName:tag.toUpperCase()})};
  globalThis.window={location:{search,href:''},addEventListener(){}};
  const calls=[],queue=[initial];globalThis.fetch=async(url)=>{calls.push(url);if(!queue.length)throw new Error('unplanned request');return queue.shift();};
  if(typeof require==='function')(0,eval)(require('node:fs').readFileSync('assets/static/js/app.js','utf8'));else load('assets/static/js/app.js');
@@ -29,6 +29,7 @@ async function run() {
  let custom=setup('',{ok:true,json:async()=>({page:1,pageSize:5,items:[]})},false,5);await tick();assert(custom.calls[0]==='/api/v1/entries?page=1&size=5' && custom.status.textContent==='', 'rendered limit controls requests and response validation');
  let f=setup('',payload(1,true,[{date:'2026-01-02',preview:'<script>plain text</script>'},{date:'2025-12-31',preview:'previous year'}]));await tick();
  assert(f.calls[0]==='/api/v1/entries?page=1&size=10','Entries requests only the latest ten');
+ const row=f.list.children[0].children[1];assert(row.tagName==='A' && row.href==='/entries/2026-01-02','whole entry row is a native navigation link');assert(row.children[1].children[1].tagName==='SPAN','Open entry remains a label without a nested interactive link');
  assert(f.list.children.length===2 && f.list.children[0].children[0].textContent==='2026','group entries newest-year first');
  assert(f.list.children[0].children[1].children[1].children[0].textContent==='<script>plain text</script>','previews remain plain text');
  for(const search of ['?page=2','?page=3','?page=10000','?page=0','?page=-1','?page=10001','?page=1.5','?page=abc','?size=100']) {f=setup(search);await tick();assert(f.calls.length===1&&f.calls[0]==='/api/v1/entries?page=1&size=10','URL parameters cannot expand recent entries browsing');}

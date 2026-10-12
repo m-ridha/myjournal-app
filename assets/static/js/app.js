@@ -623,8 +623,9 @@
 
             const items = years.get(year).sort((a, b) => b.date.localeCompare(a.date));
             items.forEach((item) => {
-              const article = document.createElement('article');
-              article.className = 'mj-entry-row';
+              const row = document.createElement('a');
+              row.href = `/entries/${item.date}`;
+              row.className = 'mj-entry-row';
 
               const time = document.createElement('time');
               time.dateTime = item.date;
@@ -636,15 +637,14 @@
               title.textContent = item.preview || t('entries.previewUnavailable');
               body.appendChild(title);
 
-              const link = document.createElement('a');
-              link.href = `/entries/${item.date}`;
+              const link = document.createElement('span');
               link.className = 'mj-entry-link';
               link.textContent = t('entries.open');
               body.appendChild(link);
 
-              article.appendChild(time);
-              article.appendChild(body);
-              yearSection.appendChild(article);
+              row.appendChild(time);
+              row.appendChild(body);
+              yearSection.appendChild(row);
             });
 
             listRoot.appendChild(yearSection);
