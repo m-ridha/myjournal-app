@@ -574,19 +574,14 @@
     const listRoot = document.querySelector('[data-entry-list]');
     if (!listRoot) return;
 
-    const newer = document.querySelector('[data-entries-newer]');
-    const older = document.querySelector('[data-entries-older]');
     const status = document.querySelector('[data-entries-status]');
     const retry = document.querySelector('[data-entries-retry]');
-    const requested = new URLSearchParams(window.location.search).get('page');
-    const page = /^[1-9]\d*$/.test(requested || '') && Number(requested) <= 10000 ? Number(requested) : 1;
-    if (newer) { newer.hidden = page === 1; newer.href = `/entries?page=${page - 1}`; }
 
     function loadEntries() {
       if (retry) { retry.disabled = true; retry.hidden = true; }
       listRoot.setAttribute('aria-busy', 'true');
       if (status) status.textContent = t('entries.loading');
-      return fetch(`/api/v1/entries?page=${page}&size=20`)
+      return fetch('/api/v1/entries?page=1&size=20')
         .then(async (response) => {
           if (!response.ok) {
             throw new Error(t('entries.unavailable'));
@@ -594,9 +589,8 @@
           return response.json();
         })
         .then((data) => {
-          if (!Array.isArray(data.items) || data.page !== page || typeof data.hasNext !== 'boolean') throw new Error('invalid list');
-          if (older) { older.hidden = !data.hasNext || page >= 10000; older.href = `/entries?page=${page + 1}`; }
-          if (status) status.textContent = t('entries.page', { page });
+          if (!Array.isArray(data.items) || data.items.length > 20 || data.page !== 1 || data.pageSize !== 20) throw new Error('invalid list');
+          if (status) status.textContent = '';
           listRoot.innerHTML = '';
           if (!data.items || data.items.length === 0) {
             const empty = document.createElement('p');
@@ -659,7 +653,6 @@
           error.className = 'mj-empty-state';
           error.textContent = t('entries.unavailable');
           listRoot.replaceChildren(error);
-          if (older) older.hidden = true;
           if (retry) retry.hidden = false;
           if (status) status.textContent = t('entries.unavailable');
         }).finally(() => {

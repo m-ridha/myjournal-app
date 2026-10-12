@@ -34,7 +34,7 @@ Goal: business rules work behind ports, with a reliable development provider.
 - LF normalization, valid UTF-8 input handling, and UTF-8-safe first-meaningful-line previews.
 - Browser-zone dates, injected-clock midnight/DST coverage, future-date rejection, and fixed selected dates.
 - Stale save, save-after-delete, and created/deleted-elsewhere conflict semantics.
-- Newest-first lazy pagination across years; safe bounds; page-only previews and one-item lookahead.
+- Newest-first lazy API pagination across years; safe bounds; page-only previews and one-item lookahead. The browser Entries view is limited to the latest 20, with Calendar for older notes (user decision, 2026-10-12).
 - Calendar grids and entry/today/future markers using the same date authority, with Monday first.
 - Provider registry/config validation and development-only local registration.
 - Shared bounded account-isolated cache, concurrent invalidation correctness, precise TTL expiry and bounded BigCache eviction (ADR 017; replaces the custom 2048-entry LRU), and Get bypass.

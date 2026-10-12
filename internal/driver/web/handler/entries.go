@@ -34,7 +34,7 @@ func (s *Server) ListEntries(w http.ResponseWriter, r *http.Request, params api.
 		size = *params.Size
 	}
 
-	result, err := service.Page(r.Context(), page, size)
+	result, err := service.ListEntries(r.Context(), page, size)
 	if err != nil {
 		s.writeServiceError(w, err)
 		return

@@ -72,7 +72,7 @@ func newJournalCache() (*cachestore.Cache, func(), error) {
 }
 
 func newServiceFactory(registry *provider.Registry, cache *cachestore.Cache, clk journal.Clock) webHandler.ServiceFactory {
-	return func(ctx context.Context, current provider.Session) (*journal.Service, error) {
+	return func(ctx context.Context, current provider.Session) (webHandler.JournalService, error) {
 		p, ok := registry.Get(current.ProviderID)
 		if !ok {
 			return nil, fmt.Errorf("session provider is not configured")

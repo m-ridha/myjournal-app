@@ -19,7 +19,18 @@ type Options struct {
 	CookieSecure bool
 }
 
-type ServiceFactory func(context.Context, provider.Session) (*journal.Service, error)
+// JournalService is the journal use-case contract consumed by HTTP handlers.
+// Constructors in core continue to return their concrete implementation.
+type JournalService interface {
+	ListEntries(ctx context.Context, page, size int) (journal.ListPage, error)
+	Open(ctx context.Context, d journal.Date) (journal.Entry, error)
+	Save(ctx context.Context, d journal.Date, text string, base journal.Version) (journal.Entry, error)
+	Delete(ctx context.Context, d journal.Date) error
+	Month(ctx context.Context, year int, month time.Month) (journal.MonthView, error)
+}
+
+// ServiceFactory resolves a journal service for the validated browser session.
+type ServiceFactory func(context.Context, provider.Session) (JournalService, error)
 
 var ErrUnauthenticated = errors.New("authentication required")
 
@@ -45,7 +56,7 @@ func (s *Server) currentSession(r *http.Request) (provider.Session, error) {
 	return authsession.Read(r, s.cfg.SessionKey, s.registry, s.now())
 }
 
-func (s *Server) service(r *http.Request) (*journal.Service, error) {
+func (s *Server) service(r *http.Request) (JournalService, error) {
 	current, err := s.currentSession(r)
 	if err != nil {
 		return nil, err

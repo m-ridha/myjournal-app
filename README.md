@@ -8,7 +8,7 @@ Contributor instructions are in [AGENTS.md](AGENTS.md). See [progress](docs/deve
 
 - One UTF-8 plain-text entry per day, with browser-time-zone dates and editable past entries.
 - Manual save and idle autosave, per-tab draft recovery, conflict-resolution controls and confirmed trash.
-- Paginated previews, calendar navigation, light/dark themes and account settings.
+- Previews for your latest 20 entries, calendar navigation for older notes, light/dark themes and account settings.
 - Google sign-in and Drive storage, with a local provider for development.
 - English and Bahasa Indonesia interfaces, selectable from the header or Settings, including before sign-in. Your choice stays in this browser after sign-out; English is the default.
 

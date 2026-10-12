@@ -74,7 +74,7 @@ func (r *Registry) List() []Provider {
 
 // FolderLocator supplies an existing provider folder link without creating paths.
 type FolderLocator interface {
-	FolderURL(context.Context, Connection) (string, error)
+	FolderURL(ctx context.Context, c Connection) (string, error)
 }
 
 // LoginStage identifies a bounded, non-sensitive authentication rejection category.

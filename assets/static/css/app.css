@@ -884,7 +884,8 @@ html[data-theme="dark"] .icon-moon {
   margin-top: 0.85rem;
 }
 
-.mj-public-copy a {
+.mj-public-copy a,
+.mj-lead a {
   text-decoration: underline;
   text-underline-offset: 0.2em;
 }

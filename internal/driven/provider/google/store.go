@@ -140,6 +140,27 @@ func (s *Store) folders(ctx context.Context, role, root, year string) ([]*drive.
 		q += " and " + property(propertyRoot, root)
 	}
 	if year != "" {
+		// ListYears already fetched all tagged year folders for this root.
+		// Reuse that complete operation-local result instead of another round trip.
+		if role == roleYear && s.discovery != nil {
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
+			s.discovery.mu.Lock()
+			files, ok := s.discovery.queries[q]
+			var matching []*drive.File
+			if ok {
+				for _, file := range files {
+					if file.AppProperties[propertyYear] == year {
+						matching = append(matching, file)
+					}
+				}
+			}
+			s.discovery.mu.Unlock()
+			if ok {
+				return matching, nil
+			}
+		}
 		q += " and " + property(propertyYear, year)
 	}
 	return s.list(ctx, q)
@@ -411,7 +432,7 @@ func (s *Store) Previews(ctx context.Context, dates []journal.Date, maxBytes int
 	jobs := make(chan journal.Date)
 	var group sync.WaitGroup
 	var first error
-	for range previewWorkers {
+	for range min(previewWorkers, len(dates)) {
 		group.Go(func() {
 			for date := range jobs {
 				file := files[date]

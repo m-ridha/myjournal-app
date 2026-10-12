@@ -1078,3 +1078,35 @@ Commit preparation (2026-10-12): fresh make fmt lint test passed with zero lint 
 ### Shared button hover border (2026-10-12)
 
 Help and Today now share the theme-text border accent used by header/icon controls. The shared enabled-button hover/focus rule also covers the Settings language trigger and trash; Save uses the same border while retaining its green action background, and trash retains its danger tint. Disabled/aria-disabled controls are excluded from the new accent, and generic button lift now excludes them. Fresh make fmt lint test and git diff --check passed. No browser visual or accessibility scan was rerun. The user subsequently authorized committing this change and opening a PR for the current branch.
+
+## Overlapping storage work (2026-10-12)
+
+The existing operation-scoped discovery and TTL caches did not collapse concurrent cold misses. The shared journal cache decorator now uses singleflight for public Store reads, benefiting both current providers and future adapters wired through it. Provider/account, generation and read parameters isolate flights; successful work is shared across devices with different grants. Save/trash attempts separate subsequent flights; mutations are never collapsed. Completed editor content is never persisted by the coordinator. Google-specific discovery remains operation-local. [ADR 019](adr/019-overlapping-journal-reads.md) records bounds, cancellation behavior and tradeoffs.
+
+Synthetic eight-request Entries coverage reduced downloads from 160 to 20 and metadata lists from 32 to 8; calendars reduced metadata lists from 24 to 3. Different Store operations no longer share individual Google folder queries, so the earlier uncommitted Google-specific 4-list result is superseded. Existing TTL staleness, deployment overlap and external-edit risks remain. See [Progress](PROGRESS.md#bounded-overlapping-journal-reads-2026-10-12) and the [performance report](performance-benchmark.md#overlapping-drive-reads-2026-10-12) for fresh checks and measurement limits. No live latency improvement or unrestricted release acceptance is asserted.
+
+Provider/account sharing refinement: credential fingerprints and `WrapScoped` were removed by user decision so different laptops/grants share successful reads. An authentication failure does not automatically fail followers: each can verify once through its own Store, under the same coordination admission bound. Both-expired credentials return authentication errors without a retry loop. Fresh full formatting/lint/tests and focused race checks passed; no live multi-device Google measurement was performed.
+
+## Recent Entries and Go boundary triage (2026-10-12)
+
+Confirmed early termination in renamed `Service.ListEntries`: it retains size+1 dates, stops older-year traversal once that lookahead is filled, and previews only returned dates. Complete per-year metadata still loads for each visited year. The browser now shows only the latest twenty and routes older-note browsing to Calendar; legacy URL query parameters cannot request later pages through this UI. The API retains pagination and validation.
+
+The handler-owned `JournalService` interface replaces the concrete factory return; a direct stub test proves isolated handler use. Existing preview concurrency remains bounded at four; additional year prefetch/worker increases need measurement. [The review](go-concurrency-interface-review.md) records other interface candidates without introducing unused abstractions. Fresh full checks and focused race tests passed. Chrome verified the twenty-entry limit with 25 synthetic entries and both locale behavior; 34 axe scans passed after fixing the new Calendar link's color-only distinction. These are local/synthetic checks, not Drive latency or native screen-reader acceptance.
+
+## Cold Entries follow-up (2026-10-12)
+
+The inline Open calendar link and successful-load announcement were removed by user request. The description still mentions Calendar, available through header navigation; loading, errors and Retry retain accessible feedback.
+
+Google discovery now derives year-specific folder matches from a complete broad year-folder result already retained within the same operation. Missing or oversized uncached results still use the original query. This removes redundant metadata requests without retaining discovery across operations or changing mutation checks. Cache-decorated previews now permit eight concurrent downloads; direct Google batches retain four workers and avoid idle singleton workers.
+
+Controlled synthetic measurements (not live Drive timings):
+
+| Workload | Metadata calls | Content downloads |
+| --- | ---: | ---: |
+| Cold eight-entry, two-year list | 4 (previously 6) | 8 |
+| Immediate warm list | 0 | 0 |
+| List after updating one visible entry | 3 | 1 |
+
+With a synthetic 100 ms download delay, eight previews dropped from two waves/200 ms to one wave/100 ms; twenty dropped from five waves/500 ms to three/300 ms. Peak concurrency was eight. These results do not establish live Drive speed or throttling behavior. The reported seven-second cold/post-save latency remains unmeasured against Google after this change. Post-save discovery and the invalidated preview remain external work; progressive previews would require a separate API/UI design.
+
+Fresh validation passed: `make fmt lint test`, focused cache/Google/web race checks, all 31 architecture probes, and 34 Chrome axe scans plus keyboard checks. Accessibility automation retains its documented coverage limits. No live Drive measurement, deployment, commit or push was performed.

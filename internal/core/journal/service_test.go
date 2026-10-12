@@ -116,19 +116,19 @@ func TestServiceSaveNormalizesText(t *testing.T) {
 	}
 }
 
-func TestServicePageLoadsOnlyRequestedPreviews(t *testing.T) {
+func TestServiceListEntriesLoadsOnlyRequestedPreviews(t *testing.T) {
 	store := newInMemStore()
 	store.entries[Date{Year: 2026, Month: 9, Day: 21}] = Entry{Date: Date{Year: 2026, Month: 9, Day: 21}, Text: "newest", Exists: true}
 	store.entries[Date{Year: 2026, Month: 9, Day: 20}] = Entry{Date: Date{Year: 2026, Month: 9, Day: 20}, Text: "next", Exists: true}
 	store.entries[Date{Year: 2025, Month: 12, Day: 31}] = Entry{Date: Date{Year: 2025, Month: 12, Day: 31}, Text: "older", Exists: true}
 	service := NewService(store, testutil.StubClock{Time: time.Date(2026, 9, 21, 12, 0, 0, 0, time.UTC)})
 
-	page, err := service.Page(context.Background(), 1, 1)
+	page, err := service.ListEntries(context.Background(), 1, 1)
 	if err != nil {
-		t.Fatalf("Page() error = %v", err)
+		t.Fatalf("ListEntries() error = %v", err)
 	}
 	if len(page.Items) != 1 || page.Items[0].Date != (Date{Year: 2026, Month: 9, Day: 21}) || page.Items[0].Preview != "newest" || !page.HasNext {
-		t.Fatalf("Page() = %#v, want newest item with HasNext", page)
+		t.Fatalf("ListEntries() = %#v, want newest item with HasNext", page)
 	}
 	if store.previewCalls != 1 || len(store.lastPreviewDates) != 1 {
 		t.Fatalf("preview calls/dates = %d/%d, want 1/1", store.previewCalls, len(store.lastPreviewDates))
@@ -163,7 +163,7 @@ func TestServiceMonthUsesYearIndexInsteadOfPerDayReads(t *testing.T) {
 func TestPaginationRejectsUnsafeBounds(t *testing.T) {
 	for _, pair := range [][2]int{{0, 20}, {-1, 20}, {MaxPage + 1, 20}, {int(^uint(0) >> 1), 100}, {1, 0}, {1, -1}, {1, MaxPageSize + 1}} {
 		store := newInMemStore()
-		_, err := NewService(store, testutil.StubClock{}).Page(context.Background(), pair[0], pair[1])
+		_, err := NewService(store, testutil.StubClock{}).ListEntries(context.Background(), pair[0], pair[1])
 		if err != ErrInvalidPagination {
 			t.Fatalf("Page(%d,%d): %v", pair[0], pair[1], err)
 		}
@@ -183,7 +183,7 @@ func TestPaginationAcrossYearsAndEmptyPage(t *testing.T) {
 		store.entries[date] = Entry{Date: date, Text: value}
 	}
 	service := NewService(store, testutil.StubClock{})
-	page, err := service.Page(context.Background(), 2, 2)
+	page, err := service.ListEntries(context.Background(), 2, 2)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -191,11 +191,31 @@ func TestPaginationAcrossYearsAndEmptyPage(t *testing.T) {
 		t.Fatalf("page=%#v", page)
 	}
 	calls := store.previewCalls
-	empty, err := service.Page(context.Background(), MaxPage, MaxPageSize)
+	empty, err := service.ListEntries(context.Background(), MaxPage, MaxPageSize)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if len(empty.Items) != 0 || empty.HasNext || store.previewCalls != calls {
 		t.Fatalf("empty=%#v", empty)
+	}
+}
+
+func TestListEntriesTwentyStopsBeforeOlderYear(t *testing.T) {
+	store := newInMemStore()
+	for day := 1; day <= 21; day++ {
+		date := Date{Year: 2026, Month: 1, Day: day}
+		store.entries[date] = Entry{Date: date, Text: "synthetic", Exists: true}
+	}
+	older := Date{Year: 2025, Month: 12, Day: 31}
+	store.entries[older] = Entry{Date: older, Text: "older", Exists: true}
+	result, err := NewService(store, testutil.StubClock{}).ListEntries(context.Background(), 1, 20)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(result.Items) != 20 || !result.HasNext || result.Items[0].Date.Day != 21 || result.Items[19].Date.Day != 2 {
+		t.Fatalf("latest twenty: %+v", result)
+	}
+	if store.listYearCalls != 1 || len(store.lastPreviewDates) != 20 || store.getCalls != 0 {
+		t.Fatalf("years=%d previews=%d downloads=%d", store.listYearCalls, len(store.lastPreviewDates), store.getCalls)
 	}
 }

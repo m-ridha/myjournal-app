@@ -598,3 +598,49 @@ Replaced EN/ID template conditionals with {{upper .Locale}}, backed by strings.T
 These consolidated notes supersede the intermediate footer/version experiments from this session. Documentation reconciliation checked current code and repository state; `git diff --check` passed. No runtime tests were rerun for documentation-only edits.
 
 Commit preparation (2026-10-12): fresh make fmt lint test passed with zero lint issues; three offline deployment-helper tests and sequential make test-architecture (31 probes, cleanup complete) passed. git diff --check passed. User authorized committing the current working-tree changes on chore/adding-version-tag-and-ui-improvement. No push, deployment, Docker image build or new browser acceptance was performed.
+
+## Bounded overlapping journal reads (2026-10-12)
+
+Implemented provider-independent request collapsing in the journal cache decorator using `golang.org/x/sync/singleflight` ([ADR 019](adr/019-overlapping-journal-reads.md)). It shares index misses, editor reads, identical preview batches and matching dates across different batches. The composition root supplies the validated provider/account, sharing both active reads and TTL snapshots across devices with different grants. Wire was regenerated. The earlier uncommitted Google-specific coordinator was replaced at the user's request.
+
+Separate bounded batch/read coordinators prevent nested admission deadlocks; each admits 64 distinct keys and 320 registrations, including cancelled callers until their result drains. Leaders use request-derived 30-second deadlines. Surviving followers retry cancelled leaders through their own Store/OAuth context. Completed editor content/errors are discarded. Save/trash advance generations and remain independent; existing TTL invalidation/generation guards remain intact. Google keeps operation-scoped discovery reuse, using singleflight with short metadata locks and generation-safe clearing. `.golangci.yml` narrowly permits singleflight/errgroup in cache policy without allowing concrete providers or storage adapters there.
+
+Controlled eight-request fixtures recorded Entries 32 lists/160 downloads versus 8/20, Calendar 24/0 versus 3/0, mixed browsing 28/80 versus 8/20, and editor reads 24/8 versus 3/1. Partially overlapping preview batches retain the four-to-three download reduction. See [measurements and limitations](performance-benchmark.md#overlapping-drive-reads-2026-10-12). These are mocked request counts, not live Drive latency. The earlier Google-specific 4-list Entries/mixed results are superseded by this provider-independent implementation.
+
+Fresh validation: `make fmt lint test` passed (zero lint issues, all Go packages and six JavaScript suites); focused race checks covered Google, journal cache and composition-root packages. Concurrent browsing, OAuth cancellation, post-mutation reads and overlapping previews passed twenty repetitions. Sequential architecture validation and final checks are recorded below. No live Google traffic, deployment, commit or push was performed. Cross-process coordination, active cancellation on disconnect and atomic external-writer protection remain outside this change.
+
+Final verification for the shared implementation: `make fmt lint test` passed with zero lint issues; `go test -race ./internal/driven/cache/journal ./internal/driven/provider/google ./cmd/app` passed. The sequential `make test-architecture` passed all 31 forbidden-import probes with cleanup complete. `git diff --check` passed. Discovery-clear regression coverage confirms that older active loads neither attract post-clear callers nor refill the cleared snapshot. No commit or push was made.
+
+Account-level sharing refinement: the user explicitly selected provider/account as the shared-read boundary across laptops/grants. Removed the credential digest and `WrapScoped`; the composition root again calls `cache.Wrap(providerID+":"+accountID, store)` after provider validation, and Wire was regenerated. Successful reads share across request-owned Stores. A follower of `ErrAuthRequired` performs one bounded retry through its own Store, retaining admission until that retry ends; leaders and failed independent retries return their own errors. Regression tests first failed without authentication retry, then passed for shared success, expired-leader/valid-follower and both-expired cases. Fresh `make fmt lint test` and focused Google/cache/composition-root race checks passed. Existing cancellation and mutation-generation behavior is retained.
+
+Account-sharing final check: sequential `make test-architecture` passed all 31 probes and removed its temporary files; `git diff --check` passed. Changes remain uncommitted.
+
+## Recent Entries and handler service contract (2026-10-12)
+
+Renamed core `Service.Page` to `ListEntries` across callers/tests/benchmarks. Confirmed the existing loop stops at the requested page plus one date; a new twenty-entry regression verifies that it skips older years when the current year supplies the lookahead. Visited years still load complete metadata indexes, and lookahead may visit an older year when exactly twenty dates exhaust the newest year.
+
+By user decision, browser Entries now always requests `/api/v1/entries?page=1&size=20`, ignores pagination/size URL parameters, removes Older/Newer controls and describes the latest-twenty limit with a Calendar link in both locales. Retry stays on the first page; malformed oversized responses are rejected. API pagination/bounds and the JSON envelope are retained. Updated README, acceptance and browsing checklists.
+
+`handler.JournalService` is the consumer-owned HTTP use-case contract; `ServiceFactory` returns it while core constructors stay concrete. Regenerated Wire. A stub-service handler regression verifies successful/error responses and forwarded arguments without constructing the real journal service. [Concurrency/interface triage](go-concurrency-interface-review.md) records current parallel preview behavior, dependent operations and measured-follow-up candidates; no speculative year prefetch or blanket interface conversion was added.
+
+Fresh `make fmt lint test` passed (zero lint issues, all Go packages and six JavaScript suites). Focused race checks passed for journal, web, cache, Google and composition-root packages. Chrome with 25 temporary entries confirmed the latest twenty, fixed page/size, absent pagination, older Calendar access, Indonesian copy and no horizontal overflow at 390px. Accessibility initially caught an inline-link distinction failure; a persistent underline fixed it, and a fresh rerun passed all 34 axe scans and keyboard checks. The report retains incomplete checks and does not establish full WCAG conformance or new screen-reader evidence. Owned QA servers/data were cleaned up. No live Drive traffic, commit, push or deployment was performed.
+
+Recent Entries final verification: sequential `make test-architecture` passed all 31 forbidden-import probes and cleaned its temporary files; `git diff --check` passed. Changes remain uncommitted in the current branch.
+
+## Cold Entries follow-up (2026-10-12)
+
+The inline Open calendar link and successful-load announcement were removed by user request. The description still mentions Calendar, available through header navigation; loading, errors and Retry retain accessible feedback.
+
+Google discovery now derives year-specific folder matches from a complete broad year-folder result already retained within the same operation. Missing or oversized uncached results still use the original query. This removes redundant metadata requests without retaining discovery across operations or changing mutation checks. Cache-decorated previews now permit eight concurrent downloads; direct Google batches retain four workers and avoid idle singleton workers.
+
+Controlled synthetic measurements (not live Drive timings):
+
+| Workload | Metadata calls | Content downloads |
+| --- | ---: | ---: |
+| Cold eight-entry, two-year list | 4 (previously 6) | 8 |
+| Immediate warm list | 0 | 0 |
+| List after updating one visible entry | 3 | 1 |
+
+With a synthetic 100 ms download delay, eight previews dropped from two waves/200 ms to one wave/100 ms; twenty dropped from five waves/500 ms to three/300 ms. Peak concurrency was eight. These results do not establish live Drive speed or throttling behavior. The reported seven-second cold/post-save latency remains unmeasured against Google after this change. Post-save discovery and the invalidated preview remain external work; progressive previews would require a separate API/UI design.
+
+Fresh validation passed: `make fmt lint test`, focused cache/Google/web race checks, all 31 architecture probes, and 34 Chrome axe scans plus keyboard checks. Accessibility automation retains its documented coverage limits. No live Drive measurement, deployment, commit or push was performed.

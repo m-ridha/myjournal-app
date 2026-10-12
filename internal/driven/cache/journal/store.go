@@ -16,8 +16,8 @@ var ErrCapacity = errors.New("cache capacity exceeded")
 // removes all matching current keys; it is not a distributed transaction. Methods
 // honor cancellation, including lock waits, and return explicit failures.
 type ByteCache interface {
-	Get(context.Context, string) ([]byte, error)
-	Set(context.Context, string, []byte) error
-	Delete(context.Context, string) error
-	DeletePrefix(context.Context, string) error
+	Get(ctx context.Context, key string) ([]byte, error)
+	Set(ctx context.Context, key string, value []byte) error
+	Delete(ctx context.Context, key string) error
+	DeletePrefix(ctx context.Context, prefix string) error
 }
