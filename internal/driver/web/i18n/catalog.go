@@ -41,6 +41,9 @@ func (c Catalog) Locale() string {
 }
 
 func (c Catalog) FormatDate(date time.Time) string {
+	if c.locale == "id" {
+		return fmt.Sprintf("%s, %02d %s %d", c.Text(fmt.Sprintf("date.weekday.%d", date.Weekday())), date.Day(), c.Text(fmt.Sprintf("date.month.%d", date.Month())), date.Year())
+	}
 	layout := c.Text("format.date")
 	if layout == "format.date" {
 		layout = "Monday, 02 January 2006"

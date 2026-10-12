@@ -24,6 +24,26 @@ import (
 
 func NewRouter(cfg Options, registry *provider.Registry, clk journal.Clock, serviceFactory handler.ServiceFactory, renderer *Renderer, connections *provider.Service) http.Handler {
 
+	// Build immutable language-specific handlers once; requests never mutate a
+	// shared renderer or API handler's catalog.
+	handlers := make(map[string]http.Handler, len(renderer.languages))
+	for locale, localized := range renderer.languages {
+		handlers[locale] = newLocaleRouter(cfg, registry, clk, serviceFactory, localized, connections)
+	}
+	fallback := handlers["en"]
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		selected := fallback
+		if cookie, err := r.Cookie(languageCookieName); err == nil {
+			if localized, ok := handlers[cookie.Value]; ok {
+				selected = localized
+			}
+		}
+		selected.ServeHTTP(w, r)
+	})
+}
+
+func newLocaleRouter(cfg Options, registry *provider.Registry, clk journal.Clock, serviceFactory handler.ServiceFactory, renderer *Renderer, connections *provider.Service) http.Handler {
+
 	r := chi.NewRouter()
 	r.Use(webMiddleware.SecurityHeaders)
 	// Trust startup configuration rather than client-supplied proxy headers.
@@ -61,6 +81,7 @@ func NewRouter(cfg Options, registry *provider.Registry, clk journal.Clock, serv
 	})
 
 	registerDiscoveryRoutes(r, cfg.BaseURL)
+	registerLanguageRoute(r, cfg, registry, clk, renderer)
 
 	// Web routes
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {

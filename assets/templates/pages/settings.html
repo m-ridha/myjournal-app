@@ -1,29 +1,55 @@
 {{define "settings"}}
-<section class="mj-page-card">
-  <header class="mj-page-header">
-    <div>
-      <p class="mj-kicker">{{t "settings.kicker"}}</p>
-      <h1>{{t "settings.title"}}</h1>
-    </div>
+<article class="mj-page-card mj-public-copy mj-reading-page mj-settings-page">
+  <header>
+    <p class="mj-kicker">{{t "settings.kicker"}}</p>
+    <h1>{{t "settings.title"}}</h1>
+    <p class="mj-lead">{{t "settings.description"}}</p>
   </header>
 
-  <div class="mj-settings-list">
-    <div class="mj-setting-row">
-      <span>{{t "settings.account"}}</span>
-      <strong>{{.AccountName}}</strong>
-    </div>
-    <div class="mj-setting-row">
-      <span>{{t "settings.journalFolder"}}</span>
-      {{if .FolderUnavailable}}<span role="status">{{t "settings.folderUnavailable"}} <a href="/settings">{{t "settings.retry"}}</a></span>{{else if .FolderURL}}<a href="{{.FolderURL}}" target="_blank" rel="noopener noreferrer">{{.FolderName}}</a>{{else}}<strong>{{.FolderName}}</strong>{{end}}
-    </div>
+  <section aria-labelledby="language-heading">
+    <h2 id="language-heading"><label for="language">{{t "settings.language"}}</label></h2>
+    <p id="language-help">{{t "settings.languageHelp"}}</p>
+    <form class="mj-language-form" method="post" action="/settings/language">
+      <div class="mj-language-picker" data-language-picker>
+      <select id="language" name="language" aria-describedby="language-help">
+        <option value="en"{{if eq .Locale "en"}} selected{{end}} lang="en">English</option>
+        <option value="id"{{if eq .Locale "id"}} selected{{end}} lang="id">Bahasa Indonesia</option>
+      </select>
+      <div data-language-custom hidden>
+        <button class="mj-language-trigger" type="button" data-language-trigger aria-haspopup="listbox" aria-expanded="false" aria-controls="language-options" aria-labelledby="language-heading language-value" aria-describedby="language-help">
+          <span class="mj-language-globe" aria-hidden="true"></span>
+          <span id="language-value" data-language-value>{{if eq .Locale "id"}}Bahasa Indonesia{{else}}English{{end}}</span>
+          <span class="mj-language-arrow" aria-hidden="true"></span>
+        </button>
+        <div class="mj-language-options" id="language-options" role="listbox" aria-labelledby="language-heading" hidden>
+          <button type="button" role="option" data-language-option="en" aria-selected="{{if eq .Locale "en"}}true{{else}}false{{end}}" tabindex="-1" lang="en">English</button>
+          <button type="button" role="option" data-language-option="id" aria-selected="{{if eq .Locale "id"}}true{{else}}false{{end}}" tabindex="-1" lang="id">Bahasa Indonesia</button>
+        </div>
+      </div>
+      </div>
+      <button class="mj-btn mj-btn-secondary" type="submit">{{t "settings.languageSave"}}</button>
+    </form>
+  </section>
 
-  </div>
+  <section aria-labelledby="connection-heading">
+    <h2 id="connection-heading">{{t "settings.connection"}}</h2>
+    <dl class="mj-settings-list">
+      <div class="mj-setting-row">
+        <dt>{{t "settings.account"}}</dt>
+        <dd>{{.AccountName}}</dd>
+      </div>
+      <div class="mj-setting-row">
+        <dt>{{t "settings.journalFolder"}}</dt>
+        <dd>{{if .FolderUnavailable}}<span role="status">{{t "settings.folderUnavailable"}} <a href="/settings">{{t "settings.retry"}}</a></span>{{else if .FolderURL}}<a href="{{.FolderURL}}" target="_blank" rel="noopener noreferrer">{{.FolderName}}</a>{{else}}{{.FolderName}}{{end}}</dd>
+      </div>
+    </dl>
+    <p>{{t "settings.disconnectHelp"}}</p>
+    <div class="mj-settings-actions">
+      <button class="mj-btn mj-btn-secondary" type="button" data-sign-out>{{t "settings.signOut"}}</button>
+      <button class="mj-btn mj-btn-secondary mj-danger" type="button" data-disconnect>{{t "settings.disconnect"}}</button>
+      <p role="status" aria-live="polite" data-sign-out-status></p>
+    </div>
+  </section>
 
-  <p>{{t "settings.disconnectHelp"}}</p>
-  <div class="mj-settings-actions">
-    <button class="mj-btn mj-btn-secondary" type="button" data-sign-out>{{t "settings.signOut"}}</button>
-    <button class="mj-btn mj-btn-secondary mj-danger" type="button" data-disconnect>{{t "settings.disconnect"}}</button>
-    <p role="status" aria-live="polite" data-sign-out-status></p>
-  </div>
-</section>
+</article>
 {{end}}

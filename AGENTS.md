@@ -43,7 +43,7 @@ make generate-wire     # after Wire edits; requires wire
 - Past dates remain editable without a cutoff; future dates are rejected. Browser IANA time zone defines today; a selected date never shifts at midnight.
 - Delete means trash, with confirmation. Reads never create folders; writes recreate missing paths. Discover folders by private `appProperties`, not names. Preserve renamed and duplicate/data-bearing folders.
 - Connections belong in encrypted, authenticated HttpOnly cookies. No production user database or server-side session store; bounded in-memory caches are allowed. Keep Redis deferred.
-- v1 is online-only and English-only. Browser backup is recovery, not offline sync. No additional providers, attachments, Markdown, client-side encryption, search, tags, sharing, reminders, AI summaries, native apps, or journal-content analytics. Park ideas in `docs/development/ideas.md`.
+- v1 is online-only, with English and Bahasa Indonesia interfaces. Language selection in Settings persists in a browser preference cookie after sign-out; default to English. Browser backup is recovery, not offline sync. No additional providers, attachments, Markdown, client-side encryption, search, tags, sharing, reminders, AI summaries, native apps, or journal-content analytics. Park ideas in `docs/development/ideas.md`.
 
 ## Architecture
 

@@ -1,0 +1,34 @@
+const output = typeof print === 'function' ? print : console.log;
+const assert = (ok, message) => { if (!ok) throw new Error(message); };
+function element(extra = {}) {
+  return Object.assign({ hidden: false, attrs: {}, events: {}, setAttribute(k, v) { this.attrs[k] = v; }, addEventListener(k, fn) { this.events[k] = fn; }, focus() { document.activeElement = this; } }, extra);
+}
+const select = element({ value: 'en' });
+const custom = element({ hidden: true });
+const trigger = element();
+const label = element();
+const menu = element({ hidden: true });
+const options = [element({dataset:{languageOption:'en'}, textContent:'English', lang:'en'}), element({dataset:{languageOption:'id'},textContent:'Bahasa Indonesia',lang:'id'})];
+const nodes = {'select':select,'[data-language-custom]':custom,'[data-language-trigger]':trigger,'[data-language-value]':label,'[role="listbox"]':menu};
+const picker = element({querySelector(key){return nodes[key];},querySelectorAll(){return options;},contains(node){return Object.values(nodes).includes(node)||options.includes(node);}});
+globalThis.document = element({activeElement:trigger,querySelector(){return picker;}});
+if (typeof require === 'function') (0,eval)(require('node:fs').readFileSync('assets/static/js/language.js','utf8'));
+else load('assets/static/js/language.js');
+const key = value => picker.events.keydown({key:value,preventDefault(){}});
+assert(select.hidden && !custom.hidden,'progressive enhancement preserves form select but shows custom picker');
+trigger.events.click();
+assert(!menu.hidden && trigger.attrs['aria-expanded']==='true' && document.activeElement===options[0],'open focuses selected option');
+key('ArrowDown');assert(document.activeElement===options[1],'down arrow moves focus');
+options[1].events.click();
+assert(select.value==='id' && label.textContent==='Bahasa Indonesia' && label.lang==='id','selection updates submitted value and visible native name');
+assert(options[1].attrs['aria-selected']==='true' && options[0].attrs['aria-selected']==='false','selection updates accessible state');
+assert(menu.hidden && document.activeElement===trigger,'selection closes and restores focus');
+key('ArrowUp');key('Home');assert(document.activeElement===options[0],'Home selects first focus');
+key('End');assert(document.activeElement===options[1],'End selects last focus');
+key('e');assert(document.activeElement===options[0],'typeahead finds English');
+key('Escape');assert(menu.hidden && document.activeElement===trigger && select.value==='id','Escape closes without changing choice');
+trigger.events.click(); key('Tab');assert(menu.hidden,'Tab dismisses menu without trapping focus');
+trigger.events.click();document.events.click({target:{}});assert(menu.hidden,'outside click dismisses menu');
+trigger.events.click();picker.events.focusout({relatedTarget:options[0]});assert(!menu.hidden,'internal focus keeps menu open');
+picker.events.focusout({relatedTarget:null});assert(menu.hidden,'focus leaving closes menu');
+output('PASS language browser regressions');

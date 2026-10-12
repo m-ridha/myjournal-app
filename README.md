@@ -10,6 +10,7 @@ Contributor instructions are in [AGENTS.md](AGENTS.md). See [progress](docs/deve
 - Manual save and idle autosave, per-tab draft recovery, conflict-resolution controls and confirmed trash.
 - Paginated previews, calendar navigation, light/dark themes and account settings.
 - Google sign-in and Drive storage, with a local provider for development.
+- English and Bahasa Indonesia interfaces, selectable in Settings. Your choice stays in this browser after sign-out; English is the default.
 
 The app is online-only. Browser drafts provide recovery rather than offline synchronization. Checksum comparisons are non-atomic; simultaneous external Drive edits are unsupported. See [ADR 016](docs/development/adr/016-restricted-google-release.md) for deployment and writer constraints.
 
@@ -33,7 +34,7 @@ make fmt lint test
 make test-architecture
 ```
 
-Run architecture probes separately from other lint/build processes because they temporarily add forbidden imports. Lint requires golangci-lint v2.14.0. `make test` runs five JavaScript regression suites and `go test ./...`; JavaScript uses Node.js or macOS JavaScriptCore without npm packages. Run only browser interaction regressions with `make test-js`.
+Run architecture probes separately from other lint/build processes because they temporarily add forbidden imports. Lint requires golangci-lint v2.14.0. `make test` runs six JavaScript regression suites and `go test ./...`; JavaScript uses Node.js or macOS JavaScriptCore without npm packages. Run only browser interaction regressions with `make test-js`.
 
 The [editor recovery checklist](docs/development/editor-recovery-checks.md) and [UI acceptance checks](docs/development/ui-acceptance-checks.md) document manual coverage. Optional accessibility tooling is separate from ordinary CI. PR creation and updates run formatting, lint, tests and architecture checks.
 
