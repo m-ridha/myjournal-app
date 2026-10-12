@@ -13,6 +13,9 @@ import (
 	"github/mridha/myjournal-app/internal/driver/web/i18n"
 )
 
+// recentEntriesLimit controls browser browsing; the API retains its own pagination bounds.
+const recentEntriesLimit = 10
+
 // Renderer owns an immutable catalog and parsed page templates.
 type Renderer struct {
 	catalog   i18n.Catalog
@@ -67,26 +70,28 @@ func loadLocaleRenderer(source fs.FS, locale string) (*Renderer, error) {
 }
 
 type pageData struct {
-	Version           string
-	Title             string
-	TitleKey          string
-	Description       string
-	DescriptionKey    string
-	SignedIn          bool
-	GoogleLogin       bool
-	LocalLogin        bool
-	Theme             string
-	Page              string
-	Date              string
-	Today             string
-	IsToday           bool
-	AccountName       string
-	DraftScope        string
-	FolderName        string
-	FolderURL         string
-	FolderUnavailable bool
-	Locale            string
-	Messages          string
+	EntriesLimit       int
+	EntriesDescription string
+	Version            string
+	Title              string
+	TitleKey           string
+	Description        string
+	DescriptionKey     string
+	SignedIn           bool
+	GoogleLogin        bool
+	LocalLogin         bool
+	Theme              string
+	Page               string
+	Date               string
+	Today              string
+	IsToday            bool
+	AccountName        string
+	DraftScope         string
+	FolderName         string
+	FolderURL          string
+	FolderUnavailable  bool
+	Locale             string
+	Messages           string
 }
 
 func (renderer *Renderer) renderPage(w http.ResponseWriter, data pageData) {
@@ -99,6 +104,8 @@ func (renderer *Renderer) renderPageStatus(w http.ResponseWriter, status int, da
 		http.Error(w, renderer.catalog.Text("errors.internal"), http.StatusInternalServerError)
 		return
 	}
+	data.EntriesLimit = recentEntriesLimit
+	data.EntriesDescription = strings.ReplaceAll(renderer.catalog.Text("entries.recentDescription"), "{listLimit}", fmt.Sprint(data.EntriesLimit))
 	data.Version = renderer.version
 	data.Locale = renderer.catalog.Locale()
 	data.Messages = localeJSON

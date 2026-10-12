@@ -644,3 +644,15 @@ Controlled synthetic measurements (not live Drive timings):
 With a synthetic 100 ms download delay, eight previews dropped from two waves/200 ms to one wave/100 ms; twenty dropped from five waves/500 ms to three/300 ms. Peak concurrency was eight. These results do not establish live Drive speed or throttling behavior. The reported seven-second cold/post-save latency remains unmeasured against Google after this change. Post-save discovery and the invalidated preview remain external work; progressive previews would require a separate API/UI design.
 
 Fresh validation passed: `make fmt lint test`, focused cache/Google/web race checks, all 31 architecture probes, and 34 Chrome axe scans plus keyboard checks. Accessibility automation retains its documented coverage limits. No live Drive measurement, deployment, commit or push was performed.
+
+## Entries limit and preview concurrency (2026-10-12)
+
+Cache preview concurrency is now ten by user decision. Synthetic 100 ms downloads take one wave for eight previews and two for twenty; this is not live Drive latency evidence. The Google direct-batch limit remains four.
+
+`internal/driver/web/render.go` owns `recentEntriesLimit` (currently 10). Change this constant within the API-supported range 1–100 to change browser requests, response-size validation and both localized descriptions together. Templates expose it through `data-list-limit`; locale strings use `{listLimit}`. API pagination limits remain unchanged. A non-default five-entry JavaScript regression checks the configurable request/response path, and renderer tests check both locales.
+
+Fresh `make fmt lint test`, cache race checks and `git diff --check` passed. Changes are uncommitted; no deployment or live Drive measurement was performed.
+
+The browser limit was subsequently reduced to 10 by the user. Active README, acceptance/browsing guidance and JavaScript fixtures now reflect ten; earlier twenty-entry QA and benchmark records remain historical evidence. Production JavaScript and localized descriptions already derive the limit from the rendered page and needed no adjustment.
+
+Pre-PR review found no blocking issue. Fresh `make fmt lint test`, `go vet ./...`, `go test -race -short ./...`, all 31 architecture probes and `git diff --check` passed. The reviewed branch includes bounded shared reads, operation-local discovery reuse, ten preview workers and the configurable ten-entry browser view. Live Drive speed/throttling and cross-process guarantees remain unverified.

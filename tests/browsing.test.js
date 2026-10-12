@@ -11,9 +11,10 @@ function element() {
  const listeners={};const node={children:[],hidden:false,disabled:false,textContent:'',addEventListener:(name,fn)=>{listeners[name]=fn;},fire:(name)=>listeners[name]?.(),setAttribute(name,value){this[name]=value;},classList:{add(){}},appendChild(child){this.children.push(child);},replaceChildren(...children){this.children=children;}};
  Object.defineProperty(node,'innerHTML',{set(){this.children=[];}});return node;
 }
-const payload=(page=1,hasNext=false,items=[])=>({ok:true,json:async()=>({page,pageSize:20,hasNext,items})});
-function setup(search='',initial=payload(),calendarMode=false) {
+const payload=(page=1,hasNext=false,items=[])=>({ok:true,json:async()=>({page,pageSize:10,hasNext,items})});
+function setup(search='',initial=payload(),calendarMode=false,listLimit=10) {
  const list=element(),status=element(),retry=element();
+ list.dataset={listLimit:String(listLimit)};
  const fields={'[data-entry-list]':list,'[data-entries-status]':status,'[data-entries-retry]':retry};
  const calendar=element(),label=element(),grid=element(),prev=element(),next=element(),today=element();
  calendar.querySelector=s=>({'[data-calendar-month]':label,'[data-calendar-grid]':grid,'[data-calendar-prev]':prev,'[data-calendar-next]':next,'[data-calendar-today]':today}[s]||null);
@@ -25,14 +26,15 @@ function setup(search='',initial=payload(),calendarMode=false) {
  events.DOMContentLoaded();return {list,status,retry,calls,queue,label,grid,prev,next,today};
 }
 async function run() {
+ let custom=setup('',{ok:true,json:async()=>({page:1,pageSize:5,items:[]})},false,5);await tick();assert(custom.calls[0]==='/api/v1/entries?page=1&size=5' && custom.status.textContent==='', 'rendered limit controls requests and response validation');
  let f=setup('',payload(1,true,[{date:'2026-01-02',preview:'<script>plain text</script>'},{date:'2025-12-31',preview:'previous year'}]));await tick();
- assert(f.calls[0]==='/api/v1/entries?page=1&size=20','Entries requests only the latest twenty');
+ assert(f.calls[0]==='/api/v1/entries?page=1&size=10','Entries requests only the latest ten');
  assert(f.list.children.length===2 && f.list.children[0].children[0].textContent==='2026','group entries newest-year first');
  assert(f.list.children[0].children[1].children[1].children[0].textContent==='<script>plain text</script>','previews remain plain text');
- for(const search of ['?page=2','?page=3','?page=10000','?page=0','?page=-1','?page=10001','?page=1.5','?page=abc','?size=100']) {f=setup(search);await tick();assert(f.calls.length===1&&f.calls[0]==='/api/v1/entries?page=1&size=20','URL parameters cannot expand recent entries browsing');}
+ for(const search of ['?page=2','?page=3','?page=10000','?page=0','?page=-1','?page=10001','?page=1.5','?page=abc','?size=100']) {f=setup(search);await tick();assert(f.calls.length===1&&f.calls[0]==='/api/v1/entries?page=1&size=10','URL parameters cannot expand recent entries browsing');}
  f=setup('?page=2',{ok:false,status:503});await tick();assert(f.list.children[0].textContent==='entries.unavailable' && !f.retry.hidden,'failed recent entries offers retry');
  f.queue.push(payload(1,false,[{date:'2026-01-01',preview:'recovered'}]));f.retry.fire('click');await tick();assert(f.calls.length===2 && f.calls[0]===f.calls[1] && f.retry.hidden,'retry stays on first page and clears failure');
- f=setup('',payload(1,true,Array.from({length:21},()=>({date:'2026-01-01',preview:'unexpected'}))));await tick();assert(f.list.children[0].textContent==='entries.unavailable','oversized responses do not render more than twenty entries');
+ f=setup('',payload(1,true,Array.from({length:11},()=>({date:'2026-01-01',preview:'unexpected'}))));await tick();assert(f.list.children[0].textContent==='entries.unavailable','oversized responses do not render more than ten entries');
  const deferred=()=>{let resolve,reject;const promise=new Promise((a,b)=>{resolve=a;reject=b;});return {promise,resolve,reject};};
  const pendingList=deferred();f=setup('',pendingList.promise);
  assert(f.status.textContent==='entries.loading' && f.list.children.length===0 && f.list['aria-busy']==='true','pending entries request uses only the shared loading status');

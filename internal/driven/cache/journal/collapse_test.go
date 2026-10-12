@@ -368,10 +368,10 @@ func TestColdPreviewConcurrencyAndLatency(t *testing.T) {
 				elapsed := time.Since(start)
 				want := 100 * time.Millisecond
 				if count == 20 {
-					want = 300 * time.Millisecond
+					want = 200 * time.Millisecond
 				}
 				t.Logf("cold %d previews: elapsed=%v peak downloads=%d", count, elapsed, peak.Load())
-				if err != nil || len(result) != count || peak.Load() != 8 || elapsed != want {
+				if err != nil || len(result) != count || peak.Load() != int32(min(count, 10)) || elapsed != want {
 					t.Fatalf("previews=%d err=%v peak=%d elapsed=%v", len(result), err, peak.Load(), elapsed)
 				}
 			})

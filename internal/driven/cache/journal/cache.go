@@ -18,8 +18,8 @@ import (
 	"github/mridha/myjournal-app/internal/core/journal"
 )
 
-// Eight concurrent preview reads reduce cold-page waves while keeping I/O bounded.
-const previewWorkers = 8
+// concurrent preview reads reduce cold-page waves while keeping I/O bounded.
+const previewWorkers = 10
 
 type cacheKey struct {
 	account string
@@ -90,7 +90,7 @@ func (s *Store) Previews(ctx context.Context, dates []civil.Date, maxBytes int) 
 	ordered := append([]civil.Date(nil), dates...)
 	sort.Slice(ordered, func(i, j int) bool { return ordered[i].Before(ordered[j]) })
 	ordered = slices.Compact(ordered)
-	digest := sha256.Sum256([]byte(fmt.Sprint(ordered)))
+	digest := sha256.Sum256(fmt.Append(nil, ordered))
 	key := fmt.Sprintf("%s:%x:%d:%d", namespace(s.account), digest, maxBytes, s.cache.readEpoch(s.account).Load())
 	// One batch keeps identical requests in one operation view; individual flights
 	// inside it also share dates with different overlapping batches.

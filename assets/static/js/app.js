@@ -573,6 +573,8 @@
   function initEntriesList() {
     const listRoot = document.querySelector('[data-entry-list]');
     if (!listRoot) return;
+    const listLimit = Number(listRoot.dataset.listLimit);
+    if (!Number.isInteger(listLimit) || listLimit < 1 || listLimit > 100) return;
 
     const status = document.querySelector('[data-entries-status]');
     const retry = document.querySelector('[data-entries-retry]');
@@ -581,7 +583,7 @@
       if (retry) { retry.disabled = true; retry.hidden = true; }
       listRoot.setAttribute('aria-busy', 'true');
       if (status) status.textContent = t('entries.loading');
-      return fetch('/api/v1/entries?page=1&size=20')
+      return fetch(`/api/v1/entries?page=1&size=${listLimit}`)
         .then(async (response) => {
           if (!response.ok) {
             throw new Error(t('entries.unavailable'));
@@ -589,7 +591,7 @@
           return response.json();
         })
         .then((data) => {
-          if (!Array.isArray(data.items) || data.items.length > 20 || data.page !== 1 || data.pageSize !== 20) throw new Error('invalid list');
+          if (!Array.isArray(data.items) || data.items.length > listLimit || data.page !== 1 || data.pageSize !== listLimit) throw new Error('invalid list');
           if (status) status.textContent = '';
           listRoot.innerHTML = '';
           if (!data.items || data.items.length === 0) {

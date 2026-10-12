@@ -3,6 +3,7 @@ package web
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -136,8 +137,8 @@ func TestEntriesPageRendersTemplate(t *testing.T) {
 		t.Fatalf("loading message count = %d, want 1", got)
 	}
 
-	if got := res.Body.String(); strings.Contains(got, "data-entries-newer") || strings.Contains(got, "data-entries-older") || strings.Contains(got, "Open calendar</a>") || !strings.Contains(got, "Your last 20 entries.") {
-		t.Fatal("Entries must describe latest twenty without pagination controls or an extra Calendar link")
+	if got := res.Body.String(); strings.Contains(got, "data-entries-newer") || strings.Contains(got, "data-entries-older") || strings.Contains(got, "Open calendar</a>") || !strings.Contains(got, fmt.Sprintf("Your last %d entries.", recentEntriesLimit)) {
+		t.Fatal("Entries must describe latest 'recentEntriesLimit' without pagination controls or an extra Calendar link")
 	}
 
 }

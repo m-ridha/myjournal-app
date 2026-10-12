@@ -4,11 +4,11 @@
     <div>
       <p class="mj-kicker">{{t "entries.kicker"}}</p>
       <h1>{{t "entries.title"}}</h1>
-      <p class="mj-lead">{{t "entries.recentDescription"}}</p>
+      <p class="mj-lead">{{.EntriesDescription}}</p>
     </div>
   </header>
 
-  <div class="mj-entry-list" data-entry-list></div>
+  <div class="mj-entry-list" data-entry-list data-list-limit="{{.EntriesLimit}}"></div>
   <div class="mj-actions">
     <button class="mj-btn mj-btn-secondary" type="button" data-entries-retry hidden>{{t "entries.retry"}}</button>
   </div>

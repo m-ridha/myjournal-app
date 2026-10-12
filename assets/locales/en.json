@@ -226,5 +226,5 @@
   "nav.changeLanguage": "Change language; current language: English",
   "footer.github": "GitHub profile of developer",
   "footer.copyright": "Copyright © 2026",
-  "entries.recentDescription": "Your last 20 entries. Find older entries in the calendar."
+  "entries.recentDescription": "Your last {listLimit} entries. Find older entries in the calendar."
 }

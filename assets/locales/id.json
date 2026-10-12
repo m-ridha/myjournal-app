@@ -226,5 +226,5 @@
   "nav.changeLanguage": "Ubah bahasa; bahasa saat ini: Bahasa Indonesia",
   "footer.github": "Profil GitHub pengembang",
   "footer.copyright": "Copyright © 2026",
-  "entries.recentDescription": "20 entri terbaru Anda. Temukan entri lama di kalender."
+  "entries.recentDescription": "{listLimit} entri terbaru Anda. Temukan entri lama di kalender."
 }
