@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"io/fs"
 	"net/http"
+	"strings"
 
 	"github/mridha/myjournal-app/assets"
 	"github/mridha/myjournal-app/internal/driver/web/i18n"
@@ -14,17 +15,31 @@ import (
 type Renderer struct {
 	catalog   i18n.Catalog
 	templates *template.Template
+	languages map[string]*Renderer
 }
 
 // NewRenderer loads the embedded catalog and templates at startup.
 func NewRenderer() (*Renderer, error) { return loadRenderer(assets.FS) }
 
 func loadRenderer(source fs.FS) (*Renderer, error) {
-	catalog, err := i18n.Load(source, "locales/en.json")
+	renderer, err := loadLocaleRenderer(source, "en")
 	if err != nil {
 		return nil, err
 	}
-	templates, err := template.New("base").Funcs(template.FuncMap{"t": catalog.Text}).ParseFS(source, "templates/layouts/*.html", "templates/pages/*.html")
+	indonesian, err := loadLocaleRenderer(source, "id")
+	if err != nil {
+		return nil, err
+	}
+	renderer.languages = map[string]*Renderer{"en": renderer, "id": indonesian}
+	return renderer, nil
+}
+
+func loadLocaleRenderer(source fs.FS, locale string) (*Renderer, error) {
+	catalog, err := i18n.Load(source, "locales/"+locale+".json")
+	if err != nil {
+		return nil, err
+	}
+	templates, err := template.New("base").Funcs(template.FuncMap{"t": catalog.Text, "upper": strings.ToUpper}).ParseFS(source, "templates/layouts/*.html", "templates/pages/*.html")
 	if err != nil {
 		return nil, err
 	}

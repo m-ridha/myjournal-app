@@ -30,7 +30,7 @@ func TestStyledNotFoundContentType(t *testing.T) {
 
 func TestSettingsFolderFailureIsVisible(t *testing.T) {
 	w := httptest.NewRecorder()
-	testRenderer(t).renderPage(w, pageData{Page: "settings", FolderName: "myjournal", FolderUnavailable: true})
+	testRenderer(t).renderPage(w, pageData{Page: "settings", SignedIn: true, FolderName: "myjournal", FolderUnavailable: true})
 	if !strings.Contains(w.Body.String(), "The journal folder is unavailable") || !strings.Contains(w.Body.String(), `href="/settings"`) {
 		t.Fatal("missing truthful folder failure/retry")
 	}

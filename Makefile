@@ -25,9 +25,9 @@ lint:
 	$(GOLINT) run
 
 test-js:
-	@if command -v node >/dev/null 2>&1; then node tests/editor.test.js && node tests/timezone.test.js && node tests/browsing.test.js && node tests/theme.test.js && node tests/benchmark.test.js; \
+	@if command -v node >/dev/null 2>&1; then node tests/editor.test.js && node tests/timezone.test.js && node tests/browsing.test.js && node tests/theme.test.js && node tests/benchmark.test.js && node tests/language.test.js; \
 	elif [ -x /System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc ]; then \
-	  for suite in editor timezone browsing theme benchmark; do \
+	  for suite in editor timezone browsing theme benchmark language; do \
 	    result=$$(/System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc tests/$$suite.test.js) || exit 1; \
 	    printf '%s\n' "$$result"; \
 	    case "$$result" in *"PASS $$suite"*) ;; *) exit 1 ;; esac; \

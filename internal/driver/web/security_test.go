@@ -22,11 +22,14 @@ func TestExpiredSessionsRejectedByPagesAndAPI(t *testing.T) {
 		for _, tc := range []struct {
 			path   string
 			status int
-		}{{"/entries/today", 303}, {"/settings", 303}, {"/api/v1/entries/2026-10-09", 401}} {
+		}{{"/entries/today", 303}, {"/settings", 200}, {"/api/v1/entries/2026-10-09", 401}} {
 			req := httptest.NewRequest(http.MethodGet, tc.path, nil)
 			addLocalSessionCookie(t, req, cfg.SessionKey, issued)
 			res := httptest.NewRecorder()
 			router.ServeHTTP(res, req)
+			if tc.path == "/settings" && (strings.Contains(res.Body.String(), "data-sign-out") || strings.Contains(res.Body.String(), "data-disconnect")) {
+				t.Fatal("invalid/expired session must not expose account controls")
+			}
 			if res.Code != tc.status {
 				t.Fatalf("issued=%v path=%s status=%d", issued, tc.path, res.Code)
 			}

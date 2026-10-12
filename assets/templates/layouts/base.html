@@ -28,12 +28,30 @@
               <span class="icon icon-moon" aria-hidden="true"></span>
             </span>
           </button>
-          {{if .SignedIn}}
+          <form class="mj-header-language" data-header-language method="post" action="/settings/language">
+            <div data-language-picker data-language-autosubmit>
+              <a class="mj-header-icon" data-language-fallback href="/settings" aria-label="{{t "nav.changeLanguage"}}"><span class="mj-language-globe" aria-hidden="true"></span><span>{{upper .Locale}}</span></a>
+              <select name="language" aria-label="{{t "settings.language"}}" hidden>
+                <option value="en"{{if eq .Locale "en"}} selected{{end}}>English</option>
+                <option value="id"{{if eq .Locale "id"}} selected{{end}}>Bahasa Indonesia</option>
+              </select>
+              <input type="hidden" name="returnTo" value="/settings" data-language-return>
+              <div data-language-custom hidden>
+                <button class="mj-header-icon" type="button" data-language-trigger aria-haspopup="listbox" aria-expanded="false" aria-controls="header-language-options" aria-label="{{t "nav.changeLanguage"}}" title="{{t "nav.changeLanguage"}}">
+                  <span class="mj-language-globe" aria-hidden="true"></span>
+                  <span data-language-value>{{upper .Locale}}</span>
+                </button>
+                <div class="mj-language-options" id="header-language-options" role="listbox" aria-label="{{t "settings.language"}}" hidden>
+                  <button type="button" role="option" data-language-option="en" aria-selected="{{if eq .Locale "en"}}true{{else}}false{{end}}" tabindex="-1" lang="en">English</button>
+                  <button type="button" role="option" data-language-option="id" aria-selected="{{if eq .Locale "id"}}true{{else}}false{{end}}" tabindex="-1" lang="id">Bahasa Indonesia</button>
+                </div>
+              </div>
+            </div>
+          </form>
           <a class="mj-header-icon" href="/settings" aria-label="{{t "nav.settings"}}" title="{{t "nav.settings"}}">
             <span class="icon icon-gear" aria-hidden="true"></span>
           </a>
-          {{end}}
-          <a class="mj-btn mj-btn-secondary mj-btn-small" href="/privacy">{{t "nav.privacy"}}</a>
+
           <a class="mj-btn mj-btn-secondary mj-btn-small" href="/help">{{t "nav.help"}}</a>
         </div>
       </div>
@@ -72,6 +90,7 @@
     </footer>
 
     <script src="/static/js/theme.js"></script>
+    <script src="/static/js/language.js" defer></script>
     <script src="/static/js/app.js" defer></script>
   </body>
 </html>

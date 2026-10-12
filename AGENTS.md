@@ -43,7 +43,7 @@ make generate-wire     # after Wire edits; requires wire
 - Past dates remain editable without a cutoff; future dates are rejected. Browser IANA time zone defines today; a selected date never shifts at midnight.
 - Delete means trash, with confirmation. Reads never create folders; writes recreate missing paths. Discover folders by private `appProperties`, not names. Preserve renamed and duplicate/data-bearing folders.
 - Connections belong in encrypted, authenticated HttpOnly cookies. No production user database or server-side session store; bounded in-memory caches are allowed. Keep Redis deferred.
-- v1 is online-only and English-only. Browser backup is recovery, not offline sync. No additional providers, attachments, Markdown, client-side encryption, search, tags, sharing, reminders, AI summaries, native apps, or journal-content analytics. Park ideas in `docs/development/ideas.md`.
+- v1 is online-only, with English and Bahasa Indonesia interfaces. Language selection in Settings persists in a browser preference cookie after sign-out; default to English. Browser backup is recovery, not offline sync. No additional providers, attachments, Markdown, client-side encryption, search, tags, sharing, reminders, AI summaries, native apps, or journal-content analytics. Park ideas in `docs/development/ideas.md`.
 
 ## Architecture
 
@@ -73,7 +73,7 @@ make generate-wire     # after Wire edits; requires wire
 
 - Preserve Monochrome-inspired responsive styling and licenses. Hugo is not a runtime/build dependency. ADR 004 records the source comparison: Monochrome is a visual reference, with no copied theme code detected; do not describe an upstream theme version as vendored. Separate external icon provenance remains distinct.
 - Keep the initial editor empty, without sample content or placeholder. Use readable typography, plain text, preserved line breaks, and wrapping for long text/emoji.
-- Header: brand, centered Write/Entries/Calendar, theme toggle, signed-in Settings gear, Privacy/Help. Public Privacy/Help remain accessible without a session but must validate the existing session to show Settings when signed in. Keep narrow-screen spacing/wrapping. Footer is centered `Built for quiet writing.` without duplicate links.
+- Header: brand, centered Write/Entries/Calendar, theme toggle, globe-and-EN/ID pill language picker, always-visible Settings gear, and Help. Privacy remains linked from Help. Settings and language preferences are public; validate the session before showing account data, Sign out or Disconnect. Keep narrow-screen spacing/wrapping. Footer is centered `Built for quiet writing.` without duplicate links.
 - Appearance was removed from Settings by user decision. Do not restore System/Light/Dark controls there; the shared header owns switching. Without a saved preference, follow device-theme changes; persist only explicit toggle choices. Existing valid preferences remain respected.
 - Icons belong in `assets/static/svgs/`, not inline HTML. Use theme-aware currentColor masks and accessible labels/tooltips. Keep the evenly spaced gear and PNG favicon under `assets/static/favicons/`.
 - Use theme variables, visible keyboard focus, live-region status, disabled semantics, adequate touch targets, WCAG AA contrast, reduced-motion support, and 200% zoom. Color alone must not communicate status/calendar state.
