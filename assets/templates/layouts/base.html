@@ -84,8 +84,13 @@
     </main>
 
     <footer class="mj-footer">
-      <div class="mj-container mj-footer-inner mj-footer-center">
-        <span>{{t "footer.tagline"}}</span>
+      <div class="mj-container mj-footer-inner">
+        <span class="mj-footer-tagline">{{t "footer.tagline"}}</span>
+        <span class="mj-footer-details">
+          {{if .Version}}<span>{{.Version}}</span>
+          <span aria-hidden="true"> · </span>{{end}}
+          <span class="mj-footer-copyright"><span>{{t "footer.copyright"}}</span> <a class="mj-footer-github" href="https://github.com/mridha-work" aria-label="{{t "footer.github"}}" title="{{t "footer.github"}}"><span class="icon icon-github" aria-hidden="true"></span></a></span>
+        </span>
       </div>
     </footer>
 

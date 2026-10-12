@@ -13,7 +13,11 @@ import (
 	"github/mridha/myjournal-app/internal/config"
 )
 
+// version is set from the validated release tag by the container build.
+var version string
+
 func main() {
+	slog.SetDefault(newLogger(config.Config{}))
 	if err := run(); err != nil {
 		slog.Error("application failed", "error", err)
 		os.Exit(1)

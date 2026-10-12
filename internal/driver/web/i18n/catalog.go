@@ -4,8 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/fs"
+	"strconv"
 	"time"
 )
+
+// defaultDateLayout formats dates for locales without a dedicated formatter.
+const defaultDateLayout = "Monday, 02 January 2006"
 
 // Catalog contains the immutable messages loaded for one locale.
 type Catalog struct {
@@ -41,14 +45,32 @@ func (c Catalog) Locale() string {
 }
 
 func (c Catalog) FormatDate(date time.Time) string {
-	if c.locale == "id" {
+	switch c.locale {
+	case "en":
+		return fmt.Sprintf("%s, %s %s %d", c.Text(fmt.Sprintf("date.weekday.%d", date.Weekday())), c.Text(fmt.Sprintf("date.month.%d", date.Month())), ordinalDay(date.Day()), date.Year())
+	case "id":
 		return fmt.Sprintf("%s, %02d %s %d", c.Text(fmt.Sprintf("date.weekday.%d", date.Weekday())), date.Day(), c.Text(fmt.Sprintf("date.month.%d", date.Month())), date.Year())
+	default:
+		return date.Format(defaultDateLayout)
 	}
-	layout := c.Text("format.date")
-	if layout == "format.date" {
-		layout = "Monday, 02 January 2006"
+}
+
+// ordinalDay renders a day of month with an English ordinal suffix, such as 1st, 2nd, 3rd, or 4th.
+func ordinalDay(day int) string {
+	suffix := "th"
+	switch day % 100 {
+	case 11, 12, 13:
+	default:
+		switch day % 10 {
+		case 1:
+			suffix = "st"
+		case 2:
+			suffix = "nd"
+		case 3:
+			suffix = "rd"
+		}
 	}
-	return date.Format(layout)
+	return strconv.Itoa(day) + suffix
 }
 
 func (c Catalog) JSON() (string, error) {

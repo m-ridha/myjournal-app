@@ -184,15 +184,15 @@ h3 {
   padding: 0.75rem 1.15rem;
   border-radius: 999px;
   border: 1px solid var(--mj-border-strong);
-  transition: opacity 120ms ease, transform 120ms ease;
+  transition: opacity 120ms ease, transform 120ms ease, border-color 120ms ease;
 }
 
 .mj-btn[hidden] {
   display: none;
 }
 
-.mj-btn:hover,
-.mj-btn:focus-visible {
+.mj-btn:not(:disabled):not([aria-disabled="true"]):hover,
+.mj-btn:not(:disabled):not([aria-disabled="true"]):focus-visible {
   transform: translateY(-1px);
 }
 
@@ -326,14 +326,41 @@ html[data-theme="dark"] .icon-moon {
 }
 
 .mj-footer-inner {
+  display: grid;
+  align-items: center;
+  grid-template-columns: 1fr auto 1fr;
   min-height: 3rem;
   gap: 1rem;
-  font-size: 0.92rem;
+  font-size: 0.85rem;
 }
 
-.mj-footer-center {
-  justify-content: center;
+.mj-footer-tagline {
+  grid-column: 2;
   text-align: center;
+}
+
+.mj-footer-details {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  grid-column: 3;
+  justify-self: end;
+  white-space: nowrap;
+}
+
+@media (max-width: 1100px) {
+  .mj-footer-inner {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 0.35rem;
+    padding-block: 0.75rem;
+    text-align: center;
+  }
+
+  .mj-footer-details {
+    white-space: normal;
+  }
 }
 
 .mj-page-header {
@@ -471,7 +498,7 @@ html[data-theme="dark"] .icon-moon {
 /* Hover/focus signals an available action; Saved remains a separate status. */
 .mj-btn[data-entry-save]:enabled:hover,
 .mj-btn[data-entry-save]:enabled:focus-visible {
-  border-color: var(--mj-success);
+  border-color: var(--mj-text);
   background: color-mix(in srgb, var(--mj-success) 12%, var(--mj-surface));
 }
 
@@ -1051,4 +1078,35 @@ html[data-theme="dark"] .icon-moon {
 
 .mj-header-language [hidden] {
   display: none;
+}
+
+.icon-github {
+  --mj-icon: url("/static/svgs/github.svg");
+}
+
+.mj-footer-github {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  min-height: 1.5rem;
+  vertical-align: middle;
+}
+
+.mj-footer-github:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+  border-radius: 50%;
+}
+
+.mj-footer-copyright {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+/* Shared interaction accent for enabled button controls and button links. */
+:is(.mj-btn, .mj-theme-toggle, .mj-header-icon, .mj-icon-btn, .mj-language-trigger, .mj-editor-trash):not(:disabled):not([aria-disabled="true"]):hover,
+:is(.mj-btn, .mj-theme-toggle, .mj-header-icon, .mj-icon-btn, .mj-language-trigger, .mj-editor-trash):not(:disabled):not([aria-disabled="true"]):focus-visible {
+  border-color: var(--mj-text);
 }
