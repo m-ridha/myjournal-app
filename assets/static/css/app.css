@@ -184,15 +184,15 @@ h3 {
   padding: 0.75rem 1.15rem;
   border-radius: 999px;
   border: 1px solid var(--mj-border-strong);
-  transition: opacity 120ms ease, transform 120ms ease;
+  transition: opacity 120ms ease, transform 120ms ease, border-color 120ms ease;
 }
 
 .mj-btn[hidden] {
   display: none;
 }
 
-.mj-btn:hover,
-.mj-btn:focus-visible {
+.mj-btn:not(:disabled):not([aria-disabled="true"]):hover,
+.mj-btn:not(:disabled):not([aria-disabled="true"]):focus-visible {
   transform: translateY(-1px);
 }
 
@@ -498,7 +498,7 @@ html[data-theme="dark"] .icon-moon {
 /* Hover/focus signals an available action; Saved remains a separate status. */
 .mj-btn[data-entry-save]:enabled:hover,
 .mj-btn[data-entry-save]:enabled:focus-visible {
-  border-color: var(--mj-success);
+  border-color: var(--mj-text);
   background: color-mix(in srgb, var(--mj-success) 12%, var(--mj-surface));
 }
 
@@ -1103,4 +1103,10 @@ html[data-theme="dark"] .icon-moon {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
+}
+
+/* Shared interaction accent for enabled button controls and button links. */
+:is(.mj-btn, .mj-theme-toggle, .mj-header-icon, .mj-icon-btn, .mj-language-trigger, .mj-editor-trash):not(:disabled):not([aria-disabled="true"]):hover,
+:is(.mj-btn, .mj-theme-toggle, .mj-header-icon, .mj-icon-btn, .mj-language-trigger, .mj-editor-trash):not(:disabled):not([aria-disabled="true"]):focus-visible {
+  border-color: var(--mj-text);
 }

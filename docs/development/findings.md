@@ -1074,3 +1074,7 @@ Replaced EN/ID template conditionals with {{upper .Locale}}, backed by strings.T
 These consolidated notes supersede the intermediate footer/version experiments from this session. Documentation reconciliation checked current code and repository state; `git diff --check` passed. No runtime tests were rerun for documentation-only edits.
 
 Commit preparation (2026-10-12): fresh make fmt lint test passed with zero lint issues; three offline deployment-helper tests and sequential make test-architecture (31 probes, cleanup complete) passed. git diff --check passed. User authorized committing the current working-tree changes on chore/adding-version-tag-and-ui-improvement. No push, deployment, Docker image build or new browser acceptance was performed.
+
+### Shared button hover border (2026-10-12)
+
+Help and Today now share the theme-text border accent used by header/icon controls. The shared enabled-button hover/focus rule also covers the Settings language trigger and trash; Save uses the same border while retaining its green action background, and trash retains its danger tint. Disabled/aria-disabled controls are excluded from the new accent, and generic button lift now excludes them. Fresh make fmt lint test and git diff --check passed. No browser visual or accessibility scan was rerun. The user subsequently authorized committing this change and opening a PR for the current branch.
