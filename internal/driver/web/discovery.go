@@ -11,13 +11,16 @@ import (
 func registerDiscoveryRoutes(r chi.Router, baseURL string) {
 	baseURL = strings.TrimRight(baseURL, "/")
 	r.Get("/sitemap.xml", func(w http.ResponseWriter, _ *http.Request) {
+		type sitemapURL struct {
+			Loc string `xml:"loc"`
+		}
 		sitemap := struct {
-			XMLName xml.Name `xml:"urlset"`
-			XMLNS   string   `xml:"xmlns,attr"`
-			URLs    []string `xml:"url>loc"`
+			XMLName xml.Name     `xml:"urlset"`
+			XMLNS   string       `xml:"xmlns,attr"`
+			URLs    []sitemapURL `xml:"url"`
 		}{
 			XMLNS: "http://www.sitemaps.org/schemas/sitemap/0.9",
-			URLs:  []string{baseURL + "/", baseURL + "/help", baseURL + "/privacy", baseURL + "/terms"},
+			URLs:  []sitemapURL{{Loc: baseURL + "/"}, {Loc: baseURL + "/help"}, {Loc: baseURL + "/privacy"}, {Loc: baseURL + "/terms"}},
 		}
 		body, err := xml.Marshal(sitemap)
 		if err != nil {

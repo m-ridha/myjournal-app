@@ -41,14 +41,26 @@ func TestPublicDiscoveryRoutes(t *testing.T) {
 				}
 				var sitemap struct {
 					XMLName xml.Name
-					URLs    []string `xml:"url>loc"`
+					URLs    []struct {
+						Locations []string `xml:"loc"`
+					} `xml:"url"`
 				}
 				if err := xml.Unmarshal(res.Body.Bytes(), &sitemap); err != nil {
 					t.Fatalf("decode sitemap: %v", err)
 				}
 				want := []string{origin + "/", origin + "/help", origin + "/privacy", origin + "/terms"}
-				if !reflect.DeepEqual(sitemap.URLs, want) {
-					t.Errorf("sitemap URLs = %v, want %v", sitemap.URLs, want)
+				if len(sitemap.URLs) != 4 {
+					t.Fatalf("sitemap URL records = %d, want 4", len(sitemap.URLs))
+				}
+				var locations []string
+				for i, record := range sitemap.URLs {
+					if len(record.Locations) != 1 {
+						t.Fatalf("sitemap URL record %d locations = %v, want exactly one", i, record.Locations)
+					}
+					locations = append(locations, record.Locations[0])
+				}
+				if !reflect.DeepEqual(locations, want) {
+					t.Errorf("sitemap URLs = %v, want %v", locations, want)
 				}
 				if sitemap.XMLName.Local != "urlset" || sitemap.XMLName.Space != "http://www.sitemaps.org/schemas/sitemap/0.9" {
 					t.Errorf("sitemap root = %v, want sitemap namespace urlset", sitemap.XMLName)

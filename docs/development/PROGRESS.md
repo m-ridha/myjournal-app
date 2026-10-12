@@ -527,3 +527,7 @@ Resolved the two findings from the static security review. The composition root 
 The new listener regression failed against the original wildcard behavior, then passed after the change. Fresh make fmt lint test passed with zero lint issues, all five JavaScript suites and all Go packages. go test -race ./cmd/app ./spike/... passed. Tests cover production/development listen addresses, concurrent capacity enforcement, expiry, capacity reclamation, one-time consumption, and S02 full/expired handler rejection. No live Google authorization or network-peer exploit performed; running servers must be restarted to adopt listener changes. No commit, push or deployment performed.
 
 Sequential make test-architecture also passed all 31 forbidden-import probes with cleanup. git diff --check passed.
+
+## PR 23 sitemap review correction (2026-10-12)
+
+Verified the review finding that encoding/xml's flattened url>loc slice produced one URL record containing four locations. Changed serialization to four URL structs with one loc each. The strengthened regression independently decodes URL records and asserts exactly four records and one location per record; it failed against the original implementation (one record), then fresh make fmt lint test passed after the fix with zero lint issues, five JavaScript suites and all Go packages. git diff --check passed. No deployment or Search Console submission performed.

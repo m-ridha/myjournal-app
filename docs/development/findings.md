@@ -1003,3 +1003,7 @@ Implemented public /sitemap.xml and /robots.txt in the web delivery layer, using
 Local login intentionally issues a credential-free dev identity, so checking APP_BASE_URL alone did not protect the wildcard socket. The composition root now binds development configurations to loopback, preserving IPv6 loopback when configured and production Google networking. S01/S02 historical spikes also bind loopback and use a bounded, expiring shared spike-only transaction store (128 entries, ten minutes); callbacks consume once and login capacity failures return 429. Wire regenerated. Fresh make fmt lint test and targeted race checks (go test -race ./cmd/app ./spike/...) passed. This is source/regression-test evidence, not a new live Google or LAN acceptance run.
 
 Sequential make test-architecture passed all 31 probes and cleaned up temporary files; git diff --check passed.
+
+## Sitemap record structure corrected after PR review (2026-10-12)
+
+PR 23 identified well-formed XML with an invalid sitemap record layout: all locations shared one url element. Now each public location has its own url record. A structural regression failed before the serializer change and passes afterward; fresh make fmt lint test and git diff --check passed. Earlier XML/URL checks established syntax and content only, not correct sitemap record cardinality.
