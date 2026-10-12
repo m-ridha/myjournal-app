@@ -3,14 +3,18 @@ package google
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"runtime"
 	"strings"
 	"testing"
+	"testing/synctest"
+	"time"
 
 	"google.golang.org/api/drive/v3"
 
 	"github/mridha/myjournal-app/internal/core/journal"
 	"github/mridha/myjournal-app/internal/driven/cache/journal"
+	"github/mridha/myjournal-app/internal/driven/cache/local/lru"
 )
 
 func TestSmallUploadDoesNotAllocateDefaultChunk(t *testing.T) {
@@ -50,12 +54,12 @@ func TestPageReusesDiscoveryOnlyWithinOperation(t *testing.T) {
 	}
 	service := journal.NewService(cachestore.New(nil, 0).Wrap("test", s), benchmarkClock{})
 	before := f.lists
-	page, err := service.Page(ctx, 1, 20)
+	page, err := service.ListEntries(ctx, 1, 20)
 	if err != nil || len(page.Items) != 20 {
 		t.Fatalf("page: %v", err)
 	}
-	if got := f.lists - before; got != 4 {
-		t.Fatalf("page discovery lists=%d want 4", got)
+	if got := f.lists - before; got != 3 {
+		t.Fatalf("page discovery lists=%d want 3", got)
 	}
 	// A second operation must rediscover the externally changed folder contents.
 	f.mu.Lock()
@@ -66,8 +70,8 @@ func TestPageReusesDiscoveryOnlyWithinOperation(t *testing.T) {
 	}
 	f.mu.Unlock()
 	before = f.lists
-	page, err = service.Page(ctx, 1, 20)
-	if err != nil || len(page.Items) != 19 || f.lists-before != 4 {
+	page, err = service.ListEntries(ctx, 1, 20)
+	if err != nil || len(page.Items) != 19 || f.lists-before != 3 {
 		t.Fatalf("scope leaked across operations: count=%d lists=%d err=%v", len(page.Items), f.lists-before, err)
 	}
 }
@@ -133,4 +137,49 @@ func TestStreamingUploadAtContentLimit(t *testing.T) {
 	if f.writes != before {
 		t.Fatal("oversized text reached Drive")
 	}
+}
+
+func TestColdAndPostSaveEntriesRequestCounts(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		p, _, counts := collapseProvider(t, func(_ http.ResponseWriter, r *http.Request) bool {
+			if r.Method == http.MethodGet {
+				time.Sleep(time.Millisecond)
+			}
+			return false
+		})
+		store := collapseStore(t, p, context.Background())
+		var saved journal.Entry
+		for day := 1; day <= 7; day++ {
+			entry, err := store.Put(context.Background(), journal.Date{Year: 2021, Month: 1, Day: day}, "synthetic", "")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if day == 7 {
+				saved = entry
+			}
+		}
+		if _, err := store.Put(context.Background(), journal.Date{Year: 2020, Month: 1, Day: 1}, "synthetic", ""); err != nil {
+			t.Fatal(err)
+		}
+		service := journal.NewService(cachestore.New(lru.New(time.Minute), time.Minute).Wrap("synthetic", store), benchmarkClock{})
+		check := func(label string, wantLists, wantDownloads int) {
+			counts.counts = make(map[string]int)
+			start := time.Now()
+			page, err := service.ListEntries(context.Background(), 1, 20)
+			if err != nil || len(page.Items) != 8 {
+				t.Fatalf("%s page: count=%d err=%v", label, len(page.Items), err)
+			}
+			lists, downloads := counts.counts["list"], counts.counts["download"]
+			t.Logf("%s eight-entry/two-year page: lists=%d downloads=%d simulated elapsed=%v", label, lists, downloads, time.Since(start))
+			if lists != wantLists || downloads != wantDownloads {
+				t.Fatalf("%s lists/downloads=%d/%d, want %d/%d", label, lists, downloads, wantLists, wantDownloads)
+			}
+		}
+		check("cold", 4, 8)
+		check("warm", 0, 0)
+		if _, err := service.Save(context.Background(), saved.Date, "changed synthetic", saved.Version); err != nil {
+			t.Fatal(err)
+		}
+		check("after-update", 3, 1)
+	})
 }

@@ -16,6 +16,7 @@ import (
 	"github/mridha/myjournal-app/internal/core/journal"
 	"github/mridha/myjournal-app/internal/driven/provider/local"
 	"github/mridha/myjournal-app/internal/driver/web/api"
+	"github/mridha/myjournal-app/internal/driver/web/handler"
 	"github/mridha/myjournal-app/internal/testutil"
 )
 
@@ -54,7 +55,7 @@ func TestAPIRouterWrappedProviderFailures(t *testing.T) {
 		err    error
 		status int
 	}{{journal.ErrAuthRequired, 401}, {journal.ErrUnavailable, 503}, {fmt.Errorf("private adapter failure"), 500}} {
-		factory := func(context.Context, provider.Session) (*journal.Service, error) {
+		factory := func(context.Context, provider.Session) (handler.JournalService, error) {
 			return nil, fmt.Errorf("sensitive context: %w", tc.err)
 		}
 		router := newTestRouter(cfg, provider.NewRegistry(local.New(cfg.BaseURL, t.TempDir())), testutil.StubClock{Time: now}, factory)

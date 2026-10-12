@@ -83,10 +83,6 @@
   "editor.saveTooLarge": "This entry is too large to save (1 MiB request limit). Copy your full text somewhere safe before shortening it and saving again.",
   "editor.draftKept": " Draft kept locally.",
   "editor.saveFailedDraftKept": "Save failed. Draft kept locally.",
-  "entries.pagination": "Entry pages",
-  "entries.newer": "Newer",
-  "entries.older": "Older",
-  "entries.page": "Page {page}",
   "entries.retry": "Retry",
   "entries.kicker": "Journal",
   "entries.title": "Entries",
@@ -229,5 +225,6 @@
   "settings.signIn": "Sign in",
   "nav.changeLanguage": "Change language; current language: English",
   "footer.github": "GitHub profile of developer",
-  "footer.copyright": "Copyright © 2026"
+  "footer.copyright": "Copyright © 2026",
+  "entries.recentDescription": "Your last {listLimit} entries. Find older entries in the calendar."
 }

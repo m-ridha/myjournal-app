@@ -56,7 +56,8 @@ func (s *Service) Open(ctx context.Context, d Date) (Entry, error) {
 	return s.operationStore().Get(ctx, d)
 }
 
-func (s *Service) Page(ctx context.Context, page, size int) (ListPage, error) {
+// ListEntries returns a newest-first page with previews only for its entries.
+func (s *Service) ListEntries(ctx context.Context, page, size int) (ListPage, error) {
 	if page < 1 || page > MaxPage || size < 1 || size > MaxPageSize {
 		return ListPage{}, ErrInvalidPagination
 	}

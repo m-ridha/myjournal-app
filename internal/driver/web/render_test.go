@@ -2,6 +2,7 @@ package web
 
 import (
 	"errors"
+	"fmt"
 	"html/template"
 	"net/http"
 	"net/http/httptest"
@@ -95,5 +96,23 @@ func TestFooterBuildVersion(t *testing.T) {
 		if _, err := NewRendererWithVersion(version); err == nil {
 			t.Errorf("accepted invalid version %q", version)
 		}
+	}
+}
+
+func TestEntriesLimitIsSharedWithLocalizedDescription(t *testing.T) {
+	renderer := testRenderer(t)
+	for _, locale := range []string{"en", "id"} {
+		t.Run(locale, func(t *testing.T) {
+			response := httptest.NewRecorder()
+			renderer.languages[locale].renderPage(response, pageData{Page: "entries", SignedIn: true})
+			body := response.Body.String()
+			if response.Code != http.StatusOK || !strings.Contains(body, fmt.Sprintf(`data-list-limit="%d"`, recentEntriesLimit)) {
+				t.Fatal("Entries must expose its limit to the browser")
+			}
+			description := strings.ReplaceAll(renderer.languages[locale].catalog.Text("entries.recentDescription"), "{listLimit}", fmt.Sprint(recentEntriesLimit))
+			if !strings.Contains(body, description) || strings.Contains(body, "{listLimit}</") {
+				t.Fatal("Entries must render the localized limit")
+			}
+		})
 	}
 }

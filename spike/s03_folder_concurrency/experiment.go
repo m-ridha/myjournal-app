@@ -17,8 +17,8 @@ const folderType = "application/vnd.google-apps.folder"
 const workers = 5
 
 type folderAPI interface {
-	list(context.Context, string, string) ([]*drive.File, error)
-	create(context.Context, string, string) (*drive.File, error)
+	list(ctx context.Context, role, parent string) ([]*drive.File, error)
+	create(ctx context.Context, role, parent string) (*drive.File, error)
 }
 
 type driveFolders struct {

@@ -2,8 +2,10 @@ package google
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
+	"golang.org/x/sync/singleflight"
 	"google.golang.org/api/drive/v3"
 
 	"github/mridha/myjournal-app/internal/core/journal"
@@ -15,8 +17,10 @@ const (
 )
 
 type operationDiscovery struct {
-	mu      sync.Mutex
-	queries map[string][]*drive.File
+	mu         sync.Mutex
+	queries    map[string][]*drive.File
+	loads      singleflight.Group
+	generation uint64
 }
 
 // ForOperation owns bounded metadata reuse for one service call, never a request
@@ -30,19 +34,35 @@ func (s *Store) list(ctx context.Context, query string) ([]*drive.File, error) {
 		return s.listFresh(ctx, query)
 	}
 	d := s.discovery
-	d.mu.Lock()
-	defer d.mu.Unlock()
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}
-	if files, ok := d.queries[query]; ok {
-		return files, nil
+	// Reuse is operation-local. Do not hold the metadata mutex across I/O:
+	// the generic decorator can request different preview dates concurrently.
+	d.mu.Lock()
+	generation := d.generation
+	d.mu.Unlock()
+	value, err, _ := d.loads.Do(fmt.Sprintf("%d:%s", generation, query), func() (any, error) {
+		d.mu.Lock()
+		files, ok := d.queries[query]
+		d.mu.Unlock()
+		if ok {
+			return files, nil
+		}
+		files, err := s.listFresh(ctx, query)
+		if err == nil && len(files) <= maxDiscoveryFiles {
+			d.mu.Lock()
+			if d.generation == generation && len(d.queries) < maxDiscoveryQueries {
+				d.queries[query] = files
+			}
+			d.mu.Unlock()
+		}
+		return files, err
+	})
+	if err != nil {
+		return nil, err
 	}
-	files, err := s.listFresh(ctx, query)
-	if err == nil && len(d.queries) < maxDiscoveryQueries && len(files) <= maxDiscoveryFiles {
-		d.queries[query] = files
-	}
-	return files, err
+	return value.([]*drive.File), nil
 }
 
 func (s *Store) clearDiscovery() {
@@ -50,6 +70,7 @@ func (s *Store) clearDiscovery() {
 		return
 	}
 	s.discovery.mu.Lock()
+	s.discovery.generation++
 	clear(s.discovery.queries)
 	s.discovery.mu.Unlock()
 }

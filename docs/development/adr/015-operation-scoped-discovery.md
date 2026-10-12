@@ -10,7 +10,7 @@ The initial performance baseline measured eight metadata-list requests plus twen
 
 ## Decision
 
-Add optional `journal.OperationStore.ForOperation() Store`. Each journal service operation requests its own view; ordinary stores continue to work unchanged. Cache decorators forward the capability while keeping their existing shared account-scoped cache. The Google view reuses exact discovery queries within the operation, with at most sixteen query results of at most one thousand files each. Oversized results and errors are not retained. The view is never shared across use-case calls. Mutation attempts clear reuse, and folder creation clears it immediately. Editor downloads and pre-upload metadata checks remain fresh; no Google types enter the domain.
+Add optional `journal.OperationStore.ForOperation() Store`. Each journal service operation requests its own view; ordinary stores continue to work unchanged. Cache decorators forward the capability while keeping their existing shared account-scoped cache. The Google view reuses exact discovery queries within the operation, with at most sixteen query results of at most one thousand files each. Oversized results and errors are not retained. The view is never shared across use-case calls. Mutation attempts clear reuse, and folder creation clears it immediately. Editor downloads do not retain completed content (overlapping reads may share active work under [ADR 019](019-overlapping-journal-reads.md)); pre-upload metadata checks remain fresh; no Google types enter the domain.
 
 Use single-request streaming uploads for bounded journal content rather than the SDK's default 16 MiB buffering. Do not add resumable chunks or retry ambiguous uploads. The 1 MiB content cap and checksum acknowledgements remain enforced.
 
@@ -23,3 +23,7 @@ The cache remains a TTL snapshot: unaffected previews and retained index metadat
 No new account-generation map, long-lived folder cache, background writer, or server-side session store is introduced. Account mutation serialization remains process-local. Reads still do not create folders, and duplicate selection remains deterministic. None of these changes resolves the non-atomic external-writer checksum/upload race or permits production Google registration.
 
 Synthetic measurements verify less work and allocation; live latency benefit is pending a targeted comparison. See the performance report and implementation plan for raw outputs, tests, limitations, and deferred experiments.
+
+### Complete year-folder result reuse (2026-10-12)
+
+A year-specific lookup may filter an already cached complete broad year-folder query within the same operation. Discovery limits and mutation invalidation still apply; absent or uncached broad results fall back to the filtered query. No folder identifiers are retained across operations by this optimization.

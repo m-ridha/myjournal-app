@@ -3,6 +3,7 @@ package web
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -11,12 +12,12 @@ import (
 
 	"github/mridha/myjournal-app/internal/config"
 	provider "github/mridha/myjournal-app/internal/core/connection"
-	"github/mridha/myjournal-app/internal/core/journal"
 	"github/mridha/myjournal-app/internal/driven/clock"
 	googleProvider "github/mridha/myjournal-app/internal/driven/provider/google"
 	localProvider "github/mridha/myjournal-app/internal/driven/provider/local"
 	"github/mridha/myjournal-app/internal/driven/session"
 	"github/mridha/myjournal-app/internal/driver/web/authsession"
+	"github/mridha/myjournal-app/internal/driver/web/handler"
 	"github/mridha/myjournal-app/internal/testutil"
 )
 
@@ -134,6 +135,10 @@ func TestEntriesPageRendersTemplate(t *testing.T) {
 	}
 	if got := strings.Count(res.Body.String(), ">Loading…</p>"); got != 1 {
 		t.Fatalf("loading message count = %d, want 1", got)
+	}
+
+	if got := res.Body.String(); strings.Contains(got, "data-entries-newer") || strings.Contains(got, "data-entries-older") || strings.Contains(got, "Open calendar</a>") || !strings.Contains(got, fmt.Sprintf("Your last %d entries.", recentEntriesLimit)) {
+		t.Fatal("Entries must describe latest 'recentEntriesLimit' without pagination controls or an extra Calendar link")
 	}
 
 }
@@ -330,7 +335,7 @@ func TestLandingOffersOnlyRegisteredProviders(t *testing.T) {
 
 func TestAPIPanicReturnsGenericEnvelope(t *testing.T) {
 	cfg := config.Config{BaseURL: testutil.LocalBaseURL, SessionKey: "0123456789abcdef0123456789abcdef"}
-	h := newTestRouter(cfg, provider.NewRegistry(localProvider.New(testutil.LocalBaseURL, "")), clock.System{}, func(context.Context, provider.Session) (*journal.Service, error) {
+	h := newTestRouter(cfg, provider.NewRegistry(localProvider.New(testutil.LocalBaseURL, "")), clock.System{}, func(context.Context, provider.Session) (handler.JournalService, error) {
 		panic("private provider details")
 	})
 	login := httptest.NewRecorder()

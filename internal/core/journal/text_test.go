@@ -55,7 +55,7 @@ func TestSaveRejectsInvalidUTF8AndNormalizesLF(t *testing.T) {
 func TestPagePreviewTrimsBeforeBudgetAndMarksTruncation(t *testing.T) {
 	date := Date{Year: 2026, Month: 10, Day: 8}
 	store := &inMemStore{entries: map[Date]Entry{date: {Date: date, Text: strings.Repeat("\n ", 80) + strings.Repeat("中", 20)}}}
-	page, err := NewService(store, testutil.StubClock{}).Page(context.Background(), 1, 20)
+	page, err := NewService(store, testutil.StubClock{}).ListEntries(context.Background(), 1, 20)
 	if err != nil || len(page.Items) != 1 || page.Items[0].Preview != strings.Repeat("中", 13)+"..." {
 		t.Fatalf("page=%+v err=%v", page, err)
 	}

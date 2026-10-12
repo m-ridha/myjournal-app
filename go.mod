@@ -9,6 +9,7 @@ require (
 	github.com/google/wire v0.6.0
 	github.com/oapi-codegen/runtime v1.7.0
 	golang.org/x/oauth2 v0.37.0
+	golang.org/x/sync v0.23.0
 	google.golang.org/api v0.298.0
 )
 

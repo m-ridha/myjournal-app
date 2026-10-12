@@ -100,7 +100,7 @@ func BenchmarkDriveBaseline(b *testing.B) {
 			}
 			service := newService()
 			page := func() {
-				result, err := service.Page(ctx, 1, 20)
+				result, err := service.ListEntries(ctx, 1, 20)
 				if err != nil || len(result.Items) != 20 {
 					b.Fatalf("page count/err: %d %v", len(result.Items), err)
 				}

@@ -83,10 +83,6 @@
   "editor.saveTooLarge": "Entri ini terlalu besar untuk disimpan (batas permintaan 1 MiB). Salin seluruh teks ke tempat aman sebelum mempersingkatnya dan menyimpan lagi.",
   "editor.draftKept": " Draf disimpan di browser.",
   "editor.saveFailedDraftKept": "Penyimpanan gagal. Draf disimpan di browser.",
-  "entries.pagination": "Halaman entri",
-  "entries.newer": "Lebih baru",
-  "entries.older": "Lebih lama",
-  "entries.page": "Halaman {page}",
   "entries.retry": "Coba lagi",
   "entries.kicker": "Jurnal",
   "entries.title": "Entri",
@@ -229,5 +225,6 @@
   "settings.signIn": "Masuk",
   "nav.changeLanguage": "Ubah bahasa; bahasa saat ini: Bahasa Indonesia",
   "footer.github": "Profil GitHub pengembang",
-  "footer.copyright": "Copyright © 2026"
+  "footer.copyright": "Copyright © 2026",
+  "entries.recentDescription": "{listLimit} entri terbaru Anda. Temukan entri lama di kalender."
 }

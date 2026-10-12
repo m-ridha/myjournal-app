@@ -7,9 +7,9 @@ import "context"
 type Gateway interface {
 	ID() string
 	Name() string
-	Begin(context.Context, LoginRequest) (string, error)
-	Complete(context.Context, LoginCallback) (Connection, error)
-	Revoke(context.Context, Connection) error
+	Begin(ctx context.Context, input LoginRequest) (string, error)
+	Complete(ctx context.Context, input LoginCallback) (Connection, error)
+	Revoke(ctx context.Context, c Connection) error
 }
 
 // Catalog resolves configured lifecycle gateways without exposing storage creation.

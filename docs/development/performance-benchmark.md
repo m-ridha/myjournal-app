@@ -167,3 +167,37 @@ Median server duration is 3.464 s. Timed upstream requests account for 99.94% of
 Sample four's 4.479 s server duration includes a 2.757 s upload. Sample ten's 4.285 s includes 2.309 s of discovery (one list takes 1.432 s), while its upload takes 1.653 s. Both discovery and upload variability matter; this run does not support a single failing stage or explain January 3. No failures/retries were observed, which does not prove future reliability.
 
 Decision: do not optimize local CPU, increase timeouts, remove the fresh conflict check or add automatic write retries from this evidence. Upload allocation changes improved memory rather than eliminating upstream upload latency. Further latency work would need a separately reviewed discovery-request reduction or bounded hint-cache experiment preserving external rename/move/trash/duplicate behavior and fresh pre-upload validation. Persistent hints remain deferred; no new caching policy is implemented here. First retain this baseline and address ambiguous-write recovery/concurrency acceptance before expanding caching. Exact build identity and per-request correlation remain unavailable; sequential idle-window grouping is the attribution assumption.
+
+## Overlapping Drive reads (2026-10-12)
+
+Controlled mocked Drive tests compare the same concurrent workload with and without the shared journal cache decorator's in-flight coordination. TTL storage is disabled to isolate collapsing. Counts are metadata list requests / content downloads; a short simulated GET delay makes overlap deterministic. Fixtures use synthetic accounts/content, not live Google traffic.
+
+| Workload | Without sharing | With sharing |
+| --- | --- | --- |
+| Eight editor reads of one date | 24 / 8 | 3 / 1 |
+| Eight cold Entries pages, twenty entries each | 32 / 160 | 8 / 20 |
+| Eight calendars of one month | 24 / 0 | 3 / 0 |
+| Four Entries pages and four calendars | 28 / 80 | 8 / 20 |
+| Two overlapping preview batches, two dates each | 4 downloads | 3 downloads |
+
+Sequential editor reads still download again. Real timing can yield less sharing when earlier work completes before another caller arrives. The initial, uncommitted Google-specific coordinator recorded 4 metadata lists for Entries/mixed bursts; the user-selected provider-independent boundary uses 8 in these fixtures because different Store operations no longer share individual Drive folder queries. Content download reductions remain intact. Neither result is a live latency measurement.
+
+Regression coverage exercises provider/account/generation isolation, independent cancellation, OAuth transport recovery after leader cancellation, admission/deadline/error cleanup, preview budgets, post-save/trash/failed-save reads, and repeated concurrent browsing. [ADR 019](adr/019-overlapping-journal-reads.md) records bounds and tradeoffs. No deployment or acceptance of original performance targets is implied.
+
+## Cold Entries follow-up (2026-10-12)
+
+The inline Open calendar link and successful-load announcement were removed by user request. The description still mentions Calendar, available through header navigation; loading, errors and Retry retain accessible feedback.
+
+Google discovery now derives year-specific folder matches from a complete broad year-folder result already retained within the same operation. Missing or oversized uncached results still use the original query. This removes redundant metadata requests without retaining discovery across operations or changing mutation checks. Cache-decorated previews now permit eight concurrent downloads; direct Google batches retain four workers and avoid idle singleton workers.
+
+Controlled synthetic measurements (not live Drive timings):
+
+| Workload | Metadata calls | Content downloads |
+| --- | ---: | ---: |
+| Cold eight-entry, two-year list | 4 (previously 6) | 8 |
+| Immediate warm list | 0 | 0 |
+| List after updating one visible entry | 3 | 1 |
+
+With a synthetic 100 ms download delay, eight previews dropped from two waves/200 ms to one wave/100 ms; twenty dropped from five waves/500 ms to three/300 ms. Peak concurrency was eight. These results do not establish live Drive speed or throttling behavior. The reported seven-second cold/post-save latency remains unmeasured against Google after this change. Post-save discovery and the invalidated preview remain external work; progressive previews would require a separate API/UI design.
+
+Fresh validation passed: `make fmt lint test`, focused cache/Google/web race checks, all 31 architecture probes, and 34 Chrome axe scans plus keyboard checks. Accessibility automation retains its documented coverage limits. No live Drive measurement, deployment, commit or push was performed.
