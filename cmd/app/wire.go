@@ -9,9 +9,11 @@ import (
 	"fmt"
 	"log"
 	"log/slog"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
@@ -145,8 +147,19 @@ func newProviderRegistry(cfg config.Config) (*provider.Registry, error) {
 }
 
 func newHTTPServer(cfg config.Config, handler http.Handler) *http.Server {
+	addr := fmt.Sprintf(":%d", cfg.Port)
+	if cfg.GoogleTestMode || slices.Contains(cfg.ProviderIDs(), provider.LocalID) {
+		host := "127.0.0.1"
+		origin, _ := url.Parse(cfg.BaseURL)
+		if origin != nil {
+			if ip := net.ParseIP(origin.Hostname()); ip != nil && ip.IsLoopback() {
+				host = ip.String()
+			}
+		}
+		addr = net.JoinHostPort(host, fmt.Sprint(cfg.Port))
+	}
 	return &http.Server{
-		Addr:              fmt.Sprintf(":%d", cfg.Port),
+		Addr:              addr,
 		Handler:           handler,
 		ErrorLog:          log.New(serverLogWriter{}, "", 0),
 		ReadHeaderTimeout: 5 * time.Second,
@@ -169,5 +182,5 @@ func newConnectionService(registry *provider.Registry, clk journal.Clock) *provi
 }
 func newWebOptions(cfg config.Config) web.Options {
 	origin, _ := url.Parse(cfg.BaseURL)
-	return web.Options{Session: webHandler.Options{SessionKey: cfg.SessionKey, CookieSecure: cfg.CookieSecure}, HTTPS: origin != nil && origin.Scheme == "https"}
+	return web.Options{BaseURL: cfg.BaseURL, Session: webHandler.Options{SessionKey: cfg.SessionKey, CookieSecure: cfg.CookieSecure}, HTTPS: origin != nil && origin.Scheme == "https"}
 }

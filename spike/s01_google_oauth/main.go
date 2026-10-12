@@ -9,7 +9,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"sync"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -18,12 +17,11 @@ import (
 	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/idtoken"
 	"google.golang.org/api/option"
+
+	"github/mridha/myjournal-app/spike/internal/loginstate"
 )
 
-var (
-	stateMu         sync.Mutex
-	stateToVerifier = make(map[string]string)
-)
+var pendingLogins loginstate.Store
 
 func main() {
 	if os.Getenv("GOOGLE_CLIENT_ID") == "" || os.Getenv("GOOGLE_CLIENT_SECRET") == "" {
@@ -44,9 +42,10 @@ func main() {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		stateMu.Lock()
-		stateToVerifier[state] = verifier
-		stateMu.Unlock()
+		if !pendingLogins.Add(state, verifier, time.Now()) {
+			http.Error(w, "Too many pending logins; retry later", http.StatusTooManyRequests)
+			return
+		}
 		cfg := oauth2.Config{
 			ClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
 			ClientSecret: os.Getenv("GOOGLE_CLIENT_SECRET"),
@@ -76,10 +75,7 @@ func main() {
 
 		code := r.URL.Query().Get("code")
 		state := r.URL.Query().Get("state")
-		stateMu.Lock()
-		verifier, ok := stateToVerifier[state]
-		delete(stateToVerifier, state)
-		stateMu.Unlock()
+		verifier, ok := pendingLogins.Take(state, time.Now())
 		if !ok {
 			http.Error(w, "OAuth state is invalid or expired", http.StatusBadRequest)
 			return
@@ -162,7 +158,7 @@ func main() {
 
 	log.Printf("Google OAuth spike running at %s", baseURL)
 	log.Printf("Open %s/login to start PKCE sign-in", baseURL)
-	if err := http.ListenAndServe(":3030", r); err != nil {
+	if err := http.ListenAndServe("127.0.0.1:3030", r); err != nil {
 		log.Fatal(err)
 	}
 }

@@ -22,9 +22,11 @@ import (
 	"github/mridha/myjournal-app/internal/driver/web/handler"
 	"log"
 	"log/slog"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
+	"slices"
 	"strings"
 	"time"
 )
@@ -164,8 +166,19 @@ func newProviderRegistry(cfg config.Config) (*connection.Registry, error) {
 }
 
 func newHTTPServer(cfg config.Config, handler2 http.Handler) *http.Server {
+	addr := fmt.Sprintf(":%d", cfg.Port)
+	if cfg.GoogleTestMode || slices.Contains(cfg.ProviderIDs(), connection.LocalID) {
+		host := "127.0.0.1"
+		origin, _ := url.Parse(cfg.BaseURL)
+		if origin != nil {
+			if ip := net.ParseIP(origin.Hostname()); ip != nil && ip.IsLoopback() {
+				host = ip.String()
+			}
+		}
+		addr = net.JoinHostPort(host, fmt.Sprint(cfg.Port))
+	}
 	return &http.Server{
-		Addr:              fmt.Sprintf(":%d", cfg.Port),
+		Addr:              addr,
 		Handler:           handler2,
 		ErrorLog:          log.New(serverLogWriter{}, "", 0),
 		ReadHeaderTimeout: 5 * time.Second,
@@ -189,5 +202,5 @@ func newConnectionService(registry *connection.Registry, clk journal.Clock) *con
 
 func newWebOptions(cfg config.Config) web.Options {
 	origin, _ := url.Parse(cfg.BaseURL)
-	return web.Options{Session: handler.Options{SessionKey: cfg.SessionKey, CookieSecure: cfg.CookieSecure}, HTTPS: origin != nil && origin.Scheme == "https"}
+	return web.Options{BaseURL: cfg.BaseURL, Session: handler.Options{SessionKey: cfg.SessionKey, CookieSecure: cfg.CookieSecure}, HTTPS: origin != nil && origin.Scheme == "https"}
 }

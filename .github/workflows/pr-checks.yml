@@ -15,7 +15,7 @@ jobs:
   checks:
     name: Format, lint, and tests
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - name: Check out code
         uses: actions/checkout@v7
@@ -48,8 +48,11 @@ jobs:
       - name: Lint
         run: make lint
 
-      - name: Run JavaScript and Go tests
-        run: make test
+      - name: Run JavaScript and race-enabled Go tests
+        run: make test GOTEST="go test -race ./..."
+
+      - name: Check reachable Go vulnerabilities
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 ./...
 
       - name: Test release deployment handling
         run: python3 -B -m unittest discover -s scripts -p test_deploy_railway.py

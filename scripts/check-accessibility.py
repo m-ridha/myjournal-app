@@ -90,7 +90,7 @@ async def run_browser(base, axe_script):
         for theme in ['light', 'dark']:
             await page.evaluate('(theme) => localStorage.setItem("mj-theme", theme)', theme)
             for path in ['/entries/today', '/entries', '/calendar', '/settings',
-                         '/help', '/privacy', '/invalid-page']:
+                         '/help', '/privacy', '/terms', '/invalid-page']:
                 await page.goto(base + path)
                 if path == '/entries/today':
                     await page.wait_for_function("!document.querySelector('[data-entry-text]').readOnly")
@@ -124,6 +124,26 @@ async def run_browser(base, axe_script):
             await expect(page.locator('[data-entry-conflict]')).to_be_visible()
             scans.append(await audit(page, axe_script, theme + '/editor-conflict'))
             keyboard[theme + '/editor-conflict'] = await check_keyboard(page)
+
+        # A separate cookie/storage context proves these are public pages even
+        # after the authenticated editor checks above have established a session.
+        public_context = await browser.new_context(timezone_id='Asia/Jakarta')
+        public_page = await public_context.new_page()
+        public_page.on('pageerror', lambda error: errors.append(str(error)))
+        for theme in ['light', 'dark']:
+            await public_page.goto(base + '/')
+            await public_page.evaluate('(theme) => localStorage.setItem("mj-theme", theme)', theme)
+            for path in ['/', '/help', '/privacy', '/terms', '/invalid-page']:
+                response = await public_page.goto(base + path)
+                assert response.status == (404 if path == '/invalid-page' else 200), path
+                assert public_page.url == base + path, public_page.url
+                await expect(public_page.get_by_role('link', name='Settings', exact=True)).to_have_count(0)
+                if path == '/':
+                    await expect(public_page.get_by_role('link', name='Continue with Local Dev', exact=True)).to_be_visible()
+                label = 'signed-out/' + theme + path
+                scans.append(await audit(public_page, axe_script, label))
+                keyboard[label] = await check_keyboard(public_page)
+        await public_context.close()
 
         report = {'browser': browser.version, 'axe': await page.evaluate('axe.version'),
                   'scans': scans, 'keyboard': keyboard, 'page_errors': errors}

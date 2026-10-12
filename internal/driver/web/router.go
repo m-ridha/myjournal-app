@@ -60,6 +60,8 @@ func NewRouter(cfg Options, registry *provider.Registry, clk journal.Clock, serv
 		},
 	})
 
+	registerDiscoveryRoutes(r, cfg.BaseURL)
+
 	// Web routes
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
 		if current, err := currentSession(r, cfg.Session.SessionKey, registry, clk.Now()); err == nil {
