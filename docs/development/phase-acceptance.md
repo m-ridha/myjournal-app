@@ -1,6 +1,6 @@
 # Phase acceptance requirements
 
-## Current status (2026-10-11)
+## Current status (2026-10-12)
 
 This summary supersedes pending language in the dated evidence below; those records describe what was known at the time, not new work to repeat.
 
@@ -12,6 +12,9 @@ This summary supersedes pending language in the dated evidence below; those reco
 This is the repository-local acceptance checklist distilled from the project plan. It describes requirements, not a claim of completion. Consult [PROGRESS.md](PROGRESS.md), [findings.md](findings.md), [ADRs](adr/), and the [Phase 1 review](phase-1-review.md) for implemented behavior, reported evidence, and recorded fallbacks. Recheck code before reopening or closing a gate.
 
 Later user decisions supersede earlier plans:
+
+- English and Bahasa Indonesia are supported. Language preferences and Settings are public; account details and actions require a valid session. The shared header owns language and theme controls, with Privacy linked from Help.
+- Footer/version/logging changes are implemented with automated evidence; final footer visual and deployed-build checks remain open. See the current summary in PROGRESS.md.
 
 - Keep Monday first. Configurable Monday/Sunday week start is shelved as nice to have.
 - Physical-phone testing is waived for this stage; developer-device-toolbar coverage is accepted. Do not describe it as physical-device evidence.

@@ -2,7 +2,6 @@
   "app.locale": "id",
   "app.name": "myjournal",
   "app.description": "Tempat tenang untuk menulis, satu halaman setiap hari.",
-  "format.date": "Monday, 02 January 2006",
   "nav.settings": "Pengaturan",
   "nav.main": "Navigasi utama",
   "nav.write": "Tulis",
@@ -228,5 +227,7 @@
   "date.month.12": "Desember",
   "settings.signInHelp": "Masuk untuk mengelola koneksi akun Anda.",
   "settings.signIn": "Masuk",
-  "nav.changeLanguage": "Ubah bahasa; bahasa saat ini: Bahasa Indonesia"
+  "nav.changeLanguage": "Ubah bahasa; bahasa saat ini: Bahasa Indonesia",
+  "footer.github": "Profil GitHub pengembang",
+  "footer.copyright": "Copyright © 2026"
 }

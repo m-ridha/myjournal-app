@@ -1,6 +1,6 @@
 # Findings Log
 
-## Current status (2026-10-11)
+## Current status (2026-10-12)
 
 This summary supersedes pending language in the dated evidence below; those records describe what was known at the time, not new work to repeat.
 
@@ -8,6 +8,9 @@ This summary supersedes pending language in the dated evidence below; those reco
 - Theme initialization is already externalized to assets/static/js/theme-init.js, loaded before CSS. Same-origin CSP/security headers and host-only HTTPS HSTS are implemented (ADR 012). There is no remaining inline-theme migration task.
 - Focused Chrome UI acceptance is complete with separately recorded human announcement evidence and device-testing waiver; coverage limits remain in [UI acceptance checks](ui-acceptance-checks.md). Full WCAG certification and blanket Phase 2/3 completion are not asserted.
 - Google branding/ownership submission remains separate; see [branding verification](google-branding-verification.md). Accepted latency/revision-retention limits and non-atomic external-writer/deployment-overlap risks remain documented rather than treated as passed targets. No new Google experiments or deployment are implied by this reconciliation.
+
+- English and Bahasa Indonesia are implemented with public language preferences, a globe/code header pill, an always-visible Settings gear and Help; Privacy is reached from Help. Account actions still require a valid session. Earlier English-only and conditional-Settings notes are historical.
+- Current footer/release/logging and date-format behavior is consolidated in [the implementation summary](#footer-release-metadata-and-date-formatting-2026-10-12). Final footer visuals and Docker/deployed-version checks remain unverified; no new release is implied.
 
 ## Favicon (2026-10-08)
 
@@ -1047,3 +1050,27 @@ scripts/check-accessibility.py now expects the Settings gear in both session sta
 ### Header language pill (2026-10-12)
 
 Replaced EN/ID template conditionals with {{upper .Locale}}, backed by strings.ToUpper in the renderer FuncMap. Header language navigation now uses a globe-and-code pill, including the no-JavaScript Settings-link fallback. Fresh make fmt lint test passed (zero lint issues, all Go packages and six JavaScript suites). Local Chrome confirmed the pill and no horizontal overflow at 390px. Screenshot: /private/tmp/myjournal-language-pill-20261012.png. Changes remain uncommitted.
+
+## Footer, release metadata and date formatting (2026-10-12)
+
+### Implemented behavior
+
+- The footer keeps `Built for quiet writing.` independently centered on wide screens, with version and fixed 2026 copyright at the right. At 1100px and narrower, the details form a centered second line. Flex alignment centers the GitHub icon with the copyright text.
+- The profile link uses a local currentColor SVG from [SVG Repo #394174](https://www.svgrepo.com/svg/394174/github), listed as CC0 when checked on 2026-10-12. The downloaded asset was inspected for SVG/path-only geometry. It has translated accessible labels, a tooltip, a 24px minimum target and visible keyboard focus. No external font, script or page request is added.
+- Versions render as plain text; there is no link to the private repository’s release page. Empty versions omit both the label and its separator. Local `make run` does not read a version file or provide a VERSION override.
+- The release workflow writes the validated tag to `RELEASE_VERSION` only in its temporary source archive. No such file or directory is stored in the repository, and there is no gitignore rule for it. Docker reads the optional file, validates a present value, and embeds it through `-X main.version`; an absent file yields an empty version. Wire supplies the embedded value to both locale renderers.
+- Go, Docker and the release workflow use the same strict-core/flexible-suffix pattern: `vX.Y.Z`, optionally followed by dot-separated ASCII alphanumeric/hyphen identifiers. Core numbers reject leading zeros; suffix numbers may contain them. Examples include `v0.3.0-staging`, `v0.5.1-closed-beta` and `v1.2.3-beta.01`. Build metadata with `+` is not accepted. This is a project label policy, not strict SemVer validation.
+- GitHub releases marked prerelease remain skipped. A regular published release with a suffix targets the existing production Railway service; a staging suffix does not select another environment. Readiness, main ancestry, code checks and deployment verification remain required.
+- The composition-root logger attaches nonempty `main.version` using `slog.Logger.With`. Request logs, derived loggers and application failures inherit it; main installs an info-level logger before configuration loading, then replaces it with the configured logger. Empty local versions omit the field.
+- Date formatting reuses translated `date.weekday.*` and `date.month.*` names. English uses ordinal days (`Thursday, October 1st 2026`); Indonesian uses a zero-padded day (`Kamis, 01 Oktober 2026`). The old `format.date` locale key is removed. Other locales still use the English Go-layout fallback; a shared formatting group or locale-owned pattern was discussed but not implemented.
+
+### Recorded evidence and remaining checks
+
+- Implementation checkpoints recorded passing `make fmt lint test` (zero lint issues, six JavaScript suites and all Go packages). Tests cover both locales, version labels/separator omission, invalid versions and version inheritance in logs. Workflow Bash and Docker shell checks covered stable/suffixed/malformed/empty/missing metadata, and confirmed identical regex patterns. These are recorded implementation results, not newly rerun checks for this documentation edit.
+- Earlier footer QA used a synthetic `v1.2.3` binary: Chrome confirmed exact desktop tagline centering at 1512px and a two-line 390px layout without horizontal overflow. Screenshot: `/private/tmp/myjournal-footer-desktop-20261012.png`. That check preceded the final icon/alignment and version-link changes; it does not establish the final visual result or a deployed release version.
+- Three offline deployment lifecycle tests and the sequential 31-probe architecture check passed during the initial footer implementation. The temporary QA server, binary and browser tab were cleaned up.
+- Final footer visual/browser and native screen-reader checks have not been repeated. Docker daemon access was unavailable during initial QA; no Docker image build, production deployment or live release-version log check has been performed for this work.
+
+These consolidated notes supersede the intermediate footer/version experiments from this session. Documentation reconciliation checked current code and repository state; `git diff --check` passed. No runtime tests were rerun for documentation-only edits.
+
+Commit preparation (2026-10-12): fresh make fmt lint test passed with zero lint issues; three offline deployment-helper tests and sequential make test-architecture (31 probes, cleanup complete) passed. git diff --check passed. User authorized committing the current working-tree changes on chore/adding-version-tag-and-ui-improvement. No push, deployment, Docker image build or new browser acceptance was performed.

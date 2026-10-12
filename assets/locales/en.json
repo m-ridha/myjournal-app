@@ -2,7 +2,6 @@
   "app.locale": "en",
   "app.name": "myjournal",
   "app.description": "A quiet place to write, one page a day.",
-  "format.date": "Monday, 02 January 2006",
   "nav.settings": "Settings",
   "nav.main": "Main navigation",
   "nav.write": "Write",
@@ -228,5 +227,7 @@
   "date.month.12": "December",
   "settings.signInHelp": "Sign in to manage your account connection.",
   "settings.signIn": "Sign in",
-  "nav.changeLanguage": "Change language; current language: English"
+  "nav.changeLanguage": "Change language; current language: English",
+  "footer.github": "GitHub profile of developer",
+  "footer.copyright": "Copyright © 2026"
 }

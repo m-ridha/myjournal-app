@@ -4,6 +4,8 @@ GOLINT ?= golangci-lint
 
 .PHONY: run generate generate-openapi generate-wire fmt lint test test-js test-architecture
 
+all: generate fmt lint test run
+
 run:
 	@if [ -f .env ]; then set -a; . ./.env; set +a; fi; \
 	$(GOCMD) run ./cmd/app
@@ -24,6 +26,9 @@ fmt:
 lint:
 	$(GOLINT) run
 
+test: test-js
+	$(GOTEST)
+
 test-js:
 	@if command -v node >/dev/null 2>&1; then node tests/editor.test.js && node tests/timezone.test.js && node tests/browsing.test.js && node tests/theme.test.js && node tests/benchmark.test.js && node tests/language.test.js; \
 	elif [ -x /System/Library/Frameworks/JavaScriptCore.framework/Versions/A/Helpers/jsc ]; then \
@@ -33,9 +38,6 @@ test-js:
 	    case "$$result" in *"PASS $$suite"*) ;; *) exit 1 ;; esac; \
 	  done; \
 	else echo "Browser interaction tests require Node.js or macOS JavaScriptCore (jsc)."; exit 1; fi
-
-test: test-js
-	$(GOTEST)
 
 # Run separately: this temporarily adds forbidden imports and invokes lint.
 test-architecture:

@@ -61,3 +61,39 @@ func TestRendererInstancesEscapeUserText(t *testing.T) {
 		t.Fatal("title was not escaped")
 	}
 }
+
+func TestFooterBuildVersion(t *testing.T) {
+	for _, version := range []string{"", "v1.2.3", "v0.3.0-staging", "v0.5.1-closed-beta", "v1.2.3-beta.1", "v1.2.3-beta.01"} {
+		t.Run(version, func(t *testing.T) {
+			renderer, err := NewRendererWithVersion(version)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, locale := range []string{"en", "id"} {
+				w := httptest.NewRecorder()
+				renderer.languages[locale].renderPage(w, pageData{Page: "help"})
+				body := w.Body.String()
+				start := strings.Index(body, `<footer`)
+				end := strings.Index(body, `</footer>`)
+				if start < 0 || end < start {
+					t.Fatal("missing footer")
+				}
+				footer := body[start:end]
+				if !strings.Contains(footer, version) || !strings.Contains(footer, `href="https://github.com/mridha-work"`) || !strings.Contains(footer, "2026") {
+					t.Errorf("%s footer missing build metadata", locale)
+				}
+				if strings.Contains(footer, `aria-hidden="true"> · </span>`) != (version != "") {
+					t.Errorf("%s footer separator does not match version presence", locale)
+				}
+				if strings.Contains(footer, "/releases/tag/") {
+					t.Errorf("%s footer links to private release", locale)
+				}
+			}
+		})
+	}
+	for _, version := range []string{"dev", "dev-v0.3.1", "dev-v01.2.3", "dev-v1.2.3-beta", "v01.2.3", "v1.2.3-", "v1.2.3-beta..1", "<script>", "v1.2.3 -X other=value"} {
+		if _, err := NewRendererWithVersion(version); err == nil {
+			t.Errorf("accepted invalid version %q", version)
+		}
+	}
+}

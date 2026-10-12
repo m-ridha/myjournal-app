@@ -23,11 +23,11 @@ jobs:
     env:
       RELEASE_TAG: ${{ github.event.release.tag_name }}
     steps:
-      - name: Validate stable release tag
+      - name: Validate release tag
         shell: bash
         run: |
-          [[ "$RELEASE_TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]] || {
-            echo 'Expected stable release tag vX.Y.Z'; exit 1;
+          [[ "$RELEASE_TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$ ]] || {
+            echo 'Expected release tag vX.Y.Z with an optional version suffix'; exit 1;
           }
       - uses: actions/checkout@v7
         with:
@@ -65,4 +65,5 @@ jobs:
         run: |
           source_dir=$(mktemp -d)
           git archive HEAD | tar -x -C "$source_dir"
+          printf '%s\n' "$RELEASE_TAG" > "$source_dir/RELEASE_VERSION"
           python3 scripts/deploy-railway.py "$source_dir" "$(git rev-parse HEAD)"

@@ -50,7 +50,7 @@ func BuildApp(cfg config.Config) (*App, func(), error) {
 		return nil, nil, err
 	}
 	serviceFactory := newServiceFactory(registry, cache, clock)
-	renderer, err := web.NewRenderer()
+	renderer, err := newRenderer()
 	if err != nil {
 		cleanup()
 		return nil, nil, err
@@ -71,6 +71,10 @@ type App struct {
 	Server   *http.Server
 	Logger   *slog.Logger
 	Registry *connection.Registry
+}
+
+func newRenderer() (*web.Renderer, error) {
+	return web.NewRendererWithVersion(version)
 }
 
 func newClock() journal.Clock {
@@ -111,7 +115,11 @@ func newLogger(cfg config.Config) *slog.Logger {
 		level = slog.LevelError
 	}
 
-	return slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: level}))
+	logger := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: level}))
+	if version != "" {
+		logger = logger.With("version", version)
+	}
+	return logger
 }
 
 func newProviderRegistry(cfg config.Config) (*connection.Registry, error) {

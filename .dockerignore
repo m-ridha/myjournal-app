@@ -10,3 +10,4 @@
 !assets/**
 !Dockerfile
 !.dockerignore
+!RELEASE_VERSION

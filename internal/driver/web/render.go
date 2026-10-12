@@ -2,9 +2,11 @@ package web
 
 import (
 	"bytes"
+	"fmt"
 	"html/template"
 	"io/fs"
 	"net/http"
+	"regexp"
 	"strings"
 
 	"github/mridha/myjournal-app/assets"
@@ -16,10 +18,28 @@ type Renderer struct {
 	catalog   i18n.Catalog
 	templates *template.Template
 	languages map[string]*Renderer
+	version   string
 }
 
 // NewRenderer loads the embedded catalog and templates at startup.
-func NewRenderer() (*Renderer, error) { return loadRenderer(assets.FS) }
+func NewRenderer() (*Renderer, error) { return NewRendererWithVersion("") }
+
+var releaseVersion = regexp.MustCompile(`^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z-]+(\.[0-9A-Za-z-]+)*)?$`)
+
+// NewRendererWithVersion loads page assets with trusted build-time release metadata.
+func NewRendererWithVersion(version string) (*Renderer, error) {
+	if version != "" && !releaseVersion.MatchString(version) {
+		return nil, fmt.Errorf("invalid build version")
+	}
+	renderer, err := loadRenderer(assets.FS)
+	if err != nil {
+		return nil, err
+	}
+	for _, localized := range renderer.languages {
+		localized.version = version
+	}
+	return renderer, nil
+}
 
 func loadRenderer(source fs.FS) (*Renderer, error) {
 	renderer, err := loadLocaleRenderer(source, "en")
@@ -47,6 +67,7 @@ func loadLocaleRenderer(source fs.FS, locale string) (*Renderer, error) {
 }
 
 type pageData struct {
+	Version           string
 	Title             string
 	TitleKey          string
 	Description       string
@@ -78,6 +99,7 @@ func (renderer *Renderer) renderPageStatus(w http.ResponseWriter, status int, da
 		http.Error(w, renderer.catalog.Text("errors.internal"), http.StatusInternalServerError)
 		return
 	}
+	data.Version = renderer.version
 	data.Locale = renderer.catalog.Locale()
 	data.Messages = localeJSON
 	var body bytes.Buffer

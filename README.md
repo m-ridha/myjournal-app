@@ -27,6 +27,10 @@ Open <http://localhost:3030/> and use the local sign-in. Health is available at 
 
 Install Wire and oapi-codegen before running `make generate`; see AGENTS.md for the required versions and commands. Generated files are committed, and the quick start regenerates them from their source definitions. Inspect generated diffs before committing.
 
+## Build version
+
+Local runs omit the footer version. The published-release workflow writes its validated GitHub release tag into `RELEASE_VERSION` inside the deployment archive. Docker embeds that value into the Go binary using `-ldflags`, and displays it as plain text. No runtime GitHub request is needed. `RELEASE_VERSION` is not stored in the repository and is optional for Docker builds; Docker leaves the version empty when it is absent. Accepted tags include `v0.3.0-staging` and `v0.5.1-closed-beta`; the three core numbers cannot have leading zeros, while suffix identifiers may (for example, `beta.01`). `+` build metadata is not supported. Nonempty embedded versions also appear as a `version` field in application logs.
+
 ## Development
 
 ```bash
@@ -48,6 +52,6 @@ See [Google live checks](docs/development/google-live-checks.md) for the localho
 
 ## Railway releases
 
-[Railway preparation](docs/development/railway-preparation.md) documents configuration, privacy and rollback. Publishing a non-prerelease GitHub Release with a stable `vX.Y.Z` tag deploys that tag's source after main-ancestry and code checks. A tag push alone does not deploy. The workflow polls the exact Railway deployment ID and verifies public health.
+[Railway preparation](docs/development/railway-preparation.md) documents configuration, privacy and rollback. Publishing a non-prerelease GitHub Release with a `vX.Y.Z` tag and optional version suffix deploys that tag's source after main-ancestry and code checks. A tag push alone does not deploy. The workflow polls the exact Railway deployment ID and verifies public health.
 
 The workflow retains the repository-variable gate `RAILWAY_RELEASE_READY=true`. Configure `RAILWAY_PROJECT_ID` as a repository variable, `RAILWAY_SERVICE_ID` and `RAILWAY_ENVIRONMENT_ID` as production-environment variables, and `RAILWAY_TOKEN` as a secret. Keep one replica and branch autodeploys disabled. Maintain the same `SESSION_KEY` across restart/rollback; rollback does not revert Drive writes. Never commit credentials, cookies or journal content.

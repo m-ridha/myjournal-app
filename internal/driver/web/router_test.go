@@ -167,7 +167,7 @@ func TestDateEntryPageRendersTemplate(t *testing.T) {
 	if res.Code != http.StatusOK {
 		t.Fatalf("status = %d, want %d", res.Code, http.StatusOK)
 	}
-	if got := res.Body.String(); !strings.Contains(got, "Sunday, 20 September 2026") {
+	if got := res.Body.String(); !strings.Contains(got, "Sunday, September 20th 2026") {
 		t.Fatalf("entry page body = %q, want the date heading", got)
 	}
 }
