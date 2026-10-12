@@ -626,3 +626,7 @@ Pre-PR checks passed and the changes were committed/pushed in [PR #26](https://g
 Implemented the public EN/ID `/sign-in-failed` recovery page with Back to home. Browser callback failures redirect there; API clients retain JSON errors. OAuth validation, existing connections and drafts are preserved.
 
 Formatting, lint, tests, web race checks, 31 architecture probes and 38 local accessibility scans passed. Live Google consent has not been retested, and these changes remain uncommitted. See [security and validation findings](findings.md#browser-sign-in-failure-recovery-2026-10-12).
+
+## Whole-item Entries navigation (2026-10-12)
+
+Entries rows are now native links covering the date, preview and padding. Open entry remains a noninteractive label within the link; keyboard focus highlights the whole row. The existing page template needs no change because JavaScript creates the rows. Fresh `make fmt lint test`, `git diff --check`, and 38 local Chrome accessibility scans plus keyboard-focus checks passed. JavaScript regression coverage verifies row destinations, no nested link and plain-text previews. No live Google testing or deployment was performed; changes are uncommitted.
