@@ -161,7 +161,7 @@ func TestCacheNamespaceIsolation(t *testing.T) {
 	}
 }
 
-func TestDisabledCacheAndGetBypass(t *testing.T) {
+func TestDisabledCacheAndFreshGetBypass(t *testing.T) {
 	for _, mode := range []string{"nil", "ttl", "account", "get"} {
 		t.Run(mode, func(t *testing.T) {
 			backend := newTestBackend()
@@ -180,7 +180,7 @@ func TestDisabledCacheAndGetBypass(t *testing.T) {
 			ctx := context.Background()
 			if mode == "get" {
 				for range 2 {
-					_, _ = store.Get(ctx, journal.Date{Year: 2020, Month: 1, Day: 1})
+					_, _ = store.(journal.FreshEntryStore).GetFresh(ctx, journal.Date{Year: 2020, Month: 1, Day: 1})
 				}
 			} else {
 				for range 2 {

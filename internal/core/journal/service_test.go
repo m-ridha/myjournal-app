@@ -219,3 +219,35 @@ func TestListEntriesTwentyStopsBeforeOlderYear(t *testing.T) {
 		t.Fatalf("years=%d previews=%d downloads=%d", store.listYearCalls, len(store.lastPreviewDates), store.getCalls)
 	}
 }
+
+type freshOpenStore struct {
+	*inMemStore
+	freshCalls int
+}
+
+var _ FreshEntryStore = (*freshOpenStore)(nil)
+
+func (s *freshOpenStore) GetFresh(_ context.Context, d Date) (Entry, error) {
+	s.freshCalls++
+	return Entry{Date: d, Text: "fresh", Exists: true}, nil
+}
+func TestOpenFreshSelectsPortAndValidatesDate(t *testing.T) {
+	ctx := context.Background()
+	date := Date{Year: 2020, Month: 1, Day: 1}
+	clock := testutil.StubClock{Time: time.Date(2020, 1, 1, 12, 0, 0, 0, time.UTC)}
+	store := &freshOpenStore{inMemStore: newInMemStore()}
+	service := NewService(store, clock)
+	entry, err := service.OpenFresh(ctx, date)
+	if err != nil || entry.Text != "fresh" || store.freshCalls != 1 || store.getCalls != 0 {
+		t.Fatalf("entry=%+v err=%v fresh=%d gets=%d", entry, err, store.freshCalls, store.getCalls)
+	}
+	if _, err := service.OpenFresh(ctx, Date{Year: 2020, Month: 1, Day: 2}); err == nil || store.freshCalls != 1 {
+		t.Fatal("future date reached storage")
+	}
+	base := newInMemStore()
+	base.entries[date] = Entry{Date: date, Text: "fallback"}
+	entry, err = NewService(base, clock).OpenFresh(ctx, date)
+	if err != nil || entry.Text != "fallback" || base.getCalls != 1 {
+		t.Fatal("uncached provider fallback failed")
+	}
+}

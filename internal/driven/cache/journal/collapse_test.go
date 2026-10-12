@@ -27,7 +27,7 @@ func (s slowReadStore) Previews(ctx context.Context, d []civil.Date, n int) (map
 	return s.preview(ctx, d, n)
 }
 
-func TestOverlappingGetsAreSharedButNeverCached(t *testing.T) {
+func TestOverlappingGetsAreSharedWithSnapshotsDisabled(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		var calls atomic.Int32
 		release := make(chan struct{})
@@ -377,4 +377,43 @@ func TestColdPreviewConcurrencyAndLatency(t *testing.T) {
 			})
 		})
 	}
+}
+
+func TestOldEntryFlightCannotRefillAfterSave(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		ctx := context.Background()
+		date := civil.Date{Year: 2020, Month: 1, Day: 1}
+		release := make(chan struct{})
+		var calls atomic.Int32
+		base := slowReadStore{Store: newFakeStore(), get: func(ctx context.Context, d civil.Date) (journal.Entry, error) {
+			if calls.Add(1) == 1 {
+				select {
+				case <-release:
+				case <-ctx.Done():
+					return journal.Entry{}, ctx.Err()
+				}
+				return journal.Entry{Date: d, Text: "old", Version: "v1", Exists: true}, nil
+			}
+			return journal.Entry{Date: d, Text: "new", Version: "v2", Exists: true}, nil
+		}}
+		cache := New(newTestBackend(), 2*time.Minute)
+		store := cache.Wrap("account", base)
+		done := make(chan error, 1)
+		go func() { _, err := store.Get(ctx, date); done <- err }()
+		synctest.Wait()
+		if _, err := store.Put(ctx, date, "new", "v1"); err != nil {
+			t.Fatal(err)
+		}
+		close(release)
+		if err := <-done; err != nil {
+			t.Fatal(err)
+		}
+		value, err := store.Get(ctx, date)
+		if err != nil || value.Text != "new" || calls.Load() != 2 {
+			t.Fatalf("entry=%+v calls=%d err=%v", value, calls.Load(), err)
+		}
+		if _, err := store.Get(ctx, date); err != nil || calls.Load() != 2 {
+			t.Fatal("new content was not cached")
+		}
+	})
 }

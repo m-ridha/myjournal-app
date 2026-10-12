@@ -260,3 +260,37 @@ func TestListEntriesAcceptsUseCaseStub(t *testing.T) {
 		})
 	}
 }
+
+// HTTP selects explicit fresh reads without leaking cache policy into providers.
+type openServiceStub struct {
+	JournalService
+	fresh bool
+}
+
+var _ JournalService = (*openServiceStub)(nil)
+
+func (s *openServiceStub) Open(_ context.Context, d journal.Date) (journal.Entry, error) {
+	return journal.Entry{Date: d, Text: "cached", Exists: true}, nil
+}
+func (s *openServiceStub) OpenFresh(_ context.Context, d journal.Date) (journal.Entry, error) {
+	s.fresh = true
+	return journal.Entry{Date: d, Text: "fresh", Exists: true}, nil
+}
+func TestGetEntryFreshReadDirective(t *testing.T) {
+	for _, directive := range []string{"", "no-store", "max-age=0, No-Store"} {
+		t.Run(directive, func(t *testing.T) {
+			stub := &openServiceStub{}
+			registry := provider.NewRegistry(local.New(testutil.LocalBaseURL, t.TempDir()))
+			factory := func(context.Context, provider.Session) (JournalService, error) { return stub, nil }
+			server := newTestServer(config.Config{SessionKey: "test-key"}, registry, factory, testCatalog(t), clock.System{})
+			request := httptest.NewRequest(http.MethodGet, "/api/v1/entries/2020-01-01", nil)
+			request.Header.Set("Cache-Control", directive)
+			addLocalSession(t, request)
+			response := httptest.NewRecorder()
+			server.GetEntry(response, request, openapi_types.Date{Time: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)})
+			if response.Code != 200 || stub.fresh != (directive != "") || response.Header().Get("Cache-Control") != "no-store" {
+				t.Fatalf("status=%d fresh=%v", response.Code, stub.fresh)
+			}
+		})
+	}
+}

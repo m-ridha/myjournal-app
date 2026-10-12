@@ -21,6 +21,8 @@ func previewPrefix(account string, date civil.Date) string {
 }
 func (k cacheKey) string() string {
 	switch k.kind {
+	case "entry", "fresh-entry":
+		return namespace(k.account) + k.kind + "/" + k.date.String()
 	case "years":
 		return namespace(k.account) + "years"
 	case "year":
@@ -62,6 +64,10 @@ func decodeSnapshot(data []byte, kind string, now time.Time) (any, error) {
 		return value, err
 	case "year":
 		var value []journal.EntryMeta
+		err := json.Unmarshal(item.Value, &value)
+		return value, err
+	case "entry":
+		var value entryResult
 		err := json.Unmarshal(item.Value, &value)
 		return value, err
 	case "preview":

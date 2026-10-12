@@ -51,8 +51,9 @@ type Store struct {
 }
 
 var (
-	_ journal.Store          = (*Store)(nil)
-	_ journal.OperationStore = (*Store)(nil)
+	_ journal.Store           = (*Store)(nil)
+	_ journal.OperationStore  = (*Store)(nil)
+	_ journal.FreshEntryStore = (*Store)(nil)
 )
 
 // New constructs a shared decorator coordinator. Nil storage or nonpositive TTL
@@ -79,8 +80,35 @@ func (s *Store) ListYear(ctx context.Context, year int) ([]journal.EntryMeta, er
 	return append([]journal.EntryMeta(nil), items...), err
 }
 
+// entryResult distinguishes confirmed absence from a successful provider result.
+type entryResult struct {
+	Entry   *journal.Entry `json:",omitempty"`
+	Missing bool
+}
+
 func (s *Store) Get(ctx context.Context, d civil.Date) (journal.Entry, error) {
-	return sharedRead(ctx, s, cacheKey{account: s.account, kind: "entry", date: d}, func(ctx context.Context) (journal.Entry, error) { return s.base.Get(ctx, d) })
+	result, err := cachedRead(ctx, s, cacheKey{account: s.account, kind: "entry", date: d}, func(ctx context.Context) (entryResult, error) {
+		entry, err := s.base.Get(ctx, d)
+		if errors.Is(err, journal.ErrNotFound) {
+			return entryResult{Missing: true}, nil
+		}
+		return entryResult{Entry: &entry}, err
+	})
+	if err != nil {
+		return journal.Entry{}, err
+	}
+	if result.Missing {
+		return journal.Entry{}, journal.ErrNotFound
+	}
+	if result.Entry == nil {
+		return journal.Entry{}, journal.ErrUnavailable
+	}
+	return *result.Entry, nil
+}
+
+// GetFresh bypasses retained snapshots and normal-read flights.
+func (s *Store) GetFresh(ctx context.Context, d civil.Date) (journal.Entry, error) {
+	return sharedRead(ctx, s, cacheKey{account: s.account, kind: "fresh-entry", date: d}, func(ctx context.Context) (journal.Entry, error) { return s.base.Get(ctx, d) })
 }
 
 func (s *Store) Previews(ctx context.Context, dates []civil.Date, maxBytes int) (map[civil.Date]string, error) {
@@ -316,6 +344,10 @@ func (c *Cache) invalidateDate(ctx context.Context, account string, date civil.D
 		}
 	}
 	if !c.active(account) {
+		return
+	}
+	if err := c.backend.Delete(ctx, (cacheKey{account: account, kind: "entry", date: date}).string()); err != nil {
+		c.disabled.Store(true)
 		return
 	}
 	if err := c.backend.DeletePrefix(ctx, previewPrefix(account, date)); err != nil {

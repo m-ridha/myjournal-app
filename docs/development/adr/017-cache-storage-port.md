@@ -66,3 +66,5 @@ Tests cover real-adapter storage/eviction/cancellation/lifecycle and the cached
 journal store contract, plus decorator expiry, races, isolation, mutation failures,
 serialization and backend-failure fallback. Depguard and temporary probes enforce
 the new import boundaries without introducing infrastructure into journal or web.
+
+2026-10-13: ADR 020 supersedes the original Get-bypass policy with two-minute full-entry snapshots and explicit fresh reads for recovery/conflict handling. Storage capacity and TTL policies are unchanged.

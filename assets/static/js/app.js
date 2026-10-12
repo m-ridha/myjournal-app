@@ -210,7 +210,10 @@
       if (retryBtn) retryBtn.hidden = true;
       notice(t('editor.loading'));
       try {
-        const response = await fetch(`/api/v1/entries/${date}`);
+        const recoveryRead = draft !== null || legacyDraft !== null || edited;
+        const response = await fetch(`/api/v1/entries/${date}`, recoveryRead
+          ? { cache: 'no-store', headers: { 'Cache-Control': 'no-store' } }
+          : undefined);
         if (!response.ok) throw new Error('load failed');
         const entry = await response.json();
         if (typeof entry.text !== 'string' || typeof entry.version !== 'string') throw new Error('invalid entry');
@@ -252,7 +255,7 @@
         // A failed acknowledgement can hide a successful upload. Only an explicit
         // retry reads first; differing text never silently adopts a new version.
         if (!automatic && saveNeedsVerification) {
-          response = await fetch(`/api/v1/entries/${date}`, { cache: 'no-store' });
+          response = await fetch(`/api/v1/entries/${date}`, { cache: 'no-store', headers: { 'Cache-Control': 'no-store' } });
           if (response.ok) {
             const current = await response.json();
             if (typeof current.text !== 'string' || typeof current.version !== 'string' ||
@@ -373,7 +376,7 @@
       notice(t('editor.loading'));
       let shouldSave = false;
       try {
-        const response = await fetch(`/api/v1/entries/${date}`);
+        const response = await fetch(`/api/v1/entries/${date}`, { cache: 'no-store', headers: { 'Cache-Control': 'no-store' } });
         if (!response.ok) throw new Error('load failed');
         const entry = await response.json();
         if (typeof entry.text !== 'string' || typeof entry.version !== 'string') throw new Error('invalid entry');

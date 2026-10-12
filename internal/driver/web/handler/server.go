@@ -23,6 +23,7 @@ type Options struct {
 // Constructors in core continue to return their concrete implementation.
 type JournalService interface {
 	ListEntries(ctx context.Context, page, size int) (journal.ListPage, error)
+	OpenFresh(ctx context.Context, d journal.Date) (journal.Entry, error)
 	Open(ctx context.Context, d journal.Date) (journal.Entry, error)
 	Save(ctx context.Context, d journal.Date, text string, base journal.Version) (journal.Entry, error)
 	Delete(ctx context.Context, d journal.Date) error

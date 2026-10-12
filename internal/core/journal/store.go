@@ -31,3 +31,8 @@ type Clock interface {
 type OperationStore interface {
 	ForOperation() Store
 }
+
+// FreshEntryStore bypasses retained content for reconciliation and conflict resolution.
+type FreshEntryStore interface {
+	GetFresh(ctx context.Context, d Date) (Entry, error)
+}

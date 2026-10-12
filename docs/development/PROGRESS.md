@@ -630,3 +630,13 @@ Formatting, lint, tests, web race checks, 31 architecture probes and 38 local ac
 ## Whole-item Entries navigation (2026-10-12)
 
 Entries rows are now native links covering the date, preview and padding. Open entry remains a noninteractive label within the link; keyboard focus highlights the whole row. The existing page template needs no change because JavaScript creates the rows. Fresh `make fmt lint test`, `git diff --check`, and 38 local Chrome accessibility scans plus keyboard-focus checks passed. JavaScript regression coverage verifies row destinations, no nested link and plain-text previews. No live Google testing or deployment was performed; changes are uncommitted.
+
+## Two-minute entry content cache (2026-10-13)
+
+Implemented user-approved caching of ordinary entry GETs using the existing two-minute TTL. PUT/DELETE invalidate the affected date; draft recovery, failed-save reconciliation and conflict resolution explicitly bypass snapshots. Privacy copy and API/architecture guidance reflect the policy change ([ADR 020](adr/020-entry-content-cache.md)).
+
+Full formatting/lint/tests, focused race checks and 38 local accessibility scans passed. Live Drive latency has not been remeasured. Changes remain uncommitted; see [validation findings](findings.md#entry-cache-validation-2026-10-13).
+
+### Confirmed blank-page caching (2026-10-13)
+
+Confirmed missing entries now share the two-minute TTL and same-date mutation invalidation. Fresh recovery/conflict reads still bypass retained absence; operational failures remain uncached. Full checks and focused race tests passed. See [absence-cache evidence](findings.md#confirmed-absence-cache-validation-2026-10-13).

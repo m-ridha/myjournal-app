@@ -1130,3 +1130,19 @@ Cancelled Google consent, rejected required grants and other callback failures a
 The page uses shared typography/theme/navigation, permits language switching back to itself, sends no-store/noindex headers and stays out of the sitemap. Accessibility QA now includes it for signed-in and signed-out contexts in both themes. Fresh `make fmt lint test`, web race checks, and 38 Chrome axe scans plus keyboard checks passed. Automated coverage includes denied consent without exchange, rejected grants without session creation, pending-cookie clearing, preserved session cookies, query-free redirects, JSON fallback, public rendering and both locales. Earlier provider tests continue to verify missing Drive grants are rejected. Axe incomplete checks remain human review items; this is not full accessibility certification. No live Google consent flow or deployment was performed.
 
 All 31 architecture probes and final `git diff --check` also passed; temporary QA server/data/binary and architecture probes were cleaned up. Changes remain uncommitted.
+
+## Entry cache validation (2026-10-13)
+
+A fixed-clock regression verifies that a second ordinary read avoids underlying Get, retains text/version together, and expires exactly at two minutes without sliding expiry. An explicit fresh read sees an external change without replacing/renewing the ordinary snapshot. Successful save refreshes the next read while preserving an unrelated date's snapshot; successful trash removes cached content, and missing entries remain uncached. A separate account performs its own read. A controlled in-flight old read cannot refill after save invalidation.
+
+Core tests verify fresh-port selection, uncached-provider fallback and future-date validation before I/O. Handler tests verify ordinary versus Cache-Control: no-store selection and no-store response headers. JavaScript regressions verify fresh requests for recovered drafts, failed-save verification and conflict actions. Existing account-isolated singleflight/cancellation/admission and mutation tests continue to pass.
+
+Fresh `make fmt lint test`, focused core/cache/Google/web race checks and 38 Chrome axe scans plus keyboard-focus checks passed. OpenAPI regeneration completed without a generated-code diff. These checks use synthetic/local fixtures; no live Drive latency, external-writer atomicity or deployment-overlap guarantees were established. Automated accessibility retains incomplete checks. The established conservative invalidation after failed/ambiguous mutation attempts is retained alongside the requested successful-mutation invalidation.
+
+Sequential architecture validation passed all 31 forbidden-import probes and cleaned up temporary files; final `git diff --check` passed. Owned accessibility QA process/data/binary were cleaned up.
+
+## Confirmed absence cache validation (2026-10-13)
+
+A missing-entry snapshot records confirmed absence explicitly and returns ErrNotFound on hits, preserving the existing HTTP 200/exists:false mapping. Two repeated absent reads make one backing call. The fixed-clock test confirms expiry exactly at two minutes; an externally created file remains hidden to ordinary hits until expiry but is immediately visible through GetFresh. Creation via Put invalidates cached absence; Trash invalidates cached content, and its subsequent confirmed absence can be reused. Availability, authentication and cancellation errors each trigger another backing call rather than becoming blank-page snapshots. This supersedes the earlier uncached-absence observation above.
+
+Fresh `make fmt lint test`, focused cache/core/web race checks and `git diff --check` passed. OpenAPI regeneration completed without generated-code changes. No live Drive latency measurement or deployment was performed.

@@ -261,3 +261,127 @@ func TestInvalidationEpochRejectsOldFillAfterAccountChurn(t *testing.T) {
 		t.Fatal("old in-flight fill survived epoch change")
 	}
 }
+
+func TestEntryCacheTTLInvalidationAndFreshReads(t *testing.T) {
+	ctx := context.Background()
+	base := newFakeStore()
+	date := civil.Date{Year: 2020, Month: 1, Day: 1}
+	other := civil.Date{Year: 2020, Month: 1, Day: 2}
+	base.contents[date] = journal.Entry{Date: date, Text: "first", Version: "v1", Exists: true}
+	base.contents[other] = journal.Entry{Date: other, Text: "other", Version: "v1", Exists: true}
+	now := time.Date(2026, 10, 13, 0, 0, 0, 0, time.UTC)
+	cache := New(newTestBackend(), 2*time.Minute)
+	cache.now = func() time.Time { return now }
+	store := cache.Wrap("google:account", base)
+	read := func(d civil.Date) journal.Entry {
+		t.Helper()
+		e, err := store.Get(ctx, d)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return e
+	}
+	read(date)
+	read(other)
+	base.contents[date] = journal.Entry{Date: date, Text: "external", Version: "v2", Exists: true}
+	if got := read(date); got.Text != "first" || got.Version != "v1" || base.calls != 2 {
+		t.Fatalf("cached=%+v calls=%d", got, base.calls)
+	}
+	fresh, err := store.(journal.FreshEntryStore).GetFresh(ctx, date)
+	if err != nil || fresh.Text != "external" || base.calls != 3 {
+		t.Fatalf("fresh=%+v err=%v calls=%d", fresh, err, base.calls)
+	}
+	// A fresh read does not renew or replace the ordinary snapshot.
+	now = now.Add(2 * time.Minute)
+	if got := read(date); got.Text != "external" || base.calls != 4 {
+		t.Fatalf("expired=%+v calls=%d", got, base.calls)
+	}
+	read(other)
+	if _, err := store.Put(ctx, date, "saved", "v2"); err != nil {
+		t.Fatal(err)
+	}
+	calls := base.calls
+	if got := read(date); got.Text != "saved" || base.calls != calls+1 {
+		t.Fatalf("post-save=%+v calls=%d", got, base.calls)
+	}
+	read(other)
+	if base.calls != calls+1 {
+		t.Fatal("save discarded unrelated content")
+	}
+	if err := store.Trash(ctx, date); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.Get(ctx, date); !errors.Is(err, journal.ErrNotFound) {
+		t.Fatalf("post-trash=%v", err)
+	}
+	if _, err := store.Put(ctx, date, "recreated", ""); err != nil {
+		t.Fatal(err)
+	}
+	if got := read(date); got.Text != "recreated" {
+		t.Fatal("create did not invalidate cached absence")
+	}
+	isolated := cache.Wrap("google:different-account", base)
+	calls = base.calls
+	if _, err := isolated.Get(ctx, date); err != nil || base.calls != calls+1 {
+		t.Fatal("account isolation failed")
+	}
+}
+
+func TestMissingEntriesCacheExpiryAndFreshBypass(t *testing.T) {
+	ctx := context.Background()
+	date := civil.Date{Year: 2020, Month: 1, Day: 1}
+	base := newFakeStore()
+	cache := New(newTestBackend(), 2*time.Minute)
+	now := time.Date(2026, 10, 13, 0, 0, 0, 0, time.UTC)
+	cache.now = func() time.Time { return now }
+	store := cache.Wrap("account", base)
+	for range 2 {
+		if _, err := store.Get(ctx, date); !errors.Is(err, journal.ErrNotFound) {
+			t.Fatalf("missing=%v", err)
+		}
+	}
+	if base.calls != 1 {
+		t.Fatalf("missing reads=%d", base.calls)
+	}
+	base.contents[date] = journal.Entry{Date: date, Text: "external create", Version: "v1", Exists: true}
+	if _, err := store.Get(ctx, date); !errors.Is(err, journal.ErrNotFound) {
+		t.Fatal("ordinary read did not retain absence")
+	}
+	fresh, err := store.(journal.FreshEntryStore).GetFresh(ctx, date)
+	if err != nil || fresh.Text != "external create" {
+		t.Fatal("fresh read reused cached absence")
+	}
+	now = now.Add(2 * time.Minute)
+	entry, err := store.Get(ctx, date)
+	if err != nil || entry.Text != "external create" || base.calls != 3 {
+		t.Fatalf("expiry=%+v err=%v calls=%d", entry, err, base.calls)
+	}
+	if err := store.Trash(ctx, date); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := store.Get(ctx, date); !errors.Is(err, journal.ErrNotFound) {
+		t.Fatal("trash did not invalidate positive snapshot")
+	}
+	calls := base.calls
+	if _, err := store.Get(ctx, date); !errors.Is(err, journal.ErrNotFound) || base.calls != calls {
+		t.Fatal("post-trash absence not cached")
+	}
+}
+
+func TestEntryFailuresAreNotCached(t *testing.T) {
+	for _, failure := range []error{journal.ErrUnavailable, journal.ErrAuthRequired, context.Canceled} {
+		t.Run(failure.Error(), func(t *testing.T) {
+			var calls int
+			base := slowReadStore{get: func(context.Context, civil.Date) (journal.Entry, error) { calls++; return journal.Entry{}, failure }}
+			store := New(newTestBackend(), 2*time.Minute).Wrap("account", base)
+			for range 2 {
+				if _, err := store.Get(context.Background(), civil.Date{Year: 2020, Month: 1, Day: 1}); !errors.Is(err, failure) {
+					t.Fatal(err)
+				}
+			}
+			if calls != 2 {
+				t.Fatal("operational failure cached")
+			}
+		})
+	}
+}

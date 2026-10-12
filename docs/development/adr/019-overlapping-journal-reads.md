@@ -27,3 +27,7 @@ Google retains bounded operation-scoped discovery reuse (ADR 015), rather than p
 The shared decorator reduces duplicate public Store work for every provider. Unlike the superseded Google-specific coordinator, it cannot merge individual folder queries across different Store operations. Controlled cold Entries requests therefore use more metadata calls than that narrower implementation, while preserving the download reduction. Batch-level coordination avoids scattering identical preview work across many independent operation views.
 
 Sharing remains process-local. No Redis dependency, longer TTL, Google scope change, background writer or server-side session store is introduced. Existing TTL staleness, non-atomic Drive compare/upload and deployment-overlap risks remain. Synthetic request counts establish reduced work, not live latency or a passed performance target. See [measurements](../performance-benchmark.md#overlapping-drive-reads-2026-10-12).
+
+## Full-entry snapshots supersession (2026-10-13)
+
+ADR 020 supersedes the no-retained-editor-content decision above. Ordinary entry reads now use the existing two-minute snapshot TTL; explicit fresh reads remain isolated from retained content and ordinary flights. All coordination bounds and mutation generation guards remain in effect.
