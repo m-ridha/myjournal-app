@@ -3,11 +3,13 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/option"
@@ -91,5 +93,31 @@ func TestManualVisibilityDiagnostics(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestLoginRejectsAtCapacity(t *testing.T) {
+	t.Parallel()
+	var exp experiment
+	for i := range 128 {
+		if !exp.pending.Add(fmt.Sprint(i), "verifier", time.Now()) {
+			t.Fatal("could not fill pending login store")
+		}
+	}
+	res := httptest.NewRecorder()
+	exp.login(res, httptest.NewRequest(http.MethodGet, "/login", nil))
+	if res.Code != http.StatusTooManyRequests || res.Header().Get("Location") != "" {
+		t.Errorf("login at capacity = %d, Location %q, want 429 without redirect", res.Code, res.Header().Get("Location"))
+	}
+}
+
+func TestCallbackRejectsExpiredStateBeforeExchange(t *testing.T) {
+	t.Parallel()
+	var exp experiment
+	exp.pending.Add("expired", "verifier", time.Now().Add(-10*time.Minute))
+	res := httptest.NewRecorder()
+	exp.callback(res, httptest.NewRequest(http.MethodGet, "/auth/google/callback?state=expired&code=unused", nil))
+	if res.Code != http.StatusBadRequest {
+		t.Errorf("callback expired state status = %d, want 400", res.Code)
 	}
 }

@@ -993,3 +993,13 @@ PR checks now run JavaScript plus full race-enabled Go tests and pinned govulnch
 ## Expanded accessibility matrix verified (2026-10-11)
 
 Fresh owned-server synthetic Playwright/axe run passed all 30 scans with zero violations, 28 route/state keyboard checks and zero page errors (Chrome 155.0.8059.40, axe 4.10.3). Signed-in Terms and isolated signed-out Home/Help/Privacy/Terms/404 passed in both themes. Non-text arrow contrast remains axe-incomplete; independent enabled-arrow measurements passed 13.98–17.40:1. See [UI acceptance checks](ui-acceptance-checks.md) for exact command, coverage and limits. Temporary server/data cleaned up; report stays in /tmp. This supersedes the earlier preparation-only execution status. git diff --check passed. No runtime code changes, commit, push or deployment.
+
+## Public sitemap (2026-10-12)
+
+Implemented public /sitemap.xml and /robots.txt in the web delivery layer, using configured APP_BASE_URL. Sitemap lists only /, /help, /privacy and /terms. Focused route tests cover valid XML, exact URL set, content types and untrusted Host isolation. make fmt lint test passed; Wire regenerated. After deployment, submit sitemap.xml in the matching Google Search Console property. No deployment or submission performed.
+
+## Security review remediation: development isolation (2026-10-12)
+
+Local login intentionally issues a credential-free dev identity, so checking APP_BASE_URL alone did not protect the wildcard socket. The composition root now binds development configurations to loopback, preserving IPv6 loopback when configured and production Google networking. S01/S02 historical spikes also bind loopback and use a bounded, expiring shared spike-only transaction store (128 entries, ten minutes); callbacks consume once and login capacity failures return 429. Wire regenerated. Fresh make fmt lint test and targeted race checks (go test -race ./cmd/app ./spike/...) passed. This is source/regression-test evidence, not a new live Google or LAN acceptance run.
+
+Sequential make test-architecture passed all 31 probes and cleaned up temporary files; git diff --check passed.

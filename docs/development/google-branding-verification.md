@@ -3,15 +3,15 @@
 Status: local pages and Search Console HTML tag prepared on 2026-10-11; deployment, ownership verification and Google acceptance pending.
 
 The user selected the current Railway URL for the first ownership attempt and
-support@myjournal.ink for public support. Confirm the mailbox receives messages
+<support@myjournal.ink> for public support. Confirm the mailbox receives messages
 before publishing the policy. Branding verification does not itself authorize
 unrestricted release or change the existing restricted test-user policy.
 
 ## Public pages
 
-- Home: https://myjournal-ink.up.railway.app/
-- Privacy: https://myjournal-ink.up.railway.app/privacy
-- Terms: https://myjournal-ink.up.railway.app/terms (new local public route; deploy before configuring GCP)
+- Home: <https://myjournal-ink.up.railway.app/>
+- Privacy: <https://myjournal-ink.up.railway.app/privacy>
+- Terms: <https://myjournal-ink.up.railway.app/terms> (new local public route; deploy before configuring GCP)
 - Consent-screen app name: myjournal (user reports corrected).
 
 Local updates explain journal functionality and limited Drive access, and disclose

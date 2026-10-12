@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"sync"
 	"time"
 
 	"github.com/go-chi/chi/v5"
@@ -21,13 +20,11 @@ import (
 	"golang.org/x/oauth2/google"
 	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/option"
+
+	"github/mridha/myjournal-app/spike/internal/loginstate"
 )
 
 const folderMIMEType = "application/vnd.google-apps.folder"
-
-type pendingLogin struct {
-	verifier string
-}
 
 type experiment struct {
 	mode           string
@@ -39,8 +36,7 @@ type experiment struct {
 	manualFileName string
 	clientID       string
 	clientSecret   string
-	mu             sync.Mutex
-	pending        map[string]pendingLogin
+	pending        loginstate.Store
 }
 
 func main() {
@@ -74,7 +70,6 @@ func main() {
 		manualFileName: *manualFileName,
 		clientID:       clientID,
 		clientSecret:   clientSecret,
-		pending:        make(map[string]pendingLogin),
 	}
 	if err := exp.validateFlags(); err != nil {
 		log.Fatal(err)
@@ -85,7 +80,7 @@ func main() {
 	router.Get("/auth/google/callback", exp.callback)
 	log.Printf("S2 folder experiment listening at %s", baseURL)
 	log.Printf("Open %s/login to authorize this test run", baseURL)
-	if err := http.ListenAndServe(":3030", router); err != nil {
+	if err := http.ListenAndServe("127.0.0.1:3030", router); err != nil {
 		log.Fatal("S2 folder experiment server stopped")
 	}
 }
@@ -117,9 +112,10 @@ func (e *experiment) login(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "could not start OAuth login", http.StatusInternalServerError)
 		return
 	}
-	e.mu.Lock()
-	e.pending[state] = pendingLogin{verifier: verifier}
-	e.mu.Unlock()
+	if !e.pending.Add(state, verifier, time.Now()) {
+		http.Error(w, "Too many pending logins; retry later", http.StatusTooManyRequests)
+		return
+	}
 
 	cfg := e.oauthConfig()
 	authURL := cfg.AuthCodeURL(state,
@@ -132,10 +128,7 @@ func (e *experiment) login(w http.ResponseWriter, r *http.Request) {
 
 func (e *experiment) callback(w http.ResponseWriter, r *http.Request) {
 	state := r.URL.Query().Get("state")
-	e.mu.Lock()
-	login, ok := e.pending[state]
-	delete(e.pending, state)
-	e.mu.Unlock()
+	verifier, ok := e.pending.Take(state, time.Now())
 	if !ok {
 		http.Error(w, "OAuth state is invalid or expired", http.StatusBadRequest)
 		return
@@ -147,7 +140,7 @@ func (e *experiment) callback(w http.ResponseWriter, r *http.Request) {
 
 	ctx, cancel := context.WithTimeout(r.Context(), 30*time.Second)
 	defer cancel()
-	token, err := e.oauthConfig().Exchange(ctx, r.URL.Query().Get("code"), oauth2.SetAuthURLParam("code_verifier", login.verifier))
+	token, err := e.oauthConfig().Exchange(ctx, r.URL.Query().Get("code"), oauth2.SetAuthURLParam("code_verifier", verifier))
 	if err != nil {
 		http.Error(w, "OAuth code exchange failed", http.StatusUnauthorized)
 		return

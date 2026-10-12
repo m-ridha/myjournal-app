@@ -22,7 +22,7 @@ make generate
 make run
 ```
 
-Open <http://localhost:3030/> and use the local sign-in. Health is available at <http://localhost:3030/healthz>. `make run` loads `.env`; `go run ./cmd/app` does not. Keep `PORT` and `APP_BASE_URL` aligned.
+Open <http://localhost:3030/> and use the local sign-in. Health is available at <http://localhost:3030/healthz>. `make run` loads `.env`; `go run ./cmd/app` does not. Keep `PORT` and `APP_BASE_URL` aligned. Local-provider and Google test-mode servers bind only to loopback; production Google deployments listen on all interfaces.
 
 Install Wire and oapi-codegen before running `make generate`; see AGENTS.md for the required versions and commands. Generated files are committed, and the quick start regenerates them from their source definitions. Inspect generated diffs before committing.
 

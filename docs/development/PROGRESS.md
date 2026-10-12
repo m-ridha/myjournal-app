@@ -297,13 +297,13 @@ This section records scoped live observations; later Railway acceptance establis
 <https://console.cloud.google.com/auth/branding?project=myjournal-app-509305>
 reference: <https://support.google.com/cloud/answer/13464321?sjid=12620915019931986057-NC>
 
-- [x] The website of your home page URL "<https://myjournal-ink.up.railway.app>" is not registered to you.
+- [ ] The website of your home page URL "<https://myjournal-ink.up.railway.app>" is not registered to you.
 Verify ownership of your home page, then wait 24 hours before retrying to allow our systems to update.
-- [ ] Your privacy policy page at "<https://myjournal-ink.up.railway.app/privacy>" does not have sufficient content.
+- [x] Your privacy policy page at "<https://myjournal-ink.up.railway.app/privacy>" does not have sufficient content.
 We were unable to confirm your app's compliance. Please update your privacy policy to clearly and sufficiently detail your app's data collection and usage, then retry.
-- [ ] Your home page is behind a login page.
+- [x] Your home page is behind a login page.
 We were unable to confirm your app's compliance. Please update your home page to allow users to view information about your app without needing to login, then retry.
-- [ ] Your home page does not explain the purpose of your app.
+- [x] Your home page does not explain the purpose of your app.
 We were unable to confirm your app's compliance. Please update your home page to clearly outline the purpose of your application, then retry.
 - [x] The app name "myjournal-ink" configured for your OAuth consent screen does not match the app name on your home page.
 We were unable to confirm your app's compliance. Please configure your app with an accurate and up-to-date application name, then retry. Learn more.
@@ -519,3 +519,11 @@ PR checks now run JavaScript plus full race-enabled Go tests and pinned govulnch
 ## Expanded accessibility matrix verified (2026-10-11)
 
 Fresh owned-server synthetic Playwright/axe run passed all 30 scans with zero violations, 28 route/state keyboard checks and zero page errors (Chrome 155.0.8059.40, axe 4.10.3). Signed-in Terms and isolated signed-out Home/Help/Privacy/Terms/404 passed in both themes. Non-text arrow contrast remains axe-incomplete; independent enabled-arrow measurements passed 13.98–17.40:1. See [UI acceptance checks](ui-acceptance-checks.md) for exact command, coverage and limits. Temporary server/data cleaned up; report stays in /tmp. This supersedes the earlier preparation-only execution status. git diff --check passed. No runtime code changes, commit, push or deployment.
+
+## Development listener and spike login limits (2026-10-12)
+
+Resolved the two findings from the static security review. The composition root now binds local-provider and Google test-mode servers to loopback (preserving configured IPv6 loopback); production Google keeps its wildcard listener. Regenerated Wire. S01/S02 now bind IPv4 loopback and share a spike-only, mutex-protected pending-login store with a 128-transaction limit, ten-minute expiry, lazy expired-state removal and one-time consumption; full stores return 429 before OAuth redirection.
+
+The new listener regression failed against the original wildcard behavior, then passed after the change. Fresh make fmt lint test passed with zero lint issues, all five JavaScript suites and all Go packages. go test -race ./cmd/app ./spike/... passed. Tests cover production/development listen addresses, concurrent capacity enforcement, expiry, capacity reclamation, one-time consumption, and S02 full/expired handler rejection. No live Google authorization or network-peer exploit performed; running servers must be restarted to adopt listener changes. No commit, push or deployment performed.
+
+Sequential make test-architecture also passed all 31 forbidden-import probes with cleanup. git diff --check passed.

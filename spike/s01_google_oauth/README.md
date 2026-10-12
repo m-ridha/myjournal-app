@@ -35,3 +35,5 @@ The spike simulates an expired access token using a copy of the exchanged token,
 Do not paste the callback URL, authorization code, state, or any token into notes or chat. A zero file count still indicates a successful list request; manually added files may not be visible with the `drive.file` scope.
 
 This is intentionally throwaway code used to answer Phase 1 blockers before implementing the real provider.
+
+The experiment listens only on IPv4 loopback (127.0.0.1:3030). Pending OAuth logins expire after ten minutes and are capped at 128; a full store returns HTTP 429 until a callback consumes a login or transactions expire.

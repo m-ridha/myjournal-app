@@ -89,3 +89,5 @@ Move the generated `2026` folder to another parent in Drive, then run `-mode=che
 ## Record findings
 
 Record each result and the Google API error/status if a query fails in `docs/development/findings.md`. Do not record authorization URLs, OAuth codes, tokens, file contents, or secrets. A zero-file result is not itself failure; judge each query by the expected folder IDs and properties.
+
+The experiment listens only on IPv4 loopback (127.0.0.1:3030). Pending OAuth logins expire after ten minutes and are capped at 128; a full store returns HTTP 429 until a callback consumes a login or transactions expire.

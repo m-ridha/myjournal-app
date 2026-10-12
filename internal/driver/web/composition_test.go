@@ -18,7 +18,7 @@ func newTestRouter(cfg config.Config, registry *provider.Registry, clk journal.C
 		panic(err)
 	}
 	origin, _ := url.Parse(cfg.BaseURL)
-	return NewRouter(Options{Session: handler.Options{SessionKey: cfg.SessionKey, CookieSecure: cfg.CookieSecure}, HTTPS: origin != nil && origin.Scheme == "https"}, registry, clk, factory, renderer, provider.NewService(registry, clk, rand.Reader))
+	return NewRouter(Options{BaseURL: cfg.BaseURL, Session: handler.Options{SessionKey: cfg.SessionKey, CookieSecure: cfg.CookieSecure}, HTTPS: origin != nil && origin.Scheme == "https"}, registry, clk, factory, renderer, provider.NewService(registry, clk, rand.Reader))
 }
 func testRenderer(t *testing.T) *Renderer {
 	t.Helper()

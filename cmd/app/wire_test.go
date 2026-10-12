@@ -118,3 +118,24 @@ func TestJournalCacheLifecycle(t *testing.T) {
 	cleanup()
 	cleanup()
 }
+
+func TestHTTPListenAddress(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name, providers, baseURL, want string
+		testMode                       bool
+	}{
+		{name: "local", providers: "local", baseURL: "http://localhost:3030", want: "127.0.0.1:3030"},
+		{name: "IPv6 local", providers: "local", baseURL: "http://[::1]:3030", want: "[::1]:3030"},
+		{name: "mixed test providers", providers: "google; local", baseURL: "http://localhost:3030", testMode: true, want: "127.0.0.1:3030"},
+		{name: "Google test", providers: "google", baseURL: "http://localhost:3030", testMode: true, want: "127.0.0.1:3030"},
+		{name: "production Google", providers: "google", baseURL: "https://journal.example.com", want: ":3030"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := config.Config{Port: 3030, Providers: tc.providers, BaseURL: tc.baseURL, GoogleTestMode: tc.testMode}
+			if got := newHTTPServer(cfg, nil).Addr; got != tc.want {
+				t.Errorf("newHTTPServer(%s).Addr = %q, want %q", tc.name, got, tc.want)
+			}
+		})
+	}
+}
