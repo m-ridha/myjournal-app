@@ -7,8 +7,16 @@ import (
 
 	provider "github/mridha/myjournal-app/internal/core/connection"
 	"github/mridha/myjournal-app/internal/core/journal"
-	"github/mridha/myjournal-app/internal/driven/session"
 )
+
+// Codec is the cookie serialization capability consumed by web delivery.
+// Implementations preserve the authenticated session and login-flow purposes.
+type Codec interface {
+	Encode(provider.Session) (string, error)
+	Decode(string) (provider.Session, error)
+	EncodeLoginFlow(provider.LoginFlow) (string, error)
+	DecodeLoginFlow(string) (provider.LoginFlow, error)
+}
 
 const CookieName = "mj_session"
 const LoginCookieName = "mj_oauth"
@@ -18,16 +26,16 @@ const MaxEncodedBytes = 3600
 const MaxCookieBytes = 4096
 
 // Read enforces the same session policy for HTML pages and API handlers.
-func Read(r *http.Request, secret string, registry *provider.Registry, now time.Time) (provider.Session, error) {
+func Read(r *http.Request, codec Codec, registry provider.Catalog, now time.Time) (provider.Session, error) {
 	cookie, err := r.Cookie(CookieName)
 	if err != nil || len(cookie.Value) > MaxCookieBytes {
 		return provider.Session{}, journal.ErrAuthRequired
 	}
-	current, err := session.Decode(secret, cookie.Value)
+	current, err := codec.Decode(cookie.Value)
 	if err != nil || !current.ValidAt(now) {
 		return provider.Session{}, journal.ErrAuthRequired
 	}
-	if _, ok := registry.Get(current.ProviderID); !ok {
+	if _, ok := registry.Lookup(current.ProviderID); !ok {
 		return provider.Session{}, journal.ErrAuthRequired
 	}
 	return current, nil

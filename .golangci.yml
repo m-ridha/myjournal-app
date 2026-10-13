@@ -25,6 +25,7 @@ linters:
     - ineffassign
     - depguard
     - revive
+    - testifylint
   settings:
     revive:
       enable-all-rules: false
@@ -34,11 +35,37 @@ linters:
       rules:
         core:
           files:
+            - "!**/*_test.go"
             - "**/internal/core/**.go"
           list-mode: strict
           allow:
             - $gostd
             - cloud.google.com/go/civil
+            - github/mridha/myjournal-app/internal/core
+            - github/mridha/myjournal-app/internal/testutil
+          deny:
+            - pkg: net/http
+              desc: "Core policy must not depend on HTTP"
+            - pkg: html/template
+              desc: "Core policy must not depend on rendering"
+            - pkg: os
+              desc: "Core policy must not access the filesystem"
+            - pkg: database/sql
+              desc: "Core policy must not access databases"
+            - pkg: github/mridha/myjournal-app/internal/driver
+              desc: "Core must not import driving adapters"
+            - pkg: github/mridha/myjournal-app/internal/driven
+              desc: "Core must not import driven adapters"
+            - pkg: github/mridha/myjournal-app/internal/config
+              desc: "Core must not import startup configuration"
+        core-tests:
+          files:
+            - "**/internal/core/**/*_test.go"
+          list-mode: strict
+          allow:
+            - $gostd
+            - cloud.google.com/go/civil
+            - github.com/stretchr/testify
             - github/mridha/myjournal-app/internal/core
             - github/mridha/myjournal-app/internal/testutil
           deny:
@@ -75,7 +102,6 @@ linters:
             - github/mridha/myjournal-app/assets
             - github/mridha/myjournal-app/internal/core
             - github/mridha/myjournal-app/internal/driver
-            - github/mridha/myjournal-app/internal/driven/session
         driven-side:
           files:
             - "!**/*_test.go"

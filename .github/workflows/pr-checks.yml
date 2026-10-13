@@ -53,6 +53,17 @@ jobs:
           version: v2.14.0
           install-only: true
 
+      - name: Install Mockery
+        if: steps.changes.outputs.run_code_checks == 'true'
+        run: go install github.com/vektra/mockery/v3@v3.8.1
+
+      - name: Check generated mocks
+        if: steps.changes.outputs.run_code_checks == 'true'
+        run: |
+          make generate-mocks
+          git diff --exit-code -- ':(glob)**/mock_*_test.go'
+          test -z "$(git ls-files --others --exclude-standard -- ':(glob)**/mock_*_test.go')"
+
       - name: Check formatting
         if: steps.changes.outputs.run_code_checks == 'true'
         run: |

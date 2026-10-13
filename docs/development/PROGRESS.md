@@ -1,5 +1,17 @@
 # Progress
 
+## Testify and Mockery adoption (2026-10-13)
+
+Adopted Testify assertions and pinned Mockery generation for connection/provider, catalog, cookie-codec and HTTP service mocks. Replaced handwritten interface stubs in lifecycle, login, disconnect, settings and entry-handler tests; stateful storage/Drive fixtures, fault-injection wrappers and deterministic clocks remain explicit. Pagination and malformed-save cases now have named table-driven subtests. `make generate` includes `make generate-mocks`, PR CI checks generated-mock drift, and testifylint enforces assertion usage. Core tests receive a test-only dependency allowance; production rules are unchanged. [Validation and limits](findings.md#test-tooling-validation-2026-10-13) record the checks.
+
+## Production function coverage (2026-10-13)
+
+Added tests for previously under-covered startup, configuration, core, handler, provider, codec and cache behavior. A private staging-file I/O seam enables atomic-save failure tests without global filesystem hooks. The requested per-function 85% target is met by 236 of 241 maintained functions; five remaining bootstrap/defensive cases are explicitly documented in [coverage evidence](findings.md#production-function-coverage-2026-10-13). The target is therefore not fully met. Generated bodies, test support and historical OAuth spikes are outside the agreed function target. Existing architecture changes and the user's Makefile coverage edit were preserved.
+
+## Architecture audit implementation (2026-10-13)
+
+Implemented both delivery-port recommendations and all lower-priority refinements: codec injection, ConnectionService/Catalog boundaries, explicit login-flow capability, focused Google adapter files and updated local dependency diagrams. Production web no longer imports driven adapters. Wire and depguard were updated; the architecture suite now contains 34 probes. [ADR 021](adr/021-delivery-ports-and-login-capabilities.md) records the design; [verification evidence](findings.md#architecture-refactor-verification-2026-10-13) records results and limits. No remote publication or deployment is part of this work.
+
 ## Script layout (2026-10-13)
 
 Standalone scripts are grouped under `scripts/javascript/`, `scripts/shell/` and `scripts/python/`. Makefile, PR/release workflows, benchmark regressions, CI path routing and documented commands use the relocated paths. The architecture script still resolves the repository root independently of its caller's working directory. Python test discovery targets `scripts/python`; sibling test imports remain colocated. Validation passed: `make fmt lint test`, 12 Python tests, all 31 architecture probes, actionlint, Python/JavaScript/shell syntax checks and `git diff --check`. No references to the old flat script paths remain in the repository text.

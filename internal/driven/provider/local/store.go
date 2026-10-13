@@ -254,29 +254,6 @@ func hashText(s string) string {
 	return hex.EncodeToString(sum[:])
 }
 
-// Stage in the destination directory so rename atomically replaces the entry.
-// Readers see the complete old or new file; failures before rename preserve the old file.
-func writeAtomically(ctx context.Context, path string, data []byte, rename func(string, string) error) error {
-	temp, err := os.CreateTemp(filepath.Dir(path), ".entry-*")
-	if err != nil {
-		return err
-	}
-	defer func() { _ = temp.Close(); _ = os.Remove(temp.Name()) }()
-	if _, err := temp.Write(data); err != nil {
-		return err
-	}
-	if err := temp.Sync(); err != nil {
-		return err
-	}
-	if err := temp.Close(); err != nil {
-		return err
-	}
-	if err := ctx.Err(); err != nil {
-		return err
-	}
-	return rename(temp.Name(), path)
-}
-
 // storageError translates filesystem failures while preserving their identity.
 func storageError(err error) error {
 	if err == nil {

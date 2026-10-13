@@ -11,6 +11,7 @@ import (
 	"time"
 
 	openapi_types "github.com/oapi-codegen/runtime/types"
+	"github.com/stretchr/testify/require"
 
 	"github/mridha/myjournal-app/internal/config"
 	provider "github/mridha/myjournal-app/internal/core/connection"
@@ -48,9 +49,8 @@ func TestSaveRequiredFieldsPreserveExistingEntry(t *testing.T) {
 	if first.Code != 200 {
 		t.Fatal(first.Body.String())
 	}
-	if err := json.Unmarshal(first.Body.Bytes(), &entry); err != nil {
-		t.Fatal(err)
-	}
+	err := json.Unmarshal(first.Body.Bytes(), &entry)
+	require.NoError(t, err)
 	for _, body := range []string{`null`, `{}`, `{"text":"replacement"}`, `{"text":null,"baseVersion":"` + entry.Version + `"}`, `{"baseVersion":"` + entry.Version + `"}`, `{"text":"replacement","baseVersion":null}`, `{"text":42,"baseVersion":""}`} {
 		t.Run(body, func(t *testing.T) { assertJSONError(t, save(body), 400, testCatalog(t).Text("errors.invalidRequest")) })
 	}
@@ -59,9 +59,8 @@ func TestSaveRequiredFieldsPreserveExistingEntry(t *testing.T) {
 	w := httptest.NewRecorder()
 	h.GetEntry(w, r, date)
 	var loaded api.Entry
-	if err := json.Unmarshal(w.Body.Bytes(), &loaded); err != nil {
-		t.Fatal(err)
-	}
+	err = json.Unmarshal(w.Body.Bytes(), &loaded)
+	require.NoError(t, err)
 	if loaded.Text != entry.Text || loaded.Version != entry.Version {
 		t.Fatal("invalid request changed saved entry")
 	}

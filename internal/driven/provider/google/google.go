@@ -84,3 +84,5 @@ func (p *Provider) Begin(_ context.Context, request provider.LoginRequest) (stri
 	}
 	return cfg.AuthCodeURL(request.State, options...), nil
 }
+
+func (*Provider) RequiresLoginFlow() bool { return true }

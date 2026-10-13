@@ -11,6 +11,9 @@ import (
 	"time"
 
 	openapi_types "github.com/oapi-codegen/runtime/types"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 
 	"github/mridha/myjournal-app/assets"
 	"github/mridha/myjournal-app/internal/config"
@@ -41,9 +44,8 @@ func TestSaveAndGetEntryRoundTrip(t *testing.T) {
 	}
 
 	var saved api.Entry
-	if err := json.Unmarshal(res.Body.Bytes(), &saved); err != nil {
-		t.Fatalf("SaveEntry() body is not valid JSON: %v", err)
-	}
+	err := json.Unmarshal(res.Body.Bytes(), &saved)
+	require.NoError(t, err, "SaveEntry() body is not valid JSON: %v", err)
 	if saved.Text != "hello journal" {
 		t.Fatalf("SaveEntry() saved text = %q, want %q", saved.Text, "hello journal")
 	}
@@ -60,9 +62,8 @@ func TestSaveAndGetEntryRoundTrip(t *testing.T) {
 	}
 
 	var loaded api.Entry
-	if err := json.Unmarshal(getRes.Body.Bytes(), &loaded); err != nil {
-		t.Fatalf("GetEntry() body is not valid JSON: %v", err)
-	}
+	err = json.Unmarshal(getRes.Body.Bytes(), &loaded)
+	require.NoError(t, err, "GetEntry() body is not valid JSON: %v", err)
 	if loaded.Text != "hello journal" {
 		t.Fatalf("GetEntry() text = %q, want %q", loaded.Text, "hello journal")
 	}
@@ -113,15 +114,11 @@ func TestPreviewTextUsesFirstMeaningfulLine(t *testing.T) {
 		t.Fatal("registry.Get(\"local\") = false, want true")
 	}
 	store, err := providerImpl.Store(context.Background(), provider.Connection{ProviderID: "local", AccountID: "dev", AccountEmail: "dev@localhost", Credentials: "local-dev-user"})
-	if err != nil {
-		t.Fatalf("provider.Store() error = %v", err)
-	}
+	require.NoError(t, err, "provider.Store() error = %v", err)
 
 	service := journal.NewService(store, clock.System{})
 	page, err := service.ListEntries(context.Background(), 1, 40)
-	if err != nil {
-		t.Fatalf("ListEntries() error = %v", err)
-	}
+	require.NoError(t, err, "ListEntries() error = %v", err)
 	if len(page.Items) != 1 || page.Items[0].Preview != "My first line" {
 		t.Fatalf("ListEntries() preview = %#v, want %q", page.Items, "My first line")
 	}
@@ -147,33 +144,33 @@ func addLocalSession(t *testing.T, req *http.Request) {
 		Connection: provider.Connection{ProviderID: "local", AccountID: "dev", AccountEmail: "dev@localhost", Credentials: "local-dev-user"},
 		IssuedAt:   time.Now().UTC(),
 	})
-	if err != nil {
-		t.Fatalf("session.Encode() error = %v", err)
-	}
+	require.NoError(t, err, "session.Encode() error = %v", err)
 	req.AddCookie(&http.Cookie{Name: authsession.CookieName, Value: encoded})
 }
 
 func testCatalog(t *testing.T) i18n.Catalog {
 	t.Helper()
 	catalog, err := i18n.Load(assets.FS, "locales/en.json")
-	if err != nil {
-		t.Fatalf("i18n.Load() error = %v", err)
-	}
+	require.NoError(t, err, "i18n.Load() error = %v", err)
 	return catalog
 }
 
 func TestListRejectsOutOfRangePagination(t *testing.T) {
 	registry := provider.NewRegistry(local.New(testutil.LocalBaseURL, t.TempDir()))
 	server := newTestServer(config.Config{SessionKey: "test-key"}, registry, localServiceFactory(registry), testCatalog(t), clock.System{})
-	for _, pair := range [][2]int{{0, 20}, {journal.MaxPage + 1, 20}, {1, 101}, {1, -1}} {
-		page, size := pair[0], pair[1]
-		request := httptest.NewRequest(http.MethodGet, "/api/v1/entries", nil)
-		addLocalSession(t, request)
-		response := httptest.NewRecorder()
-		server.ListEntries(response, request, api.ListEntriesParams{Page: &page, Size: &size})
-		if response.Code != http.StatusBadRequest {
-			t.Fatalf("bounds=%v status=%d", pair, response.Code)
-		}
+	for _, tc := range []struct {
+		name       string
+		page, size int
+	}{
+		{"zero page", 0, 20}, {"page above maximum", journal.MaxPage + 1, 20}, {"size above maximum", 1, 101}, {"negative size", 1, -1},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			request := httptest.NewRequest(http.MethodGet, "/api/v1/entries", nil)
+			addLocalSession(t, request)
+			response := httptest.NewRecorder()
+			server.ListEntries(response, request, api.ListEntriesParams{Page: &tc.page, Size: &tc.size})
+			assert.Equal(t, http.StatusBadRequest, response.Code)
+		})
 	}
 }
 
@@ -182,26 +179,27 @@ func TestSaveRejectsMalformedUnicodeAndOversizedEnvelope(t *testing.T) {
 	h := newTestServer(config.Config{SessionKey: "test-key"}, registry, localServiceFactory(registry), testCatalog(t), clock.System{})
 	date := openapi_types.Date{Time: time.Date(2026, 9, 21, 0, 0, 0, 0, time.UTC)}
 	for _, tc := range []struct {
-		body   string
-		status int
+		name, body string
+		status     int
 	}{
-		{"{\"text\":\"\xff\",\"baseVersion\":\"\"}", 400},
-		{`{"text":"\ud800","baseVersion":""}`, 400}, {`{"text":"\udc00","baseVersion":""}`, 400}, {`{"text":"\ud800\u0041","baseVersion":""}`, 400},
-		{`{"text":"a"} {"text":"b"}`, 400},
-		{`{"text":"` + strings.Repeat("a", MaxSaveRequestBytes) + `"}`, 413},
+		{"invalid UTF-8", "{\"text\":\"\xff\",\"baseVersion\":\"\"}", 400},
+		{"unpaired high surrogate", `{"text":"\ud800","baseVersion":""}`, 400},
+		{"unpaired low surrogate", `{"text":"\udc00","baseVersion":""}`, 400},
+		{"invalid surrogate pair", `{"text":"\ud800\u0041","baseVersion":""}`, 400},
+		{"multiple JSON values", `{"text":"a"} {"text":"b"}`, 400},
+		{"oversized envelope", `{"text":"` + strings.Repeat("a", MaxSaveRequestBytes) + `"}`, 413},
 	} {
-		req := httptest.NewRequest(http.MethodPut, "/api/v1/entries/2026-09-21", strings.NewReader(tc.body))
-		addLocalSession(t, req)
-		res := httptest.NewRecorder()
-		h.SaveEntry(res, req, date)
-		if res.Code != tc.status {
-			t.Fatalf("status=%d want=%d", res.Code, tc.status)
-		}
+		t.Run(tc.name, func(t *testing.T) {
+			req := httptest.NewRequest(http.MethodPut, "/api/v1/entries/2026-09-21", strings.NewReader(tc.body))
+			addLocalSession(t, req)
+			res := httptest.NewRecorder()
+			h.SaveEntry(res, req, date)
+			assert.Equal(t, tc.status, res.Code)
+		})
 	}
 	for _, body := range []string{`{"text":"\ud83d\ude42"}`, `{"text":"\\ud800"}`, `{"text":"�"}`} {
-		if err := validateJSONUnicode([]byte(body)); err != nil {
-			t.Fatalf("valid Unicode rejected: %v", err)
-		}
+		err := validateJSONUnicode([]byte(body))
+		require.NoError(t, err, "valid Unicode rejected: %v", err)
 	}
 	req := httptest.NewRequest(http.MethodGet, "/api/v1/entries/2026-09-21", nil)
 	addLocalSession(t, req)
@@ -212,31 +210,15 @@ func TestSaveRejectsMalformedUnicodeAndOversizedEnvelope(t *testing.T) {
 	}
 }
 
-// Only the listing method is needed by this handler test. Embedding the contract
-// leaves unexpected calls visible as test failures, without a real journal service.
-type listServiceStub struct {
-	JournalService
-	calls      int
-	page, size int
-	err        error
-}
-
-var _ JournalService = (*listServiceStub)(nil)
-
-func (s *listServiceStub) ListEntries(_ context.Context, page, size int) (journal.ListPage, error) {
-	s.calls++
-	s.page, s.size = page, size
-	return journal.ListPage{Page: page, PageSize: size, Items: []journal.ListItem{{Date: journal.Date{Year: 2020, Month: 1, Day: 2}, Preview: "synthetic"}}}, s.err
-}
-
-func TestListEntriesAcceptsUseCaseStub(t *testing.T) {
+func TestListEntriesUsesJournalService(t *testing.T) {
 	for _, tc := range []struct {
 		name   string
 		err    error
 		status int
 	}{{"success", nil, 200}, {"unavailable", journal.ErrUnavailable, 503}} {
 		t.Run(tc.name, func(t *testing.T) {
-			stub := &listServiceStub{err: tc.err}
+			stub := newMockJournalService(t)
+			stub.EXPECT().ListEntries(mock.Anything, 2, 3).Return(journal.ListPage{Page: 2, PageSize: 3, Items: []journal.ListItem{{Date: journal.Date{Year: 2020, Month: 1, Day: 2}, Preview: "synthetic"}}}, tc.err).Once()
 			registry := provider.NewRegistry(local.New(testutil.LocalBaseURL, t.TempDir()))
 			factory := func(context.Context, provider.Session) (JournalService, error) { return stub, nil }
 			server := newTestServer(config.Config{SessionKey: "test-key"}, registry, factory, testCatalog(t), clock.System{})
@@ -245,14 +227,11 @@ func TestListEntriesAcceptsUseCaseStub(t *testing.T) {
 			response := httptest.NewRecorder()
 			page, size := 2, 3
 			server.ListEntries(response, request, api.ListEntriesParams{Page: &page, Size: &size})
-			if response.Code != tc.status || stub.calls != 1 || stub.page != 2 || stub.size != 3 {
-				t.Fatalf("status=%d calls=%d page=%d size=%d", response.Code, stub.calls, stub.page, stub.size)
-			}
+			assert.Equal(t, tc.status, response.Code)
 			if tc.err == nil {
 				var result api.ListEntriesResponse
-				if err := json.Unmarshal(response.Body.Bytes(), &result); err != nil {
-					t.Fatal(err)
-				}
+				err := json.Unmarshal(response.Body.Bytes(), &result)
+				require.NoError(t, err)
 				if len(result.Items) != 1 || result.Items[0].Preview != "synthetic" {
 					t.Fatalf("response=%+v", result)
 				}
@@ -261,25 +240,16 @@ func TestListEntriesAcceptsUseCaseStub(t *testing.T) {
 	}
 }
 
-// HTTP selects explicit fresh reads without leaking cache policy into providers.
-type openServiceStub struct {
-	JournalService
-	fresh bool
-}
-
-var _ JournalService = (*openServiceStub)(nil)
-
-func (s *openServiceStub) Open(_ context.Context, d journal.Date) (journal.Entry, error) {
-	return journal.Entry{Date: d, Text: "cached", Exists: true}, nil
-}
-func (s *openServiceStub) OpenFresh(_ context.Context, d journal.Date) (journal.Entry, error) {
-	s.fresh = true
-	return journal.Entry{Date: d, Text: "fresh", Exists: true}, nil
-}
 func TestGetEntryFreshReadDirective(t *testing.T) {
 	for _, directive := range []string{"", "no-store", "max-age=0, No-Store"} {
 		t.Run(directive, func(t *testing.T) {
-			stub := &openServiceStub{}
+			stub := newMockJournalService(t)
+			date := journal.Date{Year: 2020, Month: 1, Day: 1}
+			if directive == "" {
+				stub.EXPECT().Open(mock.Anything, date).Return(journal.Entry{Date: date, Text: "cached", Exists: true}, nil).Once()
+			} else {
+				stub.EXPECT().OpenFresh(mock.Anything, date).Return(journal.Entry{Date: date, Text: "fresh", Exists: true}, nil).Once()
+			}
 			registry := provider.NewRegistry(local.New(testutil.LocalBaseURL, t.TempDir()))
 			factory := func(context.Context, provider.Session) (JournalService, error) { return stub, nil }
 			server := newTestServer(config.Config{SessionKey: "test-key"}, registry, factory, testCatalog(t), clock.System{})
@@ -288,9 +258,15 @@ func TestGetEntryFreshReadDirective(t *testing.T) {
 			addLocalSession(t, request)
 			response := httptest.NewRecorder()
 			server.GetEntry(response, request, openapi_types.Date{Time: time.Date(2020, 1, 1, 0, 0, 0, 0, time.UTC)})
-			if response.Code != 200 || stub.fresh != (directive != "") || response.Header().Get("Cache-Control") != "no-store" {
-				t.Fatalf("status=%d fresh=%v", response.Code, stub.fresh)
+			assert.Equal(t, http.StatusOK, response.Code)
+			assert.Equal(t, "no-store", response.Header().Get("Cache-Control"))
+			var entry api.Entry
+			require.NoError(t, json.Unmarshal(response.Body.Bytes(), &entry))
+			want := "cached"
+			if directive != "" {
+				want = "fresh"
 			}
+			assert.Equal(t, want, entry.Text)
 		})
 	}
 }

@@ -14,18 +14,62 @@ Contributor instructions are in [AGENTS.md](AGENTS.md). See [progress](docs/deve
 
 The app is online-only. Browser drafts provide recovery rather than offline synchronization. Checksum comparisons are non-atomic; simultaneous external Drive edits are unsupported. See [ADR 016](docs/development/adr/016-restricted-google-release.md) for deployment and writer constraints.
 
+## Prerequisites
+
+Install Go **1.27.2** (the version declared in `go.mod`), Git, Make, and OpenSSL. Development checks also need **Node.js 24**; macOS JavaScriptCore is a supported alternative for the JavaScript tests. No npm install, database, or Google credentials are required for local-provider development.
+
+Install the Go development tools at the repository's pinned versions:
+
+```sh
+go install github.com/google/wire/cmd/wire@v0.7.0
+go install github.com/oapi-codegen/oapi-codegen/v2/cmd/oapi-codegen@v2.8.0
+go install github.com/vektra/mockery/v3@v3.8.1
+go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.14.0
+```
+
+Put the installation directory on your shell's PATH. Go uses `GOBIN` when configured, otherwise `$(go env GOPATH)/bin`:
+
+```sh
+export PATH="${PATH}:$(go env GOPATH)/bin"
+# If you configured GOBIN, add that directory instead.
+```
+
+Persist the PATH setting in your shell configuration if needed. Verify the tools are available:
+
+```sh
+go version
+wire help
+oapi-codegen -version
+mockery version
+golangci-lint version
+```
+
+The `.mockery.yml` configuration requires **Mockery v3**; `go install github.com/vektra/mockery/v2@latest` installs a different major version. Prefer the pinned commands above over `@latest` so generated code is reproducible. Testify and other application/test libraries are downloaded through Go modules, without separate CLI installation.
+
 ## Quick start
 
-Use Go 1.27.2. Copy `.env.example` to `.env` and set `SESSION_KEY` to the output of `openssl rand -base64 32`. Keep `.env` private. Defaults use the development-only local provider at port 3030 with files under `.devdata`.
+After cloning the repository and entering its root directory:
 
-```bash
+```sh
+go mod download
+cp .env.example .env
+openssl rand -base64 32
+```
+
+Set `SESSION_KEY` in `.env` to the generated value. Keep `.env` private. Defaults use the development-only local provider at port 3030 with files under `.devdata`; Google credentials can stay empty.
+
+```sh
 make generate
+make fmt lint test
+make test-architecture
 make run
 ```
 
+Run `make test-architecture` separately from other checks because it temporarily adds forbidden imports. `make run` stays running until you stop it; use Ctrl+C to stop your development server. Alternatively, after setting up `.env`, `make run` alone starts the app using the committed generated code.
+
 Open <http://localhost:3030/> and use the local sign-in. Health is available at <http://localhost:3030/healthz>. `make run` loads `.env`; `go run ./cmd/app` does not. Keep `PORT` and `APP_BASE_URL` aligned. Local-provider and Google test-mode servers bind only to loopback; production Google deployments listen on all interfaces.
 
-Install Wire and oapi-codegen before running `make generate`; see AGENTS.md for the required versions and commands. Generated files are committed, and the quick start regenerates them from their source definitions. Inspect generated diffs before committing.
+`make generate` runs OpenAPI, Wire and Mockery generation. Generated files are committed; inspect generated diffs before committing. Run `make generate-mocks` after changing mocked interfaces or `.mockery.yml`.
 
 ## Build version
 
@@ -38,7 +82,9 @@ make fmt lint test
 make test-architecture
 ```
 
-Run architecture probes separately from other lint/build processes because they temporarily add forbidden imports. Lint requires golangci-lint v2.14.0. `make test` runs six JavaScript regression suites and `go test ./...`; JavaScript uses Node.js or macOS JavaScriptCore without npm packages. Run only browser interaction regressions with `make test-js`.
+Run architecture probes separately from other lint/build processes because they temporarily add forbidden imports. Lint requires golangci-lint v2.14.0. `make test` runs six JavaScript regression suites and `go test ./...`; JavaScript uses Node.js or macOS JavaScriptCore without npm packages. Run only browser interaction regressions with `make test-js`. Go unit tests use Testify assertions and Mockery-generated interface mocks. Prefer named table-driven subtests for cases sharing the same setup and assertions; keep stateful storage/HTTP fixtures and concurrency scenarios explicit. Generated mocks are test-only and checked for drift in PR CI.
+
+Optional tooling is separate from the local quick start: Python 3 runs the helper-script tests (`python3 -B -m unittest discover -s scripts/python -p 'test_*.py'`); Docker with a running daemon is needed for `docker build -t myjournal-local .`. The [UI acceptance guide](docs/development/ui-acceptance-checks.md) documents the additional browser/accessibility setup. None of these tools is needed by `make run`.
 
 The [editor recovery checklist](docs/development/editor-recovery-checks.md) and [UI acceptance checks](docs/development/ui-acceptance-checks.md) document manual coverage. Optional accessibility tooling is separate from ordinary CI. PR creation and updates run formatting, lint, tests and architecture checks.
 

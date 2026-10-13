@@ -9,6 +9,8 @@ import (
 	"strings"
 	"testing"
 	"testing/fstest"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestRenderFailureDoesNotCommitPartialSuccess(t *testing.T) {
@@ -67,9 +69,7 @@ func TestFooterBuildVersion(t *testing.T) {
 	for _, version := range []string{"", "v1.2.3", "v0.3.0-staging", "v0.5.1-closed-beta", "v1.2.3-beta.1", "v1.2.3-beta.01"} {
 		t.Run(version, func(t *testing.T) {
 			renderer, err := NewRendererWithVersion(version)
-			if err != nil {
-				t.Fatal(err)
-			}
+			require.NoError(t, err)
 			for _, locale := range []string{"en", "id"} {
 				w := httptest.NewRecorder()
 				renderer.languages[locale].renderPage(w, pageData{Page: "help"})

@@ -56,7 +56,7 @@ func (s *Service) Begin(ctx context.Context, input BeginInput) (BeginResult, err
 	}
 	request := LoginRequest{}
 	var pending *LoginFlow
-	if p.ID() != LocalID {
+	if p.RequiresLoginFlow() {
 		flow, err := NewLoginFlow(p.ID(), s.clock.Now(), s.entropy)
 		if err != nil {
 			return BeginResult{}, fmt.Errorf("%w: %w", ErrLoginFlow, err)
@@ -83,7 +83,7 @@ func (s *Service) Complete(ctx context.Context, input CompleteInput) (Session, e
 		return Session{}, ErrProviderUnavailable
 	}
 	callback := LoginCallback{}
-	if p.ID() != LocalID {
+	if p.RequiresLoginFlow() {
 		flow := input.Pending
 		if flow == nil || !flow.ValidAt(s.clock.Now()) || flow.ProviderID != p.ID() ||
 			input.Code == "" || subtle.ConstantTimeCompare([]byte(input.State), []byte(flow.State)) != 1 {

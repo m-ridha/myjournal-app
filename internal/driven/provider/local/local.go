@@ -51,3 +51,5 @@ func (p *Provider) Store(_ context.Context, _ provider.Connection) (journal.Stor
 func (p *Provider) Revoke(_ context.Context, _ provider.Connection) error {
 	return nil
 }
+
+func (*Provider) RequiresLoginFlow() bool { return false }

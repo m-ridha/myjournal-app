@@ -1,5 +1,127 @@
 # Findings Log
 
+## Test tooling validation (2026-10-13)
+
+Testify v1.12.1 and Mockery v3.8.1 were verified with the declared Go 1.27.2 toolchain. Twelve generated `mock_*_test.go` files reproduce byte-for-byte with `make generate-mocks`. Mockery remains a pinned development command, outside the application's dependency graph; Testify is imported only by tests. Typed expectations verify relevant call arguments and reject unexpected calls, including exchange after invalid login callbacks and revocation for rejected requests. Explicit stateful fixtures remain useful for storage semantics, cancellation and concurrency; this is not a mechanical replacement of every test assertion or fixture.
+
+Fresh local validation passed: `make fmt lint test` (zero lint issues), `go test -race -short ./...`, `go vet ./...`, actionlint v1.7.7, nine PR-selector Python regressions, generation reproducibility and `git diff --check`. The sequential architecture suite passed all 36 probes, including new production-Testify and core-test/driven-adapter violations, and removed its temporary files. Installed-binary Mockery regeneration, `wire diff ./cmd/app`, actionlint and all 12 Python helper regressions also passed before PR preparation. Hosted CI has not run these changes. No live Google or browser-manual acceptance was repeated for this test-tooling change. The pre-existing Makefile coverage command is preserved; `make test` regenerates its whole-repository coverage profile.
+
+
+## Production function coverage (2026-10-13)
+
+The user selected a target of at least 85% statement coverage per maintained production function. Generated API/Wire construction bodies, test-support packages and historical OAuth spikes are excluded from that function target. Handwritten composition helpers emitted into wire_gen.go remain included. The profile itself still includes generated production code; no counters were suppressed or manually rewritten.
+
+The initial supplied coverage.out reported 61.3% across the wider repository, including historical experiments, and used package-local instrumentation: functions tested from other packages could appear as 0%. A fresh comparable production baseline with cross-package instrumentation reported 84.7%. The same production measurement after the additions reports 90.4%.
+
+| Comparable production measurement | Before | After |
+| --- | ---: | ---: |
+| Statement coverage (profile total, including generated production code) | 84.7% | 90.4% |
+| Maintained functions below 85% | 49 | 5 |
+| Maintained functions at least 85% | 191/240 | 236/241 |
+
+The extra function is the private atomic staging helper. Its file port models actual Write/Sync/Close side effects, allowing tests to inject disk-stage failures and verify that old text survives, replacement never commits and temporary files are removed. It preserves the original os.CreateTemp/write/sync/close/rename ordering and public Store behavior.
+
+Other regressions exercise explicit startup environment parsing, occupied-listener and shutdown errors, session-scoped service construction, registry lookup/error privacy, invalid journal paths/dates, lock cancellation before and during handoff, partial prefix-scan cancellation/retry, malformed filesystem indexes, canceled/failed trash preservation, codec entropy/shape failures, Drive error translation and changing metadata/checksum responses, timing-body read/close errors, calendar/delete/settings HTTP mapping and the health envelope. Filesystem permission tests explicitly skip when root would bypass permissions; cancellation tests also cover trash preservation independently of permissions.
+
+### Remaining per-function shortfalls
+
+| Function | Coverage | Remaining limit |
+| --- | ---: | --- |
+| cmd/app/main.go: main | 0.0% | Process entry point calls os.Exit; covered startup/error/shutdown logic lives in run/serve. Exercising main itself belongs to a subprocess integration-coverage run. No exit hook was added solely to increase unit coverage. |
+| cache/local/bigcache: New | 83.3% | Remaining branch handles a library constructor error after fixed valid shard/config values and positive TTL validation. No mutable factory hook was added to force an otherwise unreachable library result. |
+| cache/local/bigcache: DeletePrefix | 81.2% | Cancellation, retry and account isolation are tested; remaining branches handle iterator retrieval/deletion errors during library cleanup races or unexpected underlying failures. No BigCache-internal corruption or timing-dependent test was introduced. |
+| web/discovery: registerDiscoveryRoutes | 84.6% | The uncaught coverage branch is xml.Marshal failure for the fixed sitemap structure containing strings. Valid production input cannot trigger it. |
+| web/i18n: Catalog.JSON | 75.0% | The defensive json.Marshal error branch cannot be triggered by its concrete map[string]string payload. |
+
+These five are visible in the profile; the requested per-function threshold is not fully achieved. Protective error handling was retained rather than removed to change percentages. Coverage is statement coverage, not proof of all branches, race outcomes or production correctness.
+
+### Reproduction and verification
+
+```sh
+go test -coverpkg=./cmd/app,./internal/... -coverprofile=coverage.out ./cmd/app ./internal/...
+go tool cover -func=coverage.out
+```
+
+coverage.out was regenerated with that command. The original supplied profile is preserved locally at /private/tmp/myjournal-coverage-before.out. The user's Makefile default still runs package-local coverage over ./...; running make test overwrites coverage.out with that broader profile, so regenerate the production profile above for the comparable report.
+
+Fresh checks passed: make fmt lint test (zero lint issues), go test -race -short ./..., the production coverage run and all 34 sequential architecture probes. The final test-only logger-restoration cleanup was verified by the full formatting/lint/test run. Architecture probes ran after builds/tests and removed their temporary files. Final git diff --check passed. Logs: /private/tmp/myjournal-coverage-verified.log, /private/tmp/myjournal-coverage-race.log, /private/tmp/myjournal-coverage-maintained.log and /private/tmp/myjournal-coverage-architecture.log. No live Google calls, new deployment, commit or push were performed.
+
+
+## Architecture refactor verification (2026-10-13)
+
+Implementation status and remaining scope are recorded in [Progress](PROGRESS.md#architecture-audit-implementation-2026-10-13); [ADR 021](adr/021-delivery-ports-and-login-capabilities.md) records port ownership and capability policy.
+
+- Production import inspection with `go list` confirms that no package under internal/driver imports a driven package. Codec and connection contracts are satisfied structurally and composed by Wire.
+- Synthetic historical ciphertext fixtures decrypt through the injected Codec. Regression tests retain session/login purpose separation, wrong-key rejection, fixed lifetimes and callback validation. Focused fakes exercise codec failure, connection failure, cookie preservation and use of Catalog without storage construction. Login-flow tests use provider names independently of the declared capability to prove names no longer decide validation requirements.
+- An AST comparison against the pre-refactor Google store.go confirms all 25 original function declarations are unchanged across store.go, folders.go, read.go, write.go and retry.go. This establishes the file split's function-level equivalence; it does not replace adapter contracts or prove external Drive atomicity.
+- Fresh validation passed: `make generate-wire`, `make fmt lint test` (zero lint issues), `go vet ./...`, `go test -race -short ./...`, focused non-short app/core/session/provider/cache/web race tests, all 34 sequential architecture probes, 12 Python regressions and `git diff --check`. Architecture probes were kept separate from lint/build/test work and cleaned up their temporary files. Main outputs are `/private/tmp/myjournal-hex-final-checks.log`, `/private/tmp/myjournal-hex-final-race.log` and `/private/tmp/myjournal-hex-architecture.log`.
+- All 18 local .omm diagrams validate without errors; structural checks verify 95 node descriptions, existing source paths and labeled edge endpoints. The existing node-count heuristic warnings remain on the route/editor views. No diagrams were uploaded.
+- No new live Google, deployed-version, visual accessibility or performance acceptance was run. Existing session/cookie compatibility, shared cache policy and process-local concurrency limitations remain in force. No commit, push or deployment was performed for this refactor.
+
+
+## Clean and hexagonal architecture audit (2026-10-13)
+
+This audit describes the pre-refactor snapshot. Its recommendations and lower-priority refinements are now implemented; [current status](PROGRESS.md#architecture-audit-implementation-2026-10-13) and [ADR 021](adr/021-delivery-ports-and-login-capabilities.md) supersede the codec exception, concrete connection dependency and provider-name branch described below.
+
+Verdict: the current implementation substantially follows both clean architecture and ports-and-adapters principles. This is supported by the production import graph and use-case/adapter implementations, rather than folder names alone. No forbidden core dependency or infrastructure call inside journal/connection use cases was found in the inspected code. The main qualification is an intentional delivery-to-session-codec dependency allowed by ADR 018 and depguard; this is a replaceability gap under a stricter ports-only interpretation, not a newly discovered violation of the project's current rules.
+
+Scope: the seven local `.omm/` perspectives and recursive diagrams; `cmd/app`, all production `internal` package imports, core services/ports, web/session delivery, Google/local providers, journal cache/storage, relevant contracts/tests and architecture enforcement. This is an architecture audit, not a new security assessment, live Google acceptance, performance benchmark or exhaustive correctness proof. Local `.omm/` artifacts were not changed or uploaded during this audit.
+
+### Conformance evidence
+
+| Concern | Current implementation | Assessment |
+| --- | --- | --- |
+| Domain/application independence | `internal/core/journal/service.go` injects Store/Clock, validates dates/text/pagination and uses plain domain results. `connection.Service` consumes Catalog/Gateway, Clock and entropy. | Established; no HTTP, filesystem, OAuth SDK or concrete adapter imports in core. |
+| Outbound ports | `journal/store.go` owns Store/Clock and optional scoped/fresh capabilities; `connection/ports.go` owns lifecycle Gateway/Catalog. | Established; infrastructure implements the consumer's contract. |
+| Transport mapping | `handler/entries.go` maps generated dates/JSON to domain types and domain errors to HTTP; router and auth handlers own redirects/cookies. | Established; HTTP details stay out of use cases. |
+| Runtime composition | `cmd/app/wire.go` constructs providers/cache/clock and injects session-scoped JournalService through a factory; generated Wire owns emitted construction code. | Established for providers/cache/clock; codec injection is the exception below. |
+| Storage substitution | Google and local providers implement Store; cache decorates Store; BigCache/LRU implement ByteCache without changing domain policy. | Established; adapter memory/concurrency semantics remain different. |
+| Independent policy tests | Core uses fake ports. Google fake-HTTP and local temporary-filesystem tests run shared Store contracts; cache wrappers also run them. | Established within automated/synthetic scope. |
+| Enforced dependencies | `.golangci.yml` rejects outward imports recursively; temporary probes include nested packages and test-support leakage. | Fresh lint and all 31 probes passed. |
+
+`cloud.google.com/go/civil` in core is a calendar-value dependency, not a Drive client or network dependency. Context-aware ports, operation-scoped discovery and explicit fresh reads do not make the domain HTTP-dependent. Combining entities/use cases in one small feature package is also compatible with this design; separate domain/application folders are not required here.
+
+### Recommended improvement 1: inject the session codec at the delivery boundary
+
+Priority: worthwhile boundary improvement; not an urgent correctness fix.
+
+Evidence: `internal/driver/web/authsession/session.go:10` imports driven/session and Read calls Decode at line 26. `internal/driver/web/handler/auth.go` imports that same concrete package for EncodeLoginFlow (line 40), Encode (line 89) and DecodeLoginFlow (line 136). `.golangci.yml:78` explicitly permits this cross-adapter edge. ADR 018 records encryption as an HTTP concern while the algorithm lives in the driven adapter.
+
+Impact: changing the session encoding implementation requires changing web code; HTTP tests cannot replace encoding independently. The boundary also passes the raw session key through delivery configuration because encryption is called as package functions.
+
+Recommendation: define a small session/login codec contract owned by the consuming web/session delivery package, implemented by driven/session and constructed once in cmd/app. Keep cookie names, paths, attributes, HTTP response mapping and encoded-size limits in web. Keep session models/lifetimes in connection core and cryptography in driven/session. Update depguard to remove the exception only after the injection seam is complete. Do not invent a server-side session repository/database or move HTTP cookie policy into core.
+
+Validation for a later implementation: retain ciphertext compatibility fixtures, purpose separation, expiry/provider validation, malformed-cookie and login callback regressions, plus integration tests using the real AES-GCM implementation. Add focused handler tests with fake codec failures. No implementation is authorized by this audit alone.
+
+### Recommended improvement 2: give connection delivery an inbound use-case seam
+
+Priority: useful testability improvement; existing concrete core dependencies are legal.
+
+Evidence: `internal/driver/web/handler/server.go:41` stores `*connection.Service`, and its constructor takes the concrete service at line 50. Journal operations already consume the local JournalService interface at lines 24–34. `router.go` likewise takes the concrete connection service. Handler composition tests construct the real connection.Service and gateway registry to exercise lifecycle behavior.
+
+Impact: isolated HTTP tests for settings, revocation failure and login completion must arrange core gateway behavior instead of directly supplying the use-case outcome. This does not prevent testing or violate dependency direction, but it makes the inbound boundary less replaceable than the journal boundary.
+
+Recommendation: introduce one consumer-owned connection use-case interface containing the methods delivery actually calls: Begin, Complete, Disconnect and Settings. Keep connection.NewService returning its concrete type and bind it in cmd/app. Where delivery only checks whether a provider is configured, consider the existing narrow Catalog.Lookup capability rather than exposing the storage-capable Registry.Get surface. Keep real-service integration tests; do not add interfaces around every renderer/config/value type.
+
+### Lower-priority observations
+
+- **Provider-specific login policy is explicit but not fully generic.** `connection/service.go:59` and `:86` special-case LocalID; other providers are expected to use the pending browser login transaction. This is reasonable for the locked Google/local scope and keeps state/PKCE/nonce validation in application policy. Before introducing a genuinely different login protocol, model that capability explicitly rather than extending provider-name conditionals. Additional providers remain deferred; no capability framework is needed now.
+- **Google Store has several cohesive sub-responsibilities in one file.** `internal/driven/provider/google/store.go` is 557 lines and contains client construction, folder discovery, reads, mutations, preview work, retries and error mapping (notably retryRead at line 481 and mapError at line 517). If concurrent edits or maintenance justify it, split into focused files inside the same package. Do not create another service/repository hierarchy or move Drive mechanics into core merely to reduce file size.
+- **The dependency diagram understates an existing edge.** `.omm/dependency-map/diagram.mmd` shows driving-to-core and driven-to-core but omits web-to-driven/session as an arrow; its node description mentions the exception. A future diagram update should draw that codec dependency explicitly, and distinguish byte-storage-to-cache-policy ByteCache ownership from provider-to-core dependencies. Diagrams are a guide; go list imports remain the audit evidence.
+
+### Changes not recommended
+
+Keep the current core/driver/driven structure, concrete core constructor returns, handler-owned JournalService, shared journal cache decorator and consumer-owned ByteCache. Do not move caching into Google, relocate domain rules to handlers, create an interface for every struct, replace civil.Date solely because of its module name, or split Clock into a new generic utilities package. Preserve two-minute snapshots, fresh recovery reads, generation guards, bounded singleflight/warming and same-process coordination limits.
+
+### Fresh verification and limits
+
+- `go list -f '{{.ImportPath}}|{{join .Imports ","}}' ./internal/... ./cmd/app`: inspected production dependency graph; the only direct driving-to-driven edge is session encryption in authsession/handler.
+- `make lint`: passed, zero issues. Output: `/private/tmp/myjournal-architecture-audit-lint.log`.
+- `make test-architecture`: all 31 probes passed, run after lint and before package tests; temporary files were cleaned up. Output: `/private/tmp/myjournal-architecture-audit-probes.log`.
+- `go test ./internal/core/... ./internal/driven/cache/... ./internal/driven/provider/... ./internal/driven/session/... ./internal/driver/web/...`: passed; Go reused cached test results where applicable. Output: `/private/tmp/myjournal-architecture-audit-tests.log`.
+- No production code, interfaces, generated files, runtime configuration or diagrams were changed by this audit. No commit, remote write or deployment was performed. An independent user change to `.gitignore` was preserved.
+
+
 ## Current status (2026-10-12)
 
 This summary supersedes pending language in the dated evidence below; those records describe what was known at the time, not new work to repeat.

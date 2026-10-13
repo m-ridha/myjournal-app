@@ -7,6 +7,8 @@ import "context"
 type Gateway interface {
 	ID() string
 	Name() string
+	// RequiresLoginFlow declares whether browser state/PKCE/nonce validation is required.
+	RequiresLoginFlow() bool
 	Begin(ctx context.Context, input LoginRequest) (string, error)
 	Complete(ctx context.Context, input LoginCallback) (Connection, error)
 	Revoke(ctx context.Context, c Connection) error

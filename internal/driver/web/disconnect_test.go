@@ -1,7 +1,6 @@
 package web
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -9,26 +8,15 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
+
 	"github/mridha/myjournal-app/internal/config"
 	provider "github/mridha/myjournal-app/internal/core/connection"
 	"github/mridha/myjournal-app/internal/core/journal"
 	"github/mridha/myjournal-app/internal/driver/web/authsession"
 	"github/mridha/myjournal-app/internal/testutil"
 )
-
-type disconnectProvider struct {
-	provider.Provider
-	err        error
-	calls      int
-	connection provider.Connection
-}
-
-func (*disconnectProvider) ID() string { return "local" }
-func (p *disconnectProvider) Revoke(_ context.Context, c provider.Connection) error {
-	p.calls++
-	p.connection = c
-	return p.err
-}
 
 func TestDisconnectRevokesBeforeClearingSession(t *testing.T) {
 	now := time.Date(2026, 10, 9, 12, 0, 0, 0, time.UTC)
@@ -43,16 +31,16 @@ func TestDisconnectRevokesBeforeClearingSession(t *testing.T) {
 		{"unexpected", fmt.Errorf("private adapter failure"), 500},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			p := &disconnectProvider{err: tc.err}
+			p := newMockProvider(t)
+			p.EXPECT().ID().Return("local")
+			p.EXPECT().Revoke(mock.Anything, mock.MatchedBy(func(c provider.Connection) bool { return c.AccountID == "dev" })).Return(tc.err).Once()
 			cfg := config.Config{SessionKey: "test-key", CookieSecure: true}
 			router := newTestRouter(cfg, provider.NewRegistry(p), testutil.StubClock{Time: now}, nil)
 			r := httptest.NewRequest(http.MethodPost, "/api/v1/disconnect", nil)
 			addLocalSessionCookie(t, r, cfg.SessionKey, now)
 			w := httptest.NewRecorder()
 			router.ServeHTTP(w, r)
-			if w.Code != tc.status || p.calls != 1 || p.connection.AccountID != "dev" {
-				t.Fatalf("status=%d revoke calls=%d", w.Code, p.calls)
-			}
+			assert.Equal(t, tc.status, w.Code)
 			cookies := w.Result().Cookies()
 			if tc.err != nil {
 				checkAPIError(t, w, tc.status)
@@ -85,7 +73,8 @@ func TestDisconnectRejectsUnauthenticatedAndCrossOriginRequests(t *testing.T) {
 		{"cross-origin", true, true, now, 403},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			p := &disconnectProvider{}
+			p := newMockProvider(t)
+			p.EXPECT().ID().Return("local")
 			cfg := config.Config{SessionKey: "test-key"}
 			router := newTestRouter(cfg, provider.NewRegistry(p), testutil.StubClock{Time: now}, nil)
 			r := httptest.NewRequest(http.MethodPost, "/api/v1/disconnect", nil)
@@ -98,7 +87,7 @@ func TestDisconnectRejectsUnauthenticatedAndCrossOriginRequests(t *testing.T) {
 			w := httptest.NewRecorder()
 			router.ServeHTTP(w, r)
 			checkAPIError(t, w, tc.status)
-			if p.calls != 0 || len(w.Result().Cookies()) != 0 {
+			if len(w.Result().Cookies()) != 0 {
 				t.Fatal("rejected request mutated provider/session")
 			}
 		})

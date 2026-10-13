@@ -22,7 +22,7 @@ import (
 	webMiddleware "github/mridha/myjournal-app/internal/driver/web/middleware"
 )
 
-func NewRouter(cfg Options, registry *provider.Registry, clk journal.Clock, serviceFactory handler.ServiceFactory, renderer *Renderer, connections *provider.Service) http.Handler {
+func NewRouter(cfg Options, registry provider.Catalog, clk journal.Clock, serviceFactory handler.ServiceFactory, renderer *Renderer, connections handler.ConnectionService) http.Handler {
 
 	// Build immutable language-specific handlers once; requests never mutate a
 	// shared renderer or API handler's catalog.
@@ -42,7 +42,7 @@ func NewRouter(cfg Options, registry *provider.Registry, clk journal.Clock, serv
 	})
 }
 
-func newLocaleRouter(cfg Options, registry *provider.Registry, clk journal.Clock, serviceFactory handler.ServiceFactory, renderer *Renderer, connections *provider.Service) http.Handler {
+func newLocaleRouter(cfg Options, registry provider.Catalog, clk journal.Clock, serviceFactory handler.ServiceFactory, renderer *Renderer, connections handler.ConnectionService) http.Handler {
 
 	r := chi.NewRouter()
 	r.Use(webMiddleware.SecurityHeaders)
@@ -85,22 +85,22 @@ func newLocaleRouter(cfg Options, registry *provider.Registry, clk journal.Clock
 
 	// Web routes
 	r.Get("/", func(w http.ResponseWriter, r *http.Request) {
-		if current, err := currentSession(r, cfg.Session.SessionKey, registry, clk.Now()); err == nil {
+		if current, err := currentSession(r, cfg.Session.Codec, registry, clk.Now()); err == nil {
 			renderer.renderEntryPage(w, clk.Now().In(journal.TimeZone(r.Context())), clk, current, journal.TimeZone(r.Context()))
 			return
 		}
-		_, googleLogin := registry.Get(provider.GoogleID)
-		_, localLogin := registry.Get(provider.LocalID)
+		_, googleLogin := registry.Lookup(provider.GoogleID)
+		_, localLogin := registry.Lookup(provider.LocalID)
 		renderer.renderPage(w, pageData{TitleKey: "landing.title", DescriptionKey: "landing.description", SignedIn: false, Page: "landing", GoogleLogin: googleLogin, LocalLogin: localLogin})
 	})
 	r.Get("/sign-in-failed", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "no-store")
 		w.Header().Set("X-Robots-Tag", "noindex")
-		_, err := currentSession(r, cfg.Session.SessionKey, registry, clk.Now())
+		_, err := currentSession(r, cfg.Session.Codec, registry, clk.Now())
 		renderer.renderPage(w, pageData{TitleKey: "signInFailed.title", Page: "signinfailed", SignedIn: err == nil})
 	})
 	r.Get("/entries/today", func(w http.ResponseWriter, r *http.Request) {
-		current, err := currentSession(r, cfg.Session.SessionKey, registry, clk.Now())
+		current, err := currentSession(r, cfg.Session.Codec, registry, clk.Now())
 		if err != nil {
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
@@ -108,7 +108,7 @@ func newLocaleRouter(cfg Options, registry *provider.Registry, clk journal.Clock
 		renderer.renderEntryPage(w, clk.Now().In(journal.TimeZone(r.Context())), clk, current, journal.TimeZone(r.Context()))
 	})
 	r.Get("/entries/{date}", func(w http.ResponseWriter, r *http.Request) {
-		current, err := currentSession(r, cfg.Session.SessionKey, registry, clk.Now())
+		current, err := currentSession(r, cfg.Session.Codec, registry, clk.Now())
 		if err != nil {
 			http.Redirect(w, r, "/", http.StatusSeeOther)
 			return
@@ -126,19 +126,19 @@ func newLocaleRouter(cfg Options, registry *provider.Registry, clk journal.Clock
 		renderer.renderEntryPage(w, date, clk, current, journal.TimeZone(r.Context()))
 	})
 	r.Get("/entries", func(w http.ResponseWriter, r *http.Request) {
-		if !requireSession(w, r, cfg.Session.SessionKey, registry, clk.Now()) {
+		if !requireSession(w, r, cfg.Session.Codec, registry, clk.Now()) {
 			return
 		}
 		renderer.renderPage(w, pageData{TitleKey: "entries.title", SignedIn: true, Page: "entries"})
 	})
 	r.Get("/calendar", func(w http.ResponseWriter, r *http.Request) {
-		if !requireSession(w, r, cfg.Session.SessionKey, registry, clk.Now()) {
+		if !requireSession(w, r, cfg.Session.Codec, registry, clk.Now()) {
 			return
 		}
 		renderer.renderPage(w, pageData{TitleKey: "calendar.title", SignedIn: true, Page: "calendar", Today: civil.DateOf(clk.Now().In(journal.TimeZone(r.Context()))).String()})
 	})
 	r.Get("/settings", func(w http.ResponseWriter, r *http.Request) {
-		current, err := currentSession(r, cfg.Session.SessionKey, registry, clk.Now())
+		current, err := currentSession(r, cfg.Session.Codec, registry, clk.Now())
 		if err != nil {
 			renderer.renderPage(w, pageData{TitleKey: "settings.title", Page: "settings"})
 			return
@@ -148,15 +148,15 @@ func newLocaleRouter(cfg Options, registry *provider.Registry, clk journal.Clock
 		renderer.renderPage(w, pageData{TitleKey: "settings.title", SignedIn: true, Page: "settings", AccountName: current.AccountEmail, DraftScope: draftScope(current), FolderName: renderer.catalog.Text("app.name"), FolderURL: folderURL, FolderUnavailable: folderErr != nil})
 	})
 	r.Get("/privacy", func(w http.ResponseWriter, r *http.Request) {
-		_, err := currentSession(r, cfg.Session.SessionKey, registry, clk.Now())
+		_, err := currentSession(r, cfg.Session.Codec, registry, clk.Now())
 		renderer.renderPage(w, pageData{TitleKey: "privacy.title", DescriptionKey: "privacy.description", SignedIn: err == nil, Page: "privacy"})
 	})
 	r.Get("/terms", func(w http.ResponseWriter, r *http.Request) {
-		_, err := currentSession(r, cfg.Session.SessionKey, registry, clk.Now())
+		_, err := currentSession(r, cfg.Session.Codec, registry, clk.Now())
 		renderer.renderPage(w, pageData{TitleKey: "terms.title", DescriptionKey: "terms.description", SignedIn: err == nil, Page: "terms"})
 	})
 	r.Get("/help", func(w http.ResponseWriter, r *http.Request) {
-		_, err := currentSession(r, cfg.Session.SessionKey, registry, clk.Now())
+		_, err := currentSession(r, cfg.Session.Codec, registry, clk.Now())
 		renderer.renderPage(w, pageData{TitleKey: "help.title", DescriptionKey: "help.description", SignedIn: err == nil, Page: "help"})
 	})
 	r.MethodNotAllowed(func(w http.ResponseWriter, req *http.Request) {
@@ -203,12 +203,12 @@ func (renderer *Renderer) renderEntryPage(w http.ResponseWriter, date time.Time,
 	})
 }
 
-func currentSession(r *http.Request, secret string, registry *provider.Registry, now time.Time) (provider.Session, error) {
-	return authsession.Read(r, secret, registry, now)
+func currentSession(r *http.Request, codec authsession.Codec, registry provider.Catalog, now time.Time) (provider.Session, error) {
+	return authsession.Read(r, codec, registry, now)
 }
 
-func requireSession(w http.ResponseWriter, r *http.Request, secret string, registry *provider.Registry, now time.Time) bool {
-	if _, err := currentSession(r, secret, registry, now); err == nil {
+func requireSession(w http.ResponseWriter, r *http.Request, codec authsession.Codec, registry provider.Catalog, now time.Time) bool {
+	if _, err := currentSession(r, codec, registry, now); err == nil {
 		return true
 	}
 	http.Redirect(w, r, "/", http.StatusSeeOther)

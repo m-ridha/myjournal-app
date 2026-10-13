@@ -13,6 +13,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
+
 	provider "github/mridha/myjournal-app/internal/core/connection"
 	"github/mridha/myjournal-app/internal/core/journal"
 	"github/mridha/myjournal-app/internal/driven/session"
@@ -20,28 +23,17 @@ import (
 	"github/mridha/myjournal-app/internal/driver/web/authsession"
 )
 
-type loginProvider struct {
-	provider.Provider
-	request  provider.LoginRequest
-	callback provider.LoginCallback
-	calls    int
-}
-
-func (p *loginProvider) ID() string { return "google" }
-func (p *loginProvider) Begin(_ context.Context, r provider.LoginRequest) (string, error) {
-	p.request = r
-	return "https://example.com/authorize", nil
-}
-func (p *loginProvider) Complete(_ context.Context, c provider.LoginCallback) (provider.Connection, error) {
-	p.callback = c
-	p.calls++
-	return provider.Connection{ProviderID: "google", AccountID: "test"}, nil
-}
-
 func TestBrowserLoginHandoff(t *testing.T) {
 	now := time.Date(2026, 10, 10, 0, 0, 0, 0, time.UTC)
-	p := &loginProvider{}
-	s := &Server{cfg: Options{SessionKey: "test-key", CookieSecure: true}, registry: provider.NewRegistry(p), now: func() time.Time { return now }}
+	p := newMockProvider(t)
+	p.EXPECT().ID().Return("google")
+	p.EXPECT().RequiresLoginFlow().Return(true)
+	var loginRequest provider.LoginRequest
+	var callback provider.LoginCallback
+	calls := 0
+	p.EXPECT().Begin(mock.Anything, mock.Anything).Run(func(_ context.Context, r provider.LoginRequest) { loginRequest = r }).Return("https://example.com/authorize", nil).Once()
+	p.EXPECT().Complete(mock.Anything, mock.Anything).Run(func(_ context.Context, c provider.LoginCallback) { calls++; callback = c }).Return(provider.Connection{ProviderID: "google", AccountID: "test"}, nil).Once()
+	s := &Server{cfg: Options{Codec: session.NewCodec("test-key"), CookieSecure: true}, registry: provider.NewRegistry(p), now: func() time.Time { return now }}
 	s.connections = provider.NewService(s.registry, testClock(s.now), rand.Reader)
 	w := httptest.NewRecorder()
 	s.StartProviderLogin(w, httptest.NewRequest(http.MethodGet, "/api/v1/auth/google/login", nil), "google", api.StartProviderLoginParams{})
@@ -57,15 +49,13 @@ func TestBrowserLoginHandoff(t *testing.T) {
 		t.Fatal("incorrect pending cookie flags")
 	}
 	flow, err := session.DecodeLoginFlow("test-key", cookie.Value)
-	if err != nil || flow.State != p.request.State || flow.Verifier != p.request.Verifier || flow.Nonce != p.request.Nonce {
+	if err != nil || flow.State != loginRequest.State || flow.Verifier != loginRequest.Verifier || flow.Nonce != loginRequest.Nonce {
 		t.Fatal("provider handoff lost pending secrets")
 	}
 	otherFlow := flow
 	otherFlow.ProviderID = "other"
 	otherValue, err := session.EncodeLoginFlow("test-key", otherFlow)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	for _, tc := range []struct {
 		name, query string
 		cookie      *http.Cookie
@@ -93,7 +83,7 @@ func TestBrowserLoginHandoff(t *testing.T) {
 			}
 			q, _ := url.ParseQuery(tc.query)
 			code, state := q.Get("code"), q.Get("state")
-			before := p.calls
+			before := calls
 			w := httptest.NewRecorder()
 			s.connections = provider.NewService(s.registry, testClock(s.now), rand.Reader)
 			s.CompleteProviderLogin(w, r, "google", api.CompleteProviderLoginParams{Code: &code, State: &state})
@@ -101,10 +91,10 @@ func TestBrowserLoginHandoff(t *testing.T) {
 				t.Fatalf("status %d want %d", w.Code, tc.want)
 			}
 			if tc.want == 302 {
-				if p.calls != before+1 || p.callback.Code != "test" || p.callback.Verifier != flow.Verifier || p.callback.Nonce != flow.Nonce {
+				if calls != before+1 || callback.Code != "test" || callback.Verifier != flow.Verifier || callback.Nonce != flow.Nonce {
 					t.Fatal("incorrect exchange handoff")
 				}
-			} else if p.calls != before {
+			} else if calls != before {
 				t.Fatal("invalid callback reached exchange")
 			}
 			cleared := false
@@ -123,22 +113,17 @@ func TestBrowserLoginHandoff(t *testing.T) {
 	}
 }
 
-type unavailableLoginProvider struct{ loginProvider }
-
-func (p *unavailableLoginProvider) Complete(context.Context, provider.LoginCallback) (provider.Connection, error) {
-	return provider.Connection{}, journal.ErrUnavailable
-}
 func TestLoginExchangeOutagePreservesSession(t *testing.T) {
 	now := time.Now().UTC()
 	flow, err := provider.NewLoginFlow("google", now, rand.Reader)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	value, err := session.EncodeLoginFlow("key", flow)
-	if err != nil {
-		t.Fatal(err)
-	}
-	s := &Server{cfg: Options{SessionKey: "key"}, registry: provider.NewRegistry(&unavailableLoginProvider{}), now: func() time.Time { return now }}
+	require.NoError(t, err)
+	p := newMockProvider(t)
+	p.EXPECT().ID().Return("google")
+	p.EXPECT().RequiresLoginFlow().Return(true)
+	p.EXPECT().Complete(mock.Anything, mock.Anything).Return(provider.Connection{}, journal.ErrUnavailable).Once()
+	s := &Server{cfg: Options{Codec: session.NewCodec("key")}, registry: provider.NewRegistry(p), now: func() time.Time { return now }}
 	code, state := "code", flow.State
 	r := httptest.NewRequest(http.MethodGet, "/api/v1/auth/google/callback?code=code&state="+state, nil)
 	r.AddCookie(&http.Cookie{Name: authsession.LoginCookieName, Value: value})
@@ -170,28 +155,21 @@ func TestLoginDiagnosticsAllowOnlyKnownStages(t *testing.T) {
 	}
 }
 
-// Denied consent must never reach exchange; grant rejection must not create a session.
-type rejectedLoginProvider struct{ loginProvider }
-
-func (p *rejectedLoginProvider) Complete(context.Context, provider.LoginCallback) (provider.Connection, error) {
-	p.calls++
-	return provider.Connection{}, &provider.LoginError{Stage: provider.LoginGrant, Err: journal.ErrAuthRequired}
-}
-
 func TestBrowserLoginFailureRecovery(t *testing.T) {
 	for _, denied := range []bool{true, false} {
 		t.Run(fmt.Sprint(denied), func(t *testing.T) {
 			now := time.Now().UTC()
 			flow, err := provider.NewLoginFlow("google", now, rand.Reader)
-			if err != nil {
-				t.Fatal(err)
-			}
+			require.NoError(t, err)
 			encoded, err := session.EncodeLoginFlow("key", flow)
-			if err != nil {
-				t.Fatal(err)
+			require.NoError(t, err)
+			p := newMockProvider(t)
+			p.EXPECT().ID().Return("google")
+			p.EXPECT().RequiresLoginFlow().Return(true)
+			if !denied {
+				p.EXPECT().Complete(mock.Anything, mock.Anything).Return(provider.Connection{}, &provider.LoginError{Stage: provider.LoginGrant, Err: journal.ErrAuthRequired}).Once()
 			}
-			p := &rejectedLoginProvider{}
-			s := &Server{cfg: Options{SessionKey: "key"}, registry: provider.NewRegistry(p), now: func() time.Time { return now }}
+			s := &Server{cfg: Options{Codec: session.NewCodec("key")}, registry: provider.NewRegistry(p), now: func() time.Time { return now }}
 			s.connections = provider.NewService(s.registry, testClock(s.now), rand.Reader)
 			query := "code=synthetic-code&state=" + flow.State
 			if denied {
@@ -221,12 +199,7 @@ func TestBrowserLoginFailureRecovery(t *testing.T) {
 			if !cleared {
 				t.Fatal("pending login cookie retained")
 			}
-			if denied && p.calls != 0 {
-				t.Fatal("cancel reached exchange")
-			}
-			if !denied && p.calls != 1 {
-				t.Fatal("grant rejection not exercised")
-			}
+
 		})
 	}
 }

@@ -18,7 +18,9 @@ import (
 	"github/mridha/myjournal-app/internal/driven/clock"
 	"github/mridha/myjournal-app/internal/driven/provider/google"
 	"github/mridha/myjournal-app/internal/driven/provider/local"
+	"github/mridha/myjournal-app/internal/driven/session"
 	"github/mridha/myjournal-app/internal/driver/web"
+	"github/mridha/myjournal-app/internal/driver/web/authsession"
 	"github/mridha/myjournal-app/internal/driver/web/handler"
 	"log"
 	"log/slog"
@@ -43,7 +45,8 @@ func BuildApp(cfg config.Config) (*App, func(), error) {
 	if err != nil {
 		return nil, nil, err
 	}
-	options := newWebOptions(cfg)
+	codec := newSessionCodec(cfg)
+	options := newWebOptions(cfg, codec)
 	clock := newClock()
 	cache, cleanup, err := newJournalCache()
 	if err != nil {
@@ -211,7 +214,14 @@ func newConnectionService(registry *connection.Registry, clk journal.Clock) *con
 	return connection.NewService(registry, clk, rand.Reader)
 }
 
-func newWebOptions(cfg config.Config) web.Options {
+func newWebOptions(cfg config.Config, codec *session.Codec) web.Options {
 	origin, _ := url.Parse(cfg.BaseURL)
-	return web.Options{BaseURL: cfg.BaseURL, Session: handler.Options{SessionKey: cfg.SessionKey, CookieSecure: cfg.CookieSecure}, HTTPS: origin != nil && origin.Scheme == "https"}
+	return web.Options{BaseURL: cfg.BaseURL, Session: handler.Options{Codec: codec, CookieSecure: cfg.CookieSecure}, HTTPS: origin != nil && origin.Scheme == "https"}
 }
+
+var (
+	_ authsession.Codec         = (*session.Codec)(nil)
+	_ handler.ConnectionService = (*connection.Service)(nil)
+)
+
+func newSessionCodec(cfg config.Config) *session.Codec { return session.NewCodec(cfg.SessionKey) }
