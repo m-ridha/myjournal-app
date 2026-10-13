@@ -232,5 +232,10 @@
   "signInFailed.permission": "myjournal memerlukan izin Google Drive untuk membuka dan menyimpan berkas jurnal Anda.",
   "signInFailed.retry": "Kembali ke beranda dan coba masuk lagi. Pada layar izin Google, pilih izin Google Drive yang diminta sebelum melanjutkan. Jika masih gagal, coba lagi nanti.",
   "signInFailed.preserved": "Percobaan yang gagal ini tidak mengeluarkan Anda dari koneksi yang sudah ada atau menghapus draf di browser.",
-  "signInFailed.home": "Kembali ke beranda"
+  "signInFailed.home": "Kembali ke beranda",
+  "auth.title": "Masuk kembali",
+  "auth.expired": "Sesi Anda telah berakhir atau akses akun tidak lagi tersedia.",
+  "auth.instructions": "Masuk dengan akun yang sama, lalu kembali ke tab semula dan coba lagi. Biarkan tab tersebut tetap terbuka.",
+  "auth.unsavedReminder": "Jika ada tulisan yang belum tersimpan, salin sebelum menutup tab.",
+  "auth.signInAgain": "Masuk kembali (membuka tab baru)"
 }

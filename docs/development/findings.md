@@ -1,5 +1,14 @@
 # Findings Log
 
+## Authentication-expiry recovery (2026-10-13)
+
+Previously, save/delete distinguished 401 but offered no re-login action; Entries/Calendar displayed generic failures. A production request log establishes only the status, not whether the cause was cookie validation, deployment-key changes or Google access. That cause remains unverified.
+
+Regression tests cover 401 during initial entry load, save, delete, conflict resolution and disconnect; retained text/backup, continued typing, paused idle/blur/pagehide writes, blocked storage feedback, and fresh verification before manual save retry. List and calendar tests cover shared feedback, successful retry, and obsolete calendar failures. Go tests cover login availability with or without a valid cookie, no session-cookie clearing, no-store/noindex headers, language return paths and mismatched account scopes rejected before service construction. The optional account-consistency header is documented in OpenAPI; regeneration produced no generated API changes.
+
+Fresh `make fmt lint test` passed with zero lint issues, and `go test -race -short ./...` passed. All 36 sequential architecture probes and 12 Python helper regressions passed. Local headless Chrome with axe passed 50 scans, 44 keyboard checks and zero page errors in light/dark themes, including expired-authentication states, a 390px viewport without horizontal overflow, and signed-in/signed-out `/sign-in`. A real local-provider new-tab reconnect preserved the original draft and an explicit retry saved it; synthetic 401 responses exercised expiry. Screenshots were inspected locally. Report: `/tmp/myjournal-auth-expiry-a11y.json`. Axe retains incomplete aria/contrast checks; these results do not establish native screen-reader announcements, real Google reconnect behavior or production deployment health. The QA process owns an ephemeral listener and temporary synthetic data and cleans both up.
+
+
 ## Test tooling validation (2026-10-13)
 
 Testify v1.12.1 and Mockery v3.8.1 were verified with the declared Go 1.27.2 toolchain. Twelve generated `mock_*_test.go` files reproduce byte-for-byte with `make generate-mocks`. Mockery remains a pinned development command, outside the application's dependency graph; Testify is imported only by tests. Typed expectations verify relevant call arguments and reject unexpected calls, including exchange after invalid login callbacks and revocation for rejected requests. Explicit stateful fixtures remain useful for storage semantics, cancellation and concurrency; this is not a mechanical replacement of every test assertion or fixture.

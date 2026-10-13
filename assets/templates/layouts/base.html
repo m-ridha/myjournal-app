@@ -59,7 +59,13 @@
 
     <main class="mj-main">
       <div class="mj-container">
-        {{if eq .Page "landing"}}
+        <section class="mj-card mj-auth-expired" data-auth-expired hidden aria-labelledby="auth-expired-title">
+          <h2 id="auth-expired-title">{{t "auth.title"}}</h2>
+          <p data-auth-message role="status" aria-live="polite"></p>
+          <p>{{t "auth.instructions"}}<br>{{t "auth.unsavedReminder"}}</p>
+          <a class="mj-btn mj-btn-secondary" href="/sign-in" target="_blank" rel="noopener noreferrer">{{t "auth.signInAgain"}}</a>
+        </section>
+        {{if or (eq .Page "landing") (eq .Page "signin")}}
           {{template "landing" .}}
         {{else if eq .Page "editor"}}
           {{template "editor" .}}

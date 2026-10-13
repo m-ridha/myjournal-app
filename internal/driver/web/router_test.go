@@ -241,19 +241,19 @@ func TestEditorDraftScopeIsAccountAndProviderSpecific(t *testing.T) {
 	b.AccountID = "another-account"
 	c := a
 	c.ProviderID = "google"
-	if draftScope(a) == draftScope(b) || draftScope(a) == draftScope(c) {
+	if authsession.DraftScope(a) == authsession.DraftScope(b) || authsession.DraftScope(a) == authsession.DraftScope(c) {
 		t.Fatal("draft scopes must separate accounts and providers")
 	}
 	res := httptest.NewRecorder()
 	clk := testutil.StubClock{Time: time.Date(2026, 10, 8, 12, 0, 0, 0, time.UTC)}
 	testRenderer(t).renderEntryPage(res, clk.Now(), clk, a, time.UTC)
 	body := res.Body.String()
-	if !strings.Contains(body, `data-draft-scope="`+draftScope(a)+`"`) || strings.Contains(body, a.Credentials) {
+	if !strings.Contains(body, `data-draft-scope="`+authsession.DraftScope(a)+`"`) || strings.Contains(body, a.Credentials) {
 		t.Fatal("editor must expose opaque draft scope without credentials")
 	}
 	b = a
 	b.AccountEmail = "new-label@example.test"
-	if draftScope(a) != draftScope(b) {
+	if authsession.DraftScope(a) != authsession.DraftScope(b) {
 		t.Fatal("account-label changes must not orphan drafts")
 	}
 }

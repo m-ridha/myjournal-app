@@ -283,7 +283,7 @@ components:
       type: apiKey
       in: cookie
       name: mj_session
-      description: Encrypted authenticated HttpOnly cookie, SameSite=Lax, fixed 30-day lifetime. Secure is required for HTTPS deployment; localhost development can disable it. Missing, expired, invalid, or revoked connections require sign-in (401).
+      description: Encrypted authenticated HttpOnly cookie, SameSite=Lax, fixed 30-day lifetime. Secure is required for HTTPS deployment; localhost development can disable it. Missing, expired, invalid, or revoked connections require sign-in (401). Browser editor/settings requests also send the optional X-Myjournal-Account header containing the rendered account draft scope; a mismatch with the authenticated provider/account returns 401 before invoking services. The header does not authenticate requests or replace the session cookie.
   parameters:
     ProviderPathParam:
       name: provider

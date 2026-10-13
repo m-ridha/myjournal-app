@@ -62,7 +62,14 @@ func New(cfg Options, registry provider.Catalog, service ServiceFactory, message
 func (s *Server) message(key string) string { return s.messages.Text(key) }
 
 func (s *Server) currentSession(r *http.Request) (provider.Session, error) {
-	return authsession.Read(r, s.cfg.Codec, s.registry, s.now())
+	current, err := authsession.Read(r, s.cfg.Codec, s.registry, s.now())
+	if err != nil {
+		return provider.Session{}, err
+	}
+	if expected := r.Header.Get("X-Myjournal-Account"); expected != "" && expected != authsession.DraftScope(current) {
+		return provider.Session{}, journal.ErrAuthRequired
+	}
+	return current, nil
 }
 
 func (s *Server) service(r *http.Request) (JournalService, error) {

@@ -232,5 +232,10 @@
   "signInFailed.permission": "myjournal needs Google Drive permission to open and save your journal files.",
   "signInFailed.retry": "Go back to home and try signing in again. On Google’s permission screen, select the requested Google Drive permission before continuing. If it still fails, try again later.",
   "signInFailed.preserved": "This failed attempt has not signed you out of an existing connection or cleared your browser drafts.",
-  "signInFailed.home": "Back to home"
+  "signInFailed.home": "Back to home",
+  "auth.title": "Sign in again",
+  "auth.expired": "Your session has expired or account access is no longer available.",
+  "auth.instructions": "Sign in with the same account, then return to your original tab and retry. Keep that tab open.",
+  "auth.unsavedReminder": "If you have unsaved text, copy it before closing the tab.",
+  "auth.signInAgain": "Sign in again (opens in a new tab)"
 }

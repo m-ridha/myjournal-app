@@ -1,9 +1,6 @@
 package web
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
-	"encoding/json"
 	"io/fs"
 	"net/http"
 	"strings"
@@ -93,6 +90,13 @@ func newLocaleRouter(cfg Options, registry provider.Catalog, clk journal.Clock, 
 		_, localLogin := registry.Lookup(provider.LocalID)
 		renderer.renderPage(w, pageData{TitleKey: "landing.title", DescriptionKey: "landing.description", SignedIn: false, Page: "landing", GoogleLogin: googleLogin, LocalLogin: localLogin})
 	})
+	r.Get("/sign-in", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Cache-Control", "no-store")
+		w.Header().Set("X-Robots-Tag", "noindex")
+		_, googleLogin := registry.Lookup(provider.GoogleID)
+		_, localLogin := registry.Lookup(provider.LocalID)
+		renderer.renderPage(w, pageData{TitleKey: "auth.title", Page: "signin", GoogleLogin: googleLogin, LocalLogin: localLogin})
+	})
 	r.Get("/sign-in-failed", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "no-store")
 		w.Header().Set("X-Robots-Tag", "noindex")
@@ -145,7 +149,7 @@ func newLocaleRouter(cfg Options, registry provider.Catalog, clk journal.Clock, 
 		}
 		settings, folderErr := connections.Settings(r.Context(), current)
 		folderURL := settings.FolderURL
-		renderer.renderPage(w, pageData{TitleKey: "settings.title", SignedIn: true, Page: "settings", AccountName: current.AccountEmail, DraftScope: draftScope(current), FolderName: renderer.catalog.Text("app.name"), FolderURL: folderURL, FolderUnavailable: folderErr != nil})
+		renderer.renderPage(w, pageData{TitleKey: "settings.title", SignedIn: true, Page: "settings", AccountName: current.AccountEmail, DraftScope: authsession.DraftScope(current), FolderName: renderer.catalog.Text("app.name"), FolderURL: folderURL, FolderUnavailable: folderErr != nil})
 	})
 	r.Get("/privacy", func(w http.ResponseWriter, r *http.Request) {
 		_, err := currentSession(r, cfg.Session.Codec, registry, clk.Now())
@@ -193,7 +197,7 @@ func (renderer *Renderer) renderEntryPage(w http.ResponseWriter, date time.Time,
 	today := clk.Now().In(location)
 	renderer.renderPage(w, pageData{
 		Title:          renderer.catalog.FormatDate(date),
-		DraftScope:     draftScope(current),
+		DraftScope:     authsession.DraftScope(current),
 		DescriptionKey: "editor.description",
 		SignedIn:       true,
 		Page:           "editor",
@@ -216,8 +220,3 @@ func requireSession(w http.ResponseWriter, r *http.Request, codec authsession.Co
 }
 
 // Scope browser drafts by provider/account without exposing account labels or credentials.
-func draftScope(current provider.Session) string {
-	identity, _ := json.Marshal([2]string{current.ProviderID, current.AccountID})
-	sum := sha256.Sum256(identity)
-	return hex.EncodeToString(sum[:])
-}

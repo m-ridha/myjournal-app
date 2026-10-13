@@ -31,7 +31,7 @@ func registerLanguageRoute(r chi.Router, cfg Options, renderer *Renderer) {
 // Only return to browser pages, never an external origin or auth/API endpoint.
 func languageReturnPath(path string) string {
 	switch path {
-	case "/", "/sign-in-failed", "/settings", "/help", "/privacy", "/terms", "/entries", "/calendar":
+	case "/", "/sign-in", "/sign-in-failed", "/settings", "/help", "/privacy", "/terms", "/entries", "/calendar":
 		return path
 	}
 	if strings.HasPrefix(path, "/entries/") {
