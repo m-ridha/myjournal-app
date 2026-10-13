@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github/m-ridha/myjournal-app/internal/core/journal"
-	cachestore "github/m-ridha/myjournal-app/internal/driven/cache/journal"
+	cachestore "github/m-ridha/myjournal-app/internal/driven/cache/cachestore"
 )
 
 func TestWarmingUsesIndependentGoogleClient(t *testing.T) {

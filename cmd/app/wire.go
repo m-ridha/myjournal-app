@@ -22,7 +22,7 @@ import (
 	"github/m-ridha/myjournal-app/internal/config"
 	provider "github/m-ridha/myjournal-app/internal/core/connection"
 	"github/m-ridha/myjournal-app/internal/core/journal"
-	"github/m-ridha/myjournal-app/internal/driven/cache/journal"
+	"github/m-ridha/myjournal-app/internal/driven/cache/cachestore"
 	cacheAdapter "github/m-ridha/myjournal-app/internal/driven/cache/local/bigcache"
 	"github/m-ridha/myjournal-app/internal/driven/clock"
 	googleProvider "github/m-ridha/myjournal-app/internal/driven/provider/google"

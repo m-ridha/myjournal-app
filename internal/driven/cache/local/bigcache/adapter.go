@@ -9,7 +9,7 @@ import (
 
 	library "github.com/allegro/bigcache"
 
-	cachestore "github/m-ridha/myjournal-app/internal/driven/cache/journal"
+	cachestore "github/m-ridha/myjournal-app/internal/driven/cache/cachestore"
 )
 
 const (

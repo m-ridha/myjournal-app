@@ -15,7 +15,7 @@ import (
 
 	"github/m-ridha/myjournal-app/internal/core/journal"
 	"github/m-ridha/myjournal-app/internal/core/journal/storetest"
-	cachestore "github/m-ridha/myjournal-app/internal/driven/cache/journal"
+	cachestore "github/m-ridha/myjournal-app/internal/driven/cache/cachestore"
 	"github/m-ridha/myjournal-app/internal/driven/cache/local/lru"
 )
 

@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	cachestore "github/m-ridha/myjournal-app/internal/driven/cache/journal"
+	cachestore "github/m-ridha/myjournal-app/internal/driven/cache/cachestore"
 )
 
 func TestAdapterStorage(t *testing.T) {

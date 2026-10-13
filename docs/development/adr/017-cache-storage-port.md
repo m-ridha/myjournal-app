@@ -24,7 +24,7 @@ with a 2048-entry default, explicit capacity override, lazy TTL expiry, copied
 bytes and cancelable lock waits. It owns no goroutines; Close releases values and rejects later operations.
 Its entry-count bound is not a byte-memory limit. Selecting it requires an
 explicit composition-root change; no runtime fallback or environment selector
-is added. The journal decorator lives in `internal/driven/cache/journal`; providers live
+is added. The journal decorator lives in `internal/driven/cache/cachestore`; providers live
 under `internal/driven/provider`. ADR 018 records the package migration.
 
 The decorator retains account isolation, serialized snapshots, absolute expiry,

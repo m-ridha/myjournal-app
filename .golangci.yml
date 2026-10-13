@@ -114,7 +114,7 @@ linters:
         cache-policy:
           files:
             - "!**/*_test.go"
-            - "**/internal/driven/cache/journal/**.go"
+            - "**/internal/driven/cache/cachestore/**.go"
           list-mode: strict
           allow:
             - $gostd
@@ -122,7 +122,7 @@ linters:
             - golang.org/x/sync/errgroup
             - cloud.google.com/go/civil
             - github/m-ridha/myjournal-app/internal/core/journal
-            - github/m-ridha/myjournal-app/internal/driven/cache/journal
+            - github/m-ridha/myjournal-app/internal/driven/cache/cachestore
         session-codec:
           files:
             - "!**/*_test.go"

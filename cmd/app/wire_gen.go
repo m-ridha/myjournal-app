@@ -13,7 +13,7 @@ import (
 	"github/m-ridha/myjournal-app/internal/config"
 	"github/m-ridha/myjournal-app/internal/core/connection"
 	"github/m-ridha/myjournal-app/internal/core/journal"
-	"github/m-ridha/myjournal-app/internal/driven/cache/journal"
+	"github/m-ridha/myjournal-app/internal/driven/cache/cachestore"
 	"github/m-ridha/myjournal-app/internal/driven/cache/local/bigcache"
 	"github/m-ridha/myjournal-app/internal/driven/clock"
 	"github/m-ridha/myjournal-app/internal/driven/provider/google"

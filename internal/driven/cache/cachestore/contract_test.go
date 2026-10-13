@@ -8,7 +8,7 @@ import (
 
 	"github/m-ridha/myjournal-app/internal/core/journal"
 	"github/m-ridha/myjournal-app/internal/core/journal/storetest"
-	cachestore "github/m-ridha/myjournal-app/internal/driven/cache/journal"
+	cachestore "github/m-ridha/myjournal-app/internal/driven/cache/cachestore"
 	cacheAdapter "github/m-ridha/myjournal-app/internal/driven/cache/local/bigcache"
 	"github/m-ridha/myjournal-app/internal/driven/cache/local/lru"
 	"github/m-ridha/myjournal-app/internal/driven/provider/local"
