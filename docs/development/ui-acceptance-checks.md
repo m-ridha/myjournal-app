@@ -101,3 +101,7 @@ scripts/python/check-accessibility.py now expects the Settings gear in both sess
 ## Authentication-expiry follow-up (2026-10-13)
 
 The optional QA script now covers `/sign-in` in both session states, expired Entries/Calendar/editor requests, and reconnecting through a new tab without losing the original editor. Current results and limits are recorded once in [authentication-expiry evidence](findings.md#authentication-expiry-recovery-2026-10-13). Native screen-reader announcements and Google reconnect still require separate human/live evidence; no prior acceptance gate is reopened here.
+
+## Calendar picker follow-up (2026-10-13)
+
+The QA script exercises open month/year grids, dismissal and focus return, future-month navigation limits, no requests during picker browsing and one request on selection. It also checks 390px and 320px layouts. Current results and coverage limits are recorded in [calendar picker evidence](findings.md#calendar-monthyear-picker-2026-10-13).

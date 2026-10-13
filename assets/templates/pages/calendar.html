@@ -11,10 +11,28 @@
   <div class="mj-calendar">
     <div class="mj-calendar-header">
       <button class="mj-icon-btn" type="button" aria-label="{{t "calendar.previousMonth"}}" data-calendar-prev>←</button>
-      <strong data-calendar-month role="status" aria-live="polite">{{t "calendar.loading"}}</strong>
-      <button class="mj-icon-btn" type="button" aria-label="{{t "calendar.nextMonth"}}" data-calendar-next>→</button>
+      <div class="mj-month-picker-anchor">
+        <button class="mj-btn mj-btn-secondary mj-month-trigger" type="button" data-month-trigger aria-haspopup="dialog" aria-expanded="false" aria-controls="calendar-month-picker" aria-label="{{t "calendar.chooseMonth"}}">
+          <span data-calendar-month>{{t "calendar.loading"}}</span>
+          <span class="mj-month-chevron" aria-hidden="true"></span>
+        </button>
+        <div class="mj-month-picker" id="calendar-month-picker" data-month-picker role="dialog" aria-labelledby="calendar-month-picker-title" hidden>
+          <div class="mj-month-picker-title">
+            <h2 id="calendar-month-picker-title">{{t "calendar.chooseMonth"}}</h2>
+            <button class="mj-icon-btn" type="button" data-month-close aria-label="{{t "calendar.closePicker"}}">×</button>
+          </div>
+          <div class="mj-month-picker-header">
+            <button class="mj-icon-btn" type="button" data-month-prev aria-label="{{t "calendar.previousYear"}}">←</button>
+            <button class="mj-btn mj-btn-secondary mj-btn-small" type="button" data-month-year></button>
+            <button class="mj-icon-btn" type="button" data-month-next aria-label="{{t "calendar.nextYear"}}">→</button>
+          </div>
+          <div class="mj-month-options" data-month-options role="group" aria-label="{{t "calendar.chooseMonth"}}"></div>
+        </div>
+      </div>
+      <button class="mj-icon-btn" type="button" aria-label="{{t "calendar.nextMonth"}}" data-calendar-next disabled>→</button>
     </div>
 
+    <p class="mj-calendar-status" data-calendar-status role="status" aria-live="polite"></p>
     <div class="mj-calendar-grid" role="group" aria-label="{{t "calendar.label"}}" data-calendar-grid></div>
   </div>
 </section>

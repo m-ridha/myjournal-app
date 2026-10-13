@@ -237,5 +237,13 @@
   "auth.expired": "Sesi Anda telah berakhir atau akses akun tidak lagi tersedia.",
   "auth.instructions": "Masuk dengan akun yang sama, lalu kembali ke tab semula dan coba lagi. Biarkan tab tersebut tetap terbuka.",
   "auth.unsavedReminder": "Jika ada tulisan yang belum tersimpan, salin sebelum menutup tab.",
-  "auth.signInAgain": "Masuk kembali (membuka tab baru)"
+  "auth.signInAgain": "Masuk kembali (membuka tab baru)",
+  "calendar.chooseMonth": "Pilih bulan dan tahun",
+  "calendar.chooseYear": "Pilih tahun",
+  "calendar.showMonths": "Tampilkan bulan untuk {year}",
+  "calendar.previousYear": "Tahun sebelumnya",
+  "calendar.nextYear": "Tahun berikutnya",
+  "calendar.previousYears": "12 tahun sebelumnya",
+  "calendar.nextYears": "12 tahun berikutnya",
+  "calendar.closePicker": "Tutup pemilih bulan"
 }

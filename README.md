@@ -8,7 +8,7 @@ Contributor instructions are in [AGENTS.md](AGENTS.md). See [progress](docs/deve
 
 - One UTF-8 plain-text entry per day, with browser-time-zone dates and editable past entries.
 - Manual save and idle autosave, per-tab draft recovery, conflict-resolution controls and confirmed trash.
-- Previews for your latest 10 entries, calendar navigation for older notes, light/dark themes and account settings.
+- Previews for your latest 10 entries, calendar navigation with a month/year picker for older notes, light/dark themes and account settings.
 - Google sign-in and Drive storage, with a local provider for development.
 - English and Bahasa Indonesia interfaces, selectable from the header or Settings, including before sign-in. Your choice stays in this browser after sign-out; English is the default.
 
@@ -82,7 +82,7 @@ make fmt lint test
 make test-architecture
 ```
 
-Run architecture probes separately from other lint/build processes because they temporarily add forbidden imports. Lint requires golangci-lint v2.14.0. `make test` runs six JavaScript regression suites and `go test ./...`; JavaScript uses Node.js or macOS JavaScriptCore without npm packages. Run only browser interaction regressions with `make test-js`. Go unit tests use Testify assertions and Mockery-generated interface mocks. Prefer named table-driven subtests for cases sharing the same setup and assertions; keep stateful storage/HTTP fixtures and concurrency scenarios explicit. Generated mocks are test-only and checked for drift in PR CI.
+Run architecture probes separately from other lint/build processes because they temporarily add forbidden imports. Lint requires golangci-lint v2.14.0. `make test` runs seven JavaScript regression suites and `go test ./...`; JavaScript uses Node.js or macOS JavaScriptCore without npm packages. Run only browser interaction regressions with `make test-js`. Go unit tests use Testify assertions and Mockery-generated interface mocks. Prefer named table-driven subtests for cases sharing the same setup and assertions; keep stateful storage/HTTP fixtures and concurrency scenarios explicit. Generated mocks are test-only and checked for drift in PR CI.
 
 Optional tooling is separate from the local quick start: Python 3 runs the helper-script tests (`python3 -B -m unittest discover -s scripts/python -p 'test_*.py'`); Docker with a running daemon is needed for `docker build -t myjournal-local .`. The [UI acceptance guide](docs/development/ui-acceptance-checks.md) documents the additional browser/accessibility setup. None of these tools is needed by `make run`.
 

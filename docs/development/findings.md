@@ -1,5 +1,14 @@
 # Findings Log
 
+## Calendar month/year picker (2026-10-13)
+
+The Calendar previously required stepping through months and allowed future-month navigation. It now uses a small local JavaScript picker, without a third-party date library. Month labels use the page's EN/ID locale, future bounds use the server-resolved `data-today` snapshot, and year one remains the domain lower bound. The API's supported calendar range is unchanged; the future-month restriction is a browser navigation rule. Loading/error feedback is separate from the selected heading. Picker browsing makes no API calls; every explicit selection, including the current month for retry, requests the chosen month once.
+
+A browser check exposed an outside-click bug when choosing a year: rerendering detached the clicked button before its event reached the document listener. The handler now checks the event's composed path, and focus-out handling allows the replacement grid to receive focus. A regression reproduces the detached-target event instead of masking the symptom.
+
+Fresh validation passed `make fmt lint test` (zero lint issues), seven JavaScript suites, direct Node.js/JavaScriptCore picker regressions, `go test -race -short ./...`, 12 Python helper regressions and `git diff --check`. Tests cover selection, 12-year paging, future limits, year-one bounds, disabled clicks, arrow/Home/End/Escape behavior, focus return, outside/focus dismissal, Indonesian month labels and stale calendar responses. Final local Chrome/axe QA passed 58 scans, 44 keyboard checks and zero page errors, including month/year panels in both themes, 390px and 320px layouts, no fetch during year browsing and one fetch on month selection. Screenshots were inspected locally. Report: `/tmp/myjournal-month-picker-a11y.json`. Axe retains incomplete aria/contrast checks; no native screen-reader, physical-phone or live Google verification is claimed. No dependencies, public routes or sitemap entries were added.
+
+
 ## Authentication-expiry recovery (2026-10-13)
 
 Previously, save/delete distinguished 401 but offered no re-login action; Entries/Calendar displayed generic failures. A production request log establishes only the status, not whether the cause was cookie validation, deployment-key changes or Google access. That cause remains unverified.

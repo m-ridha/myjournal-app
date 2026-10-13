@@ -84,6 +84,8 @@ async def run_browser(base, axe_script):
         context = await browser.new_context(timezone_id='Asia/Jakarta')
         page = await context.new_page()
         page.on('pageerror', lambda error: errors.append(str(error)))
+        calendar_requests = []
+        page.on('request', lambda request: calendar_requests.append(request.url) if '/api/v1/calendar?' in request.url else None)
         for _ in range(100):
             try:
                 if (await context.request.get(base + '/healthz')).status == 200:
@@ -112,6 +114,43 @@ async def run_browser(base, axe_script):
                     await page.wait_for_function("document.querySelector('[data-entry-list]').getAttribute('aria-busy') === 'false'")
                 scans.append(await audit(page, axe_script, theme + path))
                 keyboard[theme + path] = await check_keyboard(page)
+                if path == '/calendar':
+                    await expect(page.locator('[data-calendar-next]')).to_be_disabled()
+                    trigger = page.locator('[data-month-trigger]')
+                    picker = page.locator('[data-month-picker]')
+                    count = len(calendar_requests)
+                    await trigger.click()
+                    await expect(picker).to_be_visible()
+                    scans.append(await audit(page, axe_script, theme + '/month-picker'))
+                    await page.screenshot(path='/tmp/myjournal-month-picker-' + theme + '.png', full_page=True)
+                    await page.keyboard.press('ArrowLeft')
+                    await page.keyboard.press('Escape')
+                    await expect(trigger).to_be_focused()
+                    await trigger.click()
+                    await page.locator('[data-month-year]').click()
+                    scans.append(await audit(page, axe_script, theme + '/year-picker'))
+                    await page.screenshot(path='/tmp/myjournal-year-picker-' + theme + '.png', full_page=True)
+                    year = int((await page.locator('body').get_attribute('data-today'))[:4])
+                    await page.locator('[data-month-options] button').filter(has_text=str(year - 1)).click()
+                    assert len(calendar_requests) == count, 'Browsing picker fetched calendar data'
+                    await page.set_viewport_size({'width': 390, 'height': 844})
+                    assert await page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+                    scans.append(await audit(page, axe_script, theme + '/month-picker-narrow'))
+                    await page.screenshot(path='/tmp/myjournal-month-picker-narrow-' + theme + '.png', full_page=True)
+                    await page.set_viewport_size({'width': 320, 'height': 720})
+                    assert await page.evaluate('document.documentElement.scrollWidth <= innerWidth')
+                    scans.append(await audit(page, axe_script, theme + '/month-picker-320'))
+                    await page.set_viewport_size({'width': 390, 'height': 844})
+                    await page.locator('[data-month-options] button').nth(1).click()
+                    await expect(picker).to_be_hidden()
+                    await expect(trigger).to_be_focused()
+                    await expect(page.locator('[data-calendar-grid]')).to_have_attribute('aria-busy', 'false')
+                    assert len(calendar_requests) == count + 1, 'Month selection must fetch exactly once'
+                    await expect(page.locator('[data-calendar-month]')).to_contain_text(str(year - 1))
+                    await page.locator('[data-calendar-today]').click()
+                    await expect(page.locator('[data-calendar-next]')).to_be_disabled()
+                    await page.set_viewport_size({'width': 1280, 'height': 720})
+
 
             # A deterministic past date avoids changing the fixture at midnight.
             await page.goto(base + '/entries/2020-01-01')
