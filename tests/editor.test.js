@@ -178,6 +178,7 @@ async function run() {
   assert(!f.panel.hidden, 'stale recovered backup must offer conflict actions');
   f.queue.push(response('other', 'latest'), response('mine', 'saved'));
   f.mine.fire('click'); await tick();
+  assert(f.calls[1].options.headers['Cache-Control'] === 'no-store', 'conflict resolution bypasses server content cache');
   assert(JSON.parse(f.calls[2].options.body).baseVersion === 'latest' && f.panel.hidden && !f.values.has(key), 'keep mine must save against fetched version');
 
   f = setup({ draft: { text: 'mine', baseVersion: 'old', versionKnown: true } }); await tick();
@@ -223,6 +224,7 @@ async function run() {
       () => ({ok: true, status: 200, json: async () => { throw new Error('truncated acknowledgement'); }})]) {
     f = setup(); await tick(); f.input('uncertain snapshot'); f.queue.push(failure()); f.save.fire('click'); await tick();
     f.queue.push(response('uncertain snapshot', 'v2')); f.save.fire('click'); await tick();
+    assert(f.calls[2].options.headers['Cache-Control'] === 'no-store', 'save reconciliation bypasses server content cache');
     assert(!f.calls[2].options?.method && f.calls.length === 3, 'retry must read matching saved text without another PUT');
     assert(!f.values.has(key) && f.editor.classList.contains('is-saved'), 'matching read acknowledges the uncertain snapshot');
     f.input('next'); f.queue.push(response('next', 'v3')); await f.advance(5000);
@@ -269,6 +271,7 @@ async function run() {
   f = setup(); await tick(); f.input('committed'); f.queue.push(response('', '', 503)); f.save.fire('click'); await tick();
   const afterFailureBackup = f.values;
   f = setup({initial:response('committed', 'v2'), sessionValues:afterFailureBackup}); await tick();
+  assert(f.calls[0].options.headers['Cache-Control'] === 'no-store', 'draft recovery bypasses server content cache');
   assert(f.text.value === 'committed' && !f.values.has(key) && f.calls.length === 1, 'reload reconciles matching recovery through its initial GET without writing');
 
   // Autosave uses the same acknowledged snapshot/version and recovery rules.

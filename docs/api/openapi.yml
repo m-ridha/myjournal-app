@@ -58,6 +58,12 @@ paths:
       - $ref: '#/components/parameters/DatePathParam'
     get:
       summary: Fetch a single entry
+      description: >-
+        Existing entry content/version and confirmed absence may be cached for up to two minutes
+        within an app process. PUT/DELETE attempts invalidate the affected date.
+        Send Cache-Control no-store to bypass retained content for save reconciliation
+        and conflict resolution. Responses use Cache-Control no-store to prevent
+        browser/intermediary caching. Confirmed missing entries use the same TTL and invalidation; operational errors are not cached.
       operationId: getEntry
       responses:
         '400':

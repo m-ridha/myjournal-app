@@ -1,6 +1,10 @@
 # Progress
 
-## Current status (2026-10-12)
+## List-index warming (2026-10-13)
+
+Successful entry creation and trash now warm the shared year list and affected year's index before the entry snapshot. Existing-entry updates retain entry-only warming. This closes the post-mutation Entries index gap; live Drive latency improvement remains unmeasured. Warming stays optional, bounded and independent of the mutation response, with the existing two-minute TTL and fresh-read bypass.
+
+## Current status (2026-10-13)
 
 This summary supersedes pending language in the dated evidence below; those records describe what was known at the time, not new work to repeat.
 
@@ -11,6 +15,19 @@ This summary supersedes pending language in the dated evidence below; those reco
 
 - English and Bahasa Indonesia are implemented with public language preferences, a globe/code header pill, an always-visible Settings gear and Help; Privacy is reached from Help. Account actions still require a valid session. Earlier English-only and conditional-Settings notes are historical.
 - Current footer/release/logging and date-format behavior is consolidated in [the implementation summary](#footer-release-metadata-and-date-formatting-2026-10-12). Final footer visuals and Docker/deployed-version checks remain unverified; no new release is implied.
+
+## Mutation-triggered cache warming (2026-10-13)
+
+- Naming follow-up: byte-cache fields, constructor parameters, startup wiring, test fixtures and benchmarks consistently use `storage`; Wire output was regenerated. This changes names only. `make fmt lint test` passed.
+
+- Successful PUT and DELETE now schedule bounded backend read-through warming for the affected date. Save/delete acknowledgements remain independent, and recovery/conflict reads remain fresh. [ADR 020](adr/020-entry-content-cache.md#mutation-triggered-backend-warming-2026-10-13) records lifecycle and resource policy.
+- Validation: regenerated Wire output, `make fmt lint test`, targeted app/cache/Google/web race checks, twenty repeated focused warming runs, all 31 sequential architecture probes, and local browser navigation/recovery checks with 38 accessibility scans passed. Evidence and tradeoffs are in [findings](findings.md#mutation-triggered-cache-warming-2026-10-13). Live Drive latency and deployment remain unverified.
+
+## Shared entry/preview cache (2026-10-13)
+
+- Implemented the approved shared-content design: previews and details reuse full entries and confirmed absence, with two-minute TTL, ten decorated preview workers, targeted invalidation and independent fresh recovery reads. See [ADR 020](adr/020-entry-content-cache.md).
+- Validation: `make fmt lint test`, targeted core/cache/Google/web race checks, all 31 architecture probes, and 38 local Chrome accessibility scans plus keyboard checks passed. Synthetic browser navigation covered blank/save/list/detail/trash and existing retry/conflict flows. Automated accessibility coverage retains its documented limits.
+- Synthetic correctness, capacity, discovery and request-count evidence is recorded in [findings](findings.md#shared-entrypreview-content-2026-10-13) and [performance measurements](performance-benchmark.md#shared-entry-and-preview-content-2026-10-13). Live Drive timing and deployment remain separate; no performance target is newly accepted.
 
 ## Phase 0: Bootstrap
 
@@ -630,3 +647,13 @@ Formatting, lint, tests, web race checks, 31 architecture probes and 38 local ac
 ## Whole-item Entries navigation (2026-10-12)
 
 Entries rows are now native links covering the date, preview and padding. Open entry remains a noninteractive label within the link; keyboard focus highlights the whole row. The existing page template needs no change because JavaScript creates the rows. Fresh `make fmt lint test`, `git diff --check`, and 38 local Chrome accessibility scans plus keyboard-focus checks passed. JavaScript regression coverage verifies row destinations, no nested link and plain-text previews. No live Google testing or deployment was performed; changes are uncommitted.
+
+## Two-minute entry content cache (2026-10-13)
+
+Implemented user-approved caching of ordinary entry GETs using the existing two-minute TTL. PUT/DELETE invalidate the affected date; draft recovery, failed-save reconciliation and conflict resolution explicitly bypass snapshots. Privacy copy and API/architecture guidance reflect the policy change ([ADR 020](adr/020-entry-content-cache.md)).
+
+Full formatting/lint/tests, focused race checks and 38 local accessibility scans passed. Live Drive latency has not been remeasured. Changes remain uncommitted; see [validation findings](findings.md#entry-cache-validation-2026-10-13).
+
+### Confirmed blank-page caching (2026-10-13)
+
+Confirmed missing entries now share the two-minute TTL and same-date mutation invalidation. Fresh recovery/conflict reads still bypass retained absence; operational failures remain uncached. Full checks and focused race tests passed. See [absence-cache evidence](findings.md#confirmed-absence-cache-validation-2026-10-13).

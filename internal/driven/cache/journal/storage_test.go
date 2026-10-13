@@ -11,13 +11,13 @@ import (
 )
 
 // Used only behind Cache's coordinator; production storage lives in adapters.
-type testBackend struct {
+type testStorage struct {
 	items                     map[string][]byte
 	getErr, setErr, deleteErr error
 }
 
-func newTestBackend() *testBackend { return &testBackend{items: make(map[string][]byte)} }
-func (b *testBackend) Get(ctx context.Context, key string) ([]byte, error) {
+func newTestStorage() *testStorage { return &testStorage{items: make(map[string][]byte)} }
+func (b *testStorage) Get(ctx context.Context, key string) ([]byte, error) {
 	if b.getErr != nil {
 		return nil, b.getErr
 	}
@@ -27,7 +27,7 @@ func (b *testBackend) Get(ctx context.Context, key string) ([]byte, error) {
 	}
 	return append([]byte(nil), v...), nil
 }
-func (b *testBackend) Set(ctx context.Context, key string, value []byte) error {
+func (b *testStorage) Set(ctx context.Context, key string, value []byte) error {
 	if b.setErr != nil {
 		return b.setErr
 	}
@@ -40,14 +40,14 @@ func (b *testBackend) Set(ctx context.Context, key string, value []byte) error {
 	b.items[key] = append([]byte(nil), value...)
 	return nil
 }
-func (b *testBackend) Delete(ctx context.Context, key string) error {
+func (b *testStorage) Delete(ctx context.Context, key string) error {
 	if b.deleteErr != nil {
 		return b.deleteErr
 	}
 	delete(b.items, key)
 	return nil
 }
-func (b *testBackend) DeletePrefix(ctx context.Context, prefix string) error {
+func (b *testStorage) DeletePrefix(ctx context.Context, prefix string) error {
 	if b.deleteErr != nil {
 		return b.deleteErr
 	}
@@ -59,11 +59,11 @@ func (b *testBackend) DeletePrefix(ctx context.Context, prefix string) error {
 	return nil
 }
 
-func TestCacheBackendFailuresFallBack(t *testing.T) {
+func TestCacheStorageFailuresFallBack(t *testing.T) {
 	for _, failure := range []string{"get", "set", "decode", "delete", "capacity"} {
 		t.Run(failure, func(t *testing.T) {
-			backend := newTestBackend()
-			c := New(backend, time.Minute)
+			storage := newTestStorage()
+			c := New(storage, time.Minute)
 			base := newFakeStore()
 			base.years = []int{2026}
 			store := c.Wrap("account", base)
@@ -73,31 +73,31 @@ func TestCacheBackendFailuresFallBack(t *testing.T) {
 			}
 			switch failure {
 			case "get":
-				backend.getErr = errors.New("unavailable")
+				storage.getErr = errors.New("unavailable")
 			case "set":
-				backend.setErr = errors.New("unavailable")
-				backend.items = make(map[string][]byte)
+				storage.setErr = errors.New("unavailable")
+				storage.items = make(map[string][]byte)
 			case "decode":
-				for k := range backend.items {
-					backend.items[k] = []byte("bad")
+				for k := range storage.items {
+					storage.items[k] = []byte("bad")
 				}
 			case "delete":
-				backend.deleteErr = errors.New("partial deletion")
+				storage.deleteErr = errors.New("partial deletion")
 				if _, err := store.Put(ctx, journal.Date{Year: 2026, Month: 1, Day: 1}, "new", ""); err != nil {
 					t.Fatal(err)
 				}
 			case "capacity":
-				backend.setErr = ErrCapacity
-				backend.items = make(map[string][]byte)
+				storage.setErr = ErrCapacity
+				storage.items = make(map[string][]byte)
 			}
 			base.years = []int{2025}
 			got, err := store.ListYears(ctx)
 			if err != nil || len(got) != 1 || got[0] != 2025 {
 				t.Fatalf("fallback %v %v", got, err)
 			}
-			backend.getErr = nil
-			backend.setErr = nil
-			backend.deleteErr = nil
+			storage.getErr = nil
+			storage.setErr = nil
+			storage.deleteErr = nil
 			base.years = []int{2024}
 			got, err = store.ListYears(ctx)
 			if err != nil || len(got) != 1 || got[0] != 2024 {
@@ -119,7 +119,7 @@ func TestCacheInvalidatesEveryPreviewBudget(t *testing.T) {
 	base := newFakeStore()
 	d := journal.Date{Year: 2020, Month: 1, Day: 1}
 	base.contents[d] = journal.Entry{Text: "old text"}
-	store := New(newTestBackend(), time.Minute).Wrap("account", base)
+	store := New(newTestStorage(), time.Minute).Wrap("account", base)
 	for _, budget := range []int{4, 8} {
 		_, _ = store.Previews(ctx, []journal.Date{d}, budget)
 	}
@@ -137,7 +137,7 @@ func TestCacheInvalidatesEveryPreviewBudget(t *testing.T) {
 func TestCacheCopiesIndexResults(t *testing.T) {
 	base := newFakeStore()
 	base.years = []int{2026}
-	store := New(newTestBackend(), time.Minute).Wrap("a/:preview/", base)
+	store := New(newTestStorage(), time.Minute).Wrap("a/:preview/", base)
 	got, err := store.ListYears(context.Background())
 	if err != nil {
 		t.Fatal(err)
@@ -150,7 +150,7 @@ func TestCacheCopiesIndexResults(t *testing.T) {
 }
 
 func TestCacheNamespaceIsolation(t *testing.T) {
-	c := New(newTestBackend(), time.Minute)
+	c := New(newTestStorage(), time.Minute)
 	for _, account := range []string{"a", "a/year/2026", "a/preview/2020-01-01/4", "a:", "a/"} {
 		base := newFakeStore()
 		base.years = []int{len(account)}
@@ -161,11 +161,11 @@ func TestCacheNamespaceIsolation(t *testing.T) {
 	}
 }
 
-func TestDisabledCacheAndGetBypass(t *testing.T) {
+func TestDisabledCacheAndFreshGetBypass(t *testing.T) {
 	for _, mode := range []string{"nil", "ttl", "account", "get"} {
 		t.Run(mode, func(t *testing.T) {
-			backend := newTestBackend()
-			var port ByteCache = backend
+			storage := newTestStorage()
+			var port ByteCache = storage
 			ttl := time.Minute
 			account := "a"
 			switch mode {
@@ -180,14 +180,14 @@ func TestDisabledCacheAndGetBypass(t *testing.T) {
 			ctx := context.Background()
 			if mode == "get" {
 				for range 2 {
-					_, _ = store.Get(ctx, journal.Date{Year: 2020, Month: 1, Day: 1})
+					_, _ = store.(journal.FreshEntryStore).GetFresh(ctx, journal.Date{Year: 2020, Month: 1, Day: 1})
 				}
 			} else {
 				for range 2 {
 					_, _ = store.ListYears(ctx)
 				}
 			}
-			if len(backend.items) != 0 {
+			if len(storage.items) != 0 {
 				t.Fatal("bypass populated cache")
 			}
 			if base := store.(*Store).base.(*fakeStore); base.calls != 2 {
@@ -206,7 +206,7 @@ func (s *operationFake) ForOperation() journal.Store { s.scopes++; return s.fake
 func TestOperationViewRetainsSharedCache(t *testing.T) {
 	base := &operationFake{fakeStore: newFakeStore()}
 	base.years = []int{2026}
-	store := New(newTestBackend(), time.Minute).Wrap("a", base)
+	store := New(newTestStorage(), time.Minute).Wrap("a", base)
 	_, _ = store.ListYears(context.Background())
 	scoped := store.(journal.OperationStore).ForOperation()
 	got, err := scoped.ListYears(context.Background())
@@ -216,8 +216,8 @@ func TestOperationViewRetainsSharedCache(t *testing.T) {
 }
 
 func TestCancelledInvalidationDisablesReuse(t *testing.T) {
-	backend := newTestBackend()
-	c := New(backend, time.Minute)
+	storage := newTestStorage()
+	c := New(storage, time.Minute)
 	base := newFakeStore()
 	base.years = []int{2026}
 	store := c.Wrap("a", base)
@@ -235,21 +235,21 @@ func TestCancelledInvalidationDisablesReuse(t *testing.T) {
 
 func TestSnapshotKindAndExactExpiry(t *testing.T) {
 	now := time.Date(2026, 10, 11, 0, 0, 0, 0, time.UTC)
-	data, err := encodeSnapshot("preview", "text", now.Add(time.Minute))
+	data, err := encodeSnapshot("entry", entryResult{Missing: true}, now.Add(time.Minute))
 	if err != nil {
 		t.Fatal(err)
 	}
 	if _, err := decodeSnapshot(data, "years", now); err == nil {
 		t.Fatal("accepted wrong snapshot kind")
 	}
-	value, err := decodeSnapshot(data, "preview", now.Add(time.Minute))
+	value, err := decodeSnapshot(data, "entry", now.Add(time.Minute))
 	if err != nil || value != nil {
 		t.Fatalf("exact expiry: %v %v", value, err)
 	}
 }
 
 func TestCoordinatorLockWaitIsCancelable(t *testing.T) {
-	c := New(newTestBackend(), time.Minute)
+	c := New(newTestStorage(), time.Minute)
 	c.gate <- struct{}{}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
 	defer cancel()

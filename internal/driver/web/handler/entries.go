@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 	"unicode/utf8"
 
@@ -49,6 +50,7 @@ func (s *Server) ListEntries(w http.ResponseWriter, r *http.Request, params api.
 }
 
 func (s *Server) GetEntry(w http.ResponseWriter, r *http.Request, date openapi_types.Date) {
+	w.Header().Set("Cache-Control", "no-store")
 	w.Header().Set("Content-Type", "application/json")
 	service, err := s.service(r)
 	if err != nil {
@@ -56,7 +58,14 @@ func (s *Server) GetEntry(w http.ResponseWriter, r *http.Request, date openapi_t
 		return
 	}
 
-	entry, err := service.Open(r.Context(), civil.DateOf(date.Time))
+	open := service.Open
+	for _, directive := range strings.Split(r.Header.Get("Cache-Control"), ",") {
+		if strings.EqualFold(strings.TrimSpace(directive), "no-store") {
+			open = service.OpenFresh
+			break
+		}
+	}
+	entry, err := open(r.Context(), civil.DateOf(date.Time))
 	if err != nil {
 		if errors.Is(err, journal.ErrNotFound) {
 			_ = json.NewEncoder(w).Encode(api.Entry{Date: date, Exists: false})

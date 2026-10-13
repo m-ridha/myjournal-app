@@ -7,8 +7,6 @@ import (
 	"strconv"
 	"time"
 
-	"cloud.google.com/go/civil"
-
 	"github/mridha/myjournal-app/internal/core/journal"
 )
 
@@ -16,17 +14,16 @@ import (
 func namespace(account string) string {
 	return "mj-cache:v1/" + base64.RawURLEncoding.EncodeToString([]byte(account)) + "/"
 }
-func previewPrefix(account string, date civil.Date) string {
-	return namespace(account) + "preview/" + date.String() + "/"
-}
 func (k cacheKey) string() string {
 	switch k.kind {
+	case "entry", "fresh-entry":
+		return namespace(k.account) + k.kind + "/" + k.date.String()
 	case "years":
 		return namespace(k.account) + "years"
 	case "year":
 		return namespace(k.account) + "year/" + strconv.Itoa(k.year)
 	default:
-		return previewPrefix(k.account, k.date) + strconv.Itoa(k.maxSize)
+		return namespace(k.account) + k.kind
 	}
 }
 
@@ -64,8 +61,8 @@ func decodeSnapshot(data []byte, kind string, now time.Time) (any, error) {
 		var value []journal.EntryMeta
 		err := json.Unmarshal(item.Value, &value)
 		return value, err
-	case "preview":
-		var value string
+	case "entry":
+		var value entryResult
 		err := json.Unmarshal(item.Value, &value)
 		return value, err
 	default:

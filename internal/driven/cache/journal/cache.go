@@ -26,39 +26,41 @@ type cacheKey struct {
 	kind    string
 	year    int
 	date    civil.Date
-	maxSize int
 }
 
 // Cache coordinates disposable snapshots and overlapping reads across Store wrappers.
 // Generation guards coordinate only this process, even with a remote ByteCache.
 type Cache struct {
 	gate           chan struct{}
-	backend        ByteCache
+	storage        ByteCache
 	ttl            time.Duration
 	now            func() time.Time
 	generation     uint64
 	disabled       atomic.Bool
 	reads          readGroup
 	previewBatches readGroup
+	warmer         *cacheWarmer
 	readEpochs     [64]atomic.Uint64
 }
 
-// Store decorates a journal.Store with account-scoped cached indexes and previews.
+// Store decorates a journal.Store with account-scoped cached indexes and full entries.
 type Store struct {
 	cache   *Cache
 	account string
 	base    journal.Store
+	factory func(context.Context) (journal.Store, error)
 }
 
 var (
-	_ journal.Store          = (*Store)(nil)
-	_ journal.OperationStore = (*Store)(nil)
+	_ journal.Store           = (*Store)(nil)
+	_ journal.OperationStore  = (*Store)(nil)
+	_ journal.FreshEntryStore = (*Store)(nil)
 )
 
 // New constructs a shared decorator coordinator. Nil storage or nonpositive TTL
 // disables snapshots; bounded in-flight read sharing remains enabled.
-func New(backend ByteCache, ttl time.Duration) *Cache {
-	return &Cache{backend: backend, ttl: ttl, now: time.Now, gate: make(chan struct{}, 1)}
+func New(storage ByteCache, ttl time.Duration) *Cache {
+	return &Cache{storage: storage, ttl: ttl, now: time.Now, gate: make(chan struct{}, 1)}
 }
 
 // Wrap shares snapshots and overlapping reads by provider/account. The caller
@@ -79,21 +81,48 @@ func (s *Store) ListYear(ctx context.Context, year int) ([]journal.EntryMeta, er
 	return append([]journal.EntryMeta(nil), items...), err
 }
 
-func (s *Store) Get(ctx context.Context, d civil.Date) (journal.Entry, error) {
-	return sharedRead(ctx, s, cacheKey{account: s.account, kind: "entry", date: d}, func(ctx context.Context) (journal.Entry, error) { return s.base.Get(ctx, d) })
+// entryResult distinguishes confirmed absence from a successful provider result.
+type entryResult struct {
+	Entry   *journal.Entry `json:",omitempty"`
+	Missing bool
 }
 
+func (s *Store) Get(ctx context.Context, d civil.Date) (journal.Entry, error) {
+	result, err := cachedRead(ctx, s, cacheKey{account: s.account, kind: "entry", date: d}, func(ctx context.Context) (entryResult, error) {
+		entry, err := s.base.Get(ctx, d)
+		if errors.Is(err, journal.ErrNotFound) {
+			return entryResult{Missing: true}, nil
+		}
+		return entryResult{Entry: &entry}, err
+	})
+	if err != nil {
+		return journal.Entry{}, err
+	}
+	if result.Missing {
+		return journal.Entry{}, journal.ErrNotFound
+	}
+	if result.Entry == nil {
+		return journal.Entry{}, journal.ErrUnavailable
+	}
+	return *result.Entry, nil
+}
+
+// GetFresh bypasses retained snapshots and normal-read flights.
+func (s *Store) GetFresh(ctx context.Context, d civil.Date) (journal.Entry, error) {
+	return sharedRead(ctx, s, cacheKey{account: s.account, kind: "fresh-entry", date: d}, func(ctx context.Context) (journal.Entry, error) { return s.base.Get(ctx, d) })
+}
+
+// Previews shares batch orchestration so identical lists use one operation view.
+// The only retained content and per-date download flight belong to Get.
 func (s *Store) Previews(ctx context.Context, dates []civil.Date, maxBytes int) (map[civil.Date]string, error) {
-	if s.account == "" || maxBytes <= 0 {
-		return s.base.Previews(ctx, dates, maxBytes)
+	if s.account == "" {
+		return s.previews(ctx, dates, maxBytes)
 	}
 	ordered := append([]civil.Date(nil), dates...)
 	sort.Slice(ordered, func(i, j int) bool { return ordered[i].Before(ordered[j]) })
 	ordered = slices.Compact(ordered)
 	digest := sha256.Sum256(fmt.Append(nil, ordered))
 	key := fmt.Sprintf("%s:%x:%d:%d", namespace(s.account), digest, maxBytes, s.cache.readEpoch(s.account).Load())
-	// One batch keeps identical requests in one operation view; individual flights
-	// inside it also share dates with different overlapping batches.
 	value, err := s.cache.previewBatches.do(ctx, key, func(ctx context.Context) (any, error) { return s.previews(ctx, ordered, maxBytes) })
 	if err != nil {
 		return nil, err
@@ -102,13 +131,9 @@ func (s *Store) Previews(ctx context.Context, dates []civil.Date, maxBytes int) 
 }
 
 func (s *Store) previews(ctx context.Context, dates []civil.Date, maxBytes int) (map[civil.Date]string, error) {
-	if s.account == "" || maxBytes <= 0 {
-		return s.base.Previews(ctx, dates, maxBytes)
-	}
 	out := make(map[civil.Date]string, len(dates))
 	var mu sync.Mutex
 	group, ctx := errgroup.WithContext(ctx)
-	// Keep provider work bounded while sharing individual dates across batches.
 	group.SetLimit(previewWorkers)
 	seen := make(map[civil.Date]bool, len(dates))
 	for _, date := range dates {
@@ -117,20 +142,16 @@ func (s *Store) previews(ctx context.Context, dates []civil.Date, maxBytes int) 
 		}
 		seen[date] = true
 		group.Go(func() error {
-			key := cacheKey{account: s.account, kind: "preview", date: date, maxSize: maxBytes}
-			value, err := cachedRead(ctx, s, key, func(ctx context.Context) (previewResult, error) {
-				previews, err := s.base.Previews(ctx, []civil.Date{date}, maxBytes)
-				text, exists := previews[date]
-				return previewResult{text: text, exists: exists}, err
-			})
+			entry, err := s.Get(ctx, date)
+			if errors.Is(err, journal.ErrNotFound) {
+				return nil
+			}
 			if err != nil {
 				return err
 			}
-			if value.exists {
-				mu.Lock()
-				out[date] = value.text
-				mu.Unlock()
-			}
+			mu.Lock()
+			out[date] = journal.PreviewPrefix(entry.Text, maxBytes)
+			mu.Unlock()
 			return nil
 		})
 	}
@@ -140,39 +161,20 @@ func (s *Store) previews(ctx context.Context, dates []civil.Date, maxBytes int) 
 	return out, nil
 }
 
-type previewResult struct {
-	text   string
-	exists bool
-}
-
 // cachedRead fills snapshots inside the flight, before its result is published.
 func cachedRead[T any](ctx context.Context, s *Store, key cacheKey, load func(context.Context) (T, error)) (T, error) {
 	value, _, ok := s.cache.get(ctx, key)
 	if ok {
-		if key.kind == "preview" {
-			return any(previewResult{text: value.(string), exists: true}).(T), nil
-		}
 		return value.(T), nil
 	}
 	return sharedRead(ctx, s, key, func(ctx context.Context) (T, error) {
-		// A prior flight may have filled the cache between the miss and admission.
 		value, generation, ok := s.cache.get(ctx, key)
 		if ok {
-			if key.kind == "preview" {
-				return any(previewResult{text: value.(string), exists: true}).(T), nil
-			}
 			return value.(T), nil
 		}
 		items, err := load(ctx)
 		if err == nil {
-			if key.kind == "preview" {
-				preview := any(items).(previewResult)
-				if preview.exists {
-					s.cache.set(ctx, key, preview.text, generation)
-				}
-			} else {
-				s.cache.set(ctx, key, items, generation)
-			}
+			s.cache.set(ctx, key, items, generation)
 		}
 		return items, err
 	})
@@ -199,22 +201,27 @@ func (c *Cache) readEpoch(account string) *atomic.Uint64 {
 func (s *Store) Put(ctx context.Context, d civil.Date, text string, base journal.Version) (journal.Entry, error) {
 	epoch := s.cache.readEpoch(s.account)
 	epoch.Add(1)
-	defer epoch.Add(1)
 	entry, err := s.base.Put(ctx, d, text, base)
 	// Failed uploads can be ambiguous; invalidate affected data without retrying.
 	s.cache.invalidateDate(ctx, s.account, d, err != nil || base == "")
+	// Finish the mutation epoch before warming can join subsequent read flights.
+	epoch.Add(1)
 	if err != nil {
 		return journal.Entry{}, err
 	}
+	s.warm(d, base == "")
 	return entry, nil
 }
 
 func (s *Store) Trash(ctx context.Context, d civil.Date) error {
 	epoch := s.cache.readEpoch(s.account)
 	epoch.Add(1)
-	defer epoch.Add(1)
 	err := s.base.Trash(ctx, d)
 	s.cache.invalidateDate(ctx, s.account, d, true)
+	epoch.Add(1)
+	if err == nil {
+		s.warm(d, true)
+	}
 	return err
 }
 
@@ -236,7 +243,7 @@ func (c *Cache) lock(ctx context.Context) bool {
 func (c *Cache) unlock() { <-c.gate }
 
 func (c *Cache) active(account string) bool {
-	return c.backend != nil && c.ttl > 0 && account != "" && !c.disabled.Load()
+	return c.storage != nil && c.ttl > 0 && account != "" && !c.disabled.Load()
 }
 
 func (c *Cache) get(ctx context.Context, key cacheKey) (any, uint64, bool) {
@@ -254,7 +261,7 @@ func (c *Cache) read(ctx context.Context, key cacheKey) (any, bool) {
 	if !c.active(key.account) {
 		return nil, false
 	}
-	data, err := c.backend.Get(ctx, key.string())
+	data, err := c.storage.Get(ctx, key.string())
 	if errors.Is(err, ErrMiss) {
 		return nil, false
 	}
@@ -280,7 +287,7 @@ func (c *Cache) set(ctx context.Context, key cacheKey, value any, generation uin
 	}
 	data, err := encodeSnapshot(key.kind, value, c.now().Add(c.ttl))
 	if err == nil {
-		err = c.backend.Set(ctx, key.string(), data)
+		err = c.storage.Set(ctx, key.string(), data)
 	}
 	if err != nil && !errors.Is(err, ErrCapacity) {
 		c.disabled.Store(true)
@@ -318,7 +325,7 @@ func (c *Cache) invalidateDate(ctx context.Context, account string, date civil.D
 	if !c.active(account) {
 		return
 	}
-	if err := c.backend.DeletePrefix(ctx, previewPrefix(account, date)); err != nil {
+	if err := c.storage.Delete(ctx, (cacheKey{account: account, kind: "entry", date: date}).string()); err != nil {
 		c.disabled.Store(true)
 		return
 	}
@@ -327,7 +334,7 @@ func (c *Cache) invalidateDate(ctx context.Context, account string, date civil.D
 		retain bool
 	}{{yearsKey, retainYears}, {yearKey, retainYear}} {
 		if !item.retain {
-			if err := c.backend.Delete(ctx, item.key.string()); err != nil {
+			if err := c.storage.Delete(ctx, item.key.string()); err != nil {
 				c.disabled.Store(true)
 				return
 			}
@@ -341,5 +348,5 @@ func (s *Store) ForOperation() journal.Store {
 	if scoped, ok := base.(journal.OperationStore); ok {
 		base = scoped.ForOperation()
 	}
-	return s.cache.Wrap(s.account, base)
+	return s.cache.WrapWithFactory(s.account, base, s.factory)
 }

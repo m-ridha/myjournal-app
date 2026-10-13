@@ -83,11 +83,12 @@ func newClock() journal.Clock {
 
 func newJournalCache() (*cachestore.Cache, func(), error) {
 	const ttl = 2 * time.Minute
-	backend, err := bigcache.New(ttl)
+	storage, err := bigcache.New(ttl)
 	if err != nil {
 		return nil, nil, fmt.Errorf("initialize journal cache: %w", err)
 	}
-	return cachestore.New(backend, ttl), func() { _ = backend.Close() }, nil
+	cache, stopWarming := cachestore.NewWithWarming(storage, ttl)
+	return cache, func() { stopWarming(); _ = storage.Close() }, nil
 }
 
 func newServiceFactory(registry *connection.Registry, cache *cachestore.Cache, clk journal.Clock) handler.ServiceFactory {
@@ -100,7 +101,9 @@ func newServiceFactory(registry *connection.Registry, cache *cachestore.Cache, c
 		if err != nil {
 			return nil, err
 		}
-		return journal.NewService(cache.Wrap(current.ProviderID+":"+current.AccountID, store), clk), nil
+		return journal.NewService(cache.WrapWithFactory(current.ProviderID+":"+current.AccountID, store, func(ctx context.Context) (journal.Store, error) {
+			return p.Store(ctx, current.Connection)
+		}), clk), nil
 	}
 }
 

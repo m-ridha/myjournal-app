@@ -201,3 +201,27 @@ Controlled synthetic measurements (not live Drive timings):
 With a synthetic 100 ms download delay, eight previews dropped from two waves/200 ms to one wave/100 ms; twenty dropped from five waves/500 ms to three/300 ms. Peak concurrency was eight. These results do not establish live Drive speed or throttling behavior. The reported seven-second cold/post-save latency remains unmeasured against Google after this change. Post-save discovery and the invalidated preview remain external work; progressive previews would require a separate API/UI design.
 
 Fresh validation passed: `make fmt lint test`, focused cache/Google/web race checks, all 31 architecture probes, and 34 Chrome axe scans plus keyboard checks. Accessibility automation retains its documented coverage limits. No live Drive measurement, deployment, commit or push was performed.
+
+## Shared entry and preview content (2026-10-13)
+
+Controlled Drive-transport fixture: eight synthetic entries across two years, 80,000 bytes each, one millisecond per GET under Go synctest. These are request/body counts and simulated elapsed times, not live Google latency. Each service call starts a fresh discovery operation; snapshots retain their two-minute TTL.
+
+| Workload | Metadata lists | Downloads | Content bytes | Simulated elapsed | Peak downloads |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Cold list | 4 | 8 | 640,000 | 5 ms | 8 |
+| List then open all eight | 0 | 0 | 0 | 0 ms | 0 |
+| Explicit fresh detail | 3 | 1 | 80,000 | 4 ms | 1 |
+| Cold detail | 3 | 1 | 80,000 | 4 ms | 1 |
+| Detail then list | 4 | 7 | 560,000 | 5 ms | 7 |
+| Warm indexes, cold content | 5 | 8 | 640,000 | 4 ms | 8 |
+| List after saving one entry | 3 | 1 | 80,000 | 4 ms | 1 |
+
+Ten repeated runs passed the shared-content and eight-tab browsing count assertions. Identical cold twenty-entry lists still use eight metadata requests and twenty downloads with snapshots disabled. Keeping the bounded batch coordinator avoids 14–15 metadata requests observed when independent date leaders scattered across request-owned discovery views.
+
+Full-file retrieval increases cold-list transfer versus the former prefix limit; a 1 MiB serialized entry can exceed an individual BigCache shard queue and bypass retention. Capacity tests verify correct full content despite repeated backing reads, and continued caching of smaller entries. The 16 MiB byte-queue setting excludes maps and runtime overhead. No live timing or total-memory reduction is claimed. Earlier tables remain historical evidence for their implementation stage.
+
+## Mutation-triggered cache warming (2026-10-13)
+
+The synthetic Google adapter test releases warming only after a successful PUT's original request has been canceled. Warming uses three metadata lists and one validated content download. The following ordinary detail read makes zero additional upstream requests. After DELETE, warming uses three metadata lists and zero downloads to confirm absence; the following missing-date read also makes zero additional requests. Twenty repeated focused test runs passed.
+
+These requests move the next read ahead of navigation; they do not remove upstream work. Four warming workers share the ordinary date flights with foreground readers, while fresh recovery reads remain separate. The subsequent list-index follow-up also populates ListYears and the affected ListYear after creation/trash. The same synthetic fixture still uses three metadata lists per warm; following detail and index reads make zero additional requests. Existing-entry updates warm only content. Other years and uncached preview content may still require upstream reads. No live latency improvement or original performance-target acceptance is claimed.

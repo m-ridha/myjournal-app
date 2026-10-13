@@ -12,6 +12,38 @@ This summary supersedes pending language in the dated evidence below; those reco
 - English and Bahasa Indonesia are implemented with public language preferences, a globe/code header pill, an always-visible Settings gear and Help; Privacy is reached from Help. Account actions still require a valid session. Earlier English-only and conditional-Settings notes are historical.
 - Current footer/release/logging and date-format behavior is consolidated in [the implementation summary](#footer-release-metadata-and-date-formatting-2026-10-12). Final footer visuals and Docker/deployed-version checks remain unverified; no new release is implied.
 
+## DELETE to Entries diagnostic (2026-10-13)
+
+A temporary synthetic Drive diagnostic seeded eight entries across two years, deleted one date, allowed backend warming to finish during a simulated five-second wait, and requested the latest ten entries. Twenty race-detector runs passed. The diagnostic file was removed afterward; its output is retained locally at `/private/tmp/myjournal-delete-list-diagnostic.log`. No runtime behavior was changed.
+
+| Before DELETE | First list metadata requests | First list content downloads | Immediate repeat requests |
+| --- | ---: | ---: | ---: |
+| Entries list already loaded within TTL | 3 | 0 | 0 |
+| Entries list/content cold | 4 | 7 | 0 |
+
+DELETE warming itself used three metadata requests and no downloads to confirm absence. It calls ordinary Get only. DELETE invalidates the shared year list and affected year index, so waiting does not repopulate those index snapshots. The next Entries request still traverses ListYears/ListYear; surviving full-entry snapshots do avoid content downloads when already present. Metadata discovery within warming is operation-local and does not populate the decorator's retained index snapshots.
+
+This demonstrates a coverage gap in the warming policy, rather than proving the cache is globally broken or diagnosing the user's live timing. A potential follow-up is to warm ListYears and the affected ListYear before Get, through the shared decorator and a fresh operation, after membership-changing mutations. That would target invalidated indexes without seeding acknowledgement data. Newly visible or previously uncached entries would still require content reads. The follow-up is now implemented: creation and trash warm both indexes through the ordinary decorator before Get. Regression tests prove post-warm index hits, existing-entry update scope and foreground index singleflight sharing. The synthetic Google fixture retains three metadata requests per warm and subsequent detail/index reads make no upstream requests. Live latency, expiry/eviction and process identity remain relevant to actual hit rates. Follow-up validation: `make fmt lint test`, cache/Google race tests, all 31 architecture probes and `git diff --check` passed.
+
+## LRU adapter compatibility (2026-10-13)
+
+- The mismatch was in construction/lifecycle, not ByteCache methods: LRU previously returned one value from New, accepted nonpositive TTL and lacked Close. Regression tests verify invalid TTL rejection, repeated Close, released entries, explicit post-close errors and concurrent Close/operations. Existing ownership, exact expiry, LRU eviction and cancellation tests remain.
+- Validation: `make fmt lint test`, focused app/cache/Google race checks and all 31 sequential architecture probes passed; temporary probes were removed. `git diff --check` passed.
+- Shared journal Store contracts run through LRU with construction errors checked and storage closed after use. Google synthetic fixtures likewise own/close LRU storage. Both adapters support the same construction/warming/cleanup shape; current wire.go and generated startup select BigCache. Capacity policy remains adapter-specific; no production memory/latency improvement is claimed.
+
+## Mutation-triggered cache warming (2026-10-13)
+
+- Google's OAuth token source captures the Store construction context. A new operation view alone cannot detach it; warming therefore constructs a new provider client with its own bounded context. The synthetic Google test cancels the original PUT request and evicts its access token before releasing warming, forces token refresh through the independent client, and proves the next detail read hits the snapshot; DELETE similarly warms confirmed absence.
+- Cache tests gate warming to prove mutation responses do not wait, confirm that stored text/version rather than acknowledgement data seeds content, and verify that ordinary readers join warming while fresh reads stay separate. A later successful mutation coalesces into another attempt and rejects the old fill. Admission tests retain at most 64 dates with four active workers; ten-second attempt expiry and shutdown cancellation/join/queue cleanup are covered. Failed mutations schedule no warming.
+- Warming spends optional upstream requests and can be skipped, fail, or finish after navigation begins. The original entry-only implementation did not warm index/calendar snapshots; the list-index follow-up above extends creation/trash warming. These tests do not establish live latency gains, atomic external-writer safety or cross-process coherence. See [request counts](performance-benchmark.md#mutation-triggered-cache-warming-2026-10-13).
+
+## Shared entry/preview content (2026-10-13)
+
+- Complete-file tests cover meaningful text beyond 64 KiB, the 1 MiB boundary/overflow, invalid trailing UTF-8, missing/mismatched checksum and retry after failed validation. Both raw Google and decorated storage pass shared Store contracts.
+- Operation-local read discovery preserves deterministic duplicate selection and pagination. Two reads use four metadata requests with paginated retained listings, six with an oversized listing, and eight with exhausted query capacity. Bounds remain 16 queries/1000 files; oversized results can be fetched again. A later mutation still detects an externally changed checksum.
+- The identical-batch coordinator remains after removal increased metadata work across competing operation views; [ADR 019](adr/019-overlapping-journal-reads.md#shared-content-follow-up-2026-10-13) records the decision. There is no separate retained preview cache. Positive and negative stale-fill guards, fresh-flight isolation, capacity bypass and mutation invalidation are regression-tested.
+- Request counts, downloaded bytes and controlled concurrency/timing belong in the [performance record](performance-benchmark.md#shared-entry-and-preview-content-2026-10-13). Live Drive latency, external-writer atomicity and cross-process invalidation are not established by these tests.
+
 ## Favicon (2026-10-08)
 
 - Cleanup: the current favicon is `/static/favicons/myjournal-tab-icon.png`, embedded from `assets/static/favicons/`. Updated the shared layout and removed unused SVG/mask assets at the user's request; paths below describe historical troubleshooting. `make fmt lint test` passed (lint: 0 issues; browser-script regressions and all Go tests passed), and `git diff --check` passed. Verified only the active PNG remains among favicon assets and the layout references its new path.
@@ -1130,3 +1162,19 @@ Cancelled Google consent, rejected required grants and other callback failures a
 The page uses shared typography/theme/navigation, permits language switching back to itself, sends no-store/noindex headers and stays out of the sitemap. Accessibility QA now includes it for signed-in and signed-out contexts in both themes. Fresh `make fmt lint test`, web race checks, and 38 Chrome axe scans plus keyboard checks passed. Automated coverage includes denied consent without exchange, rejected grants without session creation, pending-cookie clearing, preserved session cookies, query-free redirects, JSON fallback, public rendering and both locales. Earlier provider tests continue to verify missing Drive grants are rejected. Axe incomplete checks remain human review items; this is not full accessibility certification. No live Google consent flow or deployment was performed.
 
 All 31 architecture probes and final `git diff --check` also passed; temporary QA server/data/binary and architecture probes were cleaned up. Changes remain uncommitted.
+
+## Entry cache validation (2026-10-13)
+
+A fixed-clock regression verifies that a second ordinary read avoids underlying Get, retains text/version together, and expires exactly at two minutes without sliding expiry. An explicit fresh read sees an external change without replacing/renewing the ordinary snapshot. Successful save refreshes the next read while preserving an unrelated date's snapshot; successful trash removes cached content, and missing entries remain uncached. A separate account performs its own read. A controlled in-flight old read cannot refill after save invalidation.
+
+Core tests verify fresh-port selection, uncached-provider fallback and future-date validation before I/O. Handler tests verify ordinary versus Cache-Control: no-store selection and no-store response headers. JavaScript regressions verify fresh requests for recovered drafts, failed-save verification and conflict actions. Existing account-isolated singleflight/cancellation/admission and mutation tests continue to pass.
+
+Fresh `make fmt lint test`, focused core/cache/Google/web race checks and 38 Chrome axe scans plus keyboard-focus checks passed. OpenAPI regeneration completed without a generated-code diff. These checks use synthetic/local fixtures; no live Drive latency, external-writer atomicity or deployment-overlap guarantees were established. Automated accessibility retains incomplete checks. The established conservative invalidation after failed/ambiguous mutation attempts is retained alongside the requested successful-mutation invalidation.
+
+Sequential architecture validation passed all 31 forbidden-import probes and cleaned up temporary files; final `git diff --check` passed. Owned accessibility QA process/data/binary were cleaned up.
+
+## Confirmed absence cache validation (2026-10-13)
+
+A missing-entry snapshot records confirmed absence explicitly and returns ErrNotFound on hits, preserving the existing HTTP 200/exists:false mapping. Two repeated absent reads make one backing call. The fixed-clock test confirms expiry exactly at two minutes; an externally created file remains hidden to ordinary hits until expiry but is immediately visible through GetFresh. Creation via Put invalidates cached absence; Trash invalidates cached content, and its subsequent confirmed absence can be reused. Availability, authentication and cancellation errors each trigger another backing call rather than becoming blank-page snapshots. This supersedes the earlier uncached-absence observation above.
+
+Fresh `make fmt lint test`, focused cache/core/web race checks and `git diff --check` passed. OpenAPI regeneration completed without generated-code changes. No live Drive latency measurement or deployment was performed.

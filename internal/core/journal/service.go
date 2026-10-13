@@ -56,6 +56,18 @@ func (s *Service) Open(ctx context.Context, d Date) (Entry, error) {
 	return s.operationStore().Get(ctx, d)
 }
 
+// OpenFresh reads current storage content for recovery, bypassing retained snapshots.
+func (s *Service) OpenFresh(ctx context.Context, d Date) (Entry, error) {
+	if err := ValidateEntryDate(d, s.Today(TimeZone(ctx))); err != nil {
+		return Entry{}, err
+	}
+	store := s.operationStore()
+	if fresh, ok := store.(FreshEntryStore); ok {
+		return fresh.GetFresh(ctx, d)
+	}
+	return store.Get(ctx, d)
+}
+
 // ListEntries returns a newest-first page with previews only for its entries.
 func (s *Service) ListEntries(ctx context.Context, page, size int) (ListPage, error) {
 	if page < 1 || page > MaxPage || size < 1 || size > MaxPageSize {

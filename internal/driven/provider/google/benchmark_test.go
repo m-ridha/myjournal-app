@@ -77,26 +77,26 @@ func BenchmarkDriveBaseline(b *testing.B) {
 					current = entry
 				}
 			}
-			var backend *cacheAdapter.Adapter
+			var storage *cacheAdapter.Adapter
 			b.Cleanup(func() {
-				if backend != nil {
-					if err := backend.Close(); err != nil {
+				if storage != nil {
+					if err := storage.Close(); err != nil {
 						b.Error(err)
 					}
 				}
 			})
 			newService := func() *journal.Service {
-				if backend != nil {
-					if err := backend.Close(); err != nil {
+				if storage != nil {
+					if err := storage.Close(); err != nil {
 						b.Fatal(err)
 					}
 				}
 				var err error
-				backend, err = cacheAdapter.New(2 * time.Minute)
+				storage, err = cacheAdapter.New(2 * time.Minute)
 				if err != nil {
 					b.Fatal(err)
 				}
-				return journal.NewService(cachestore.New(backend, 2*time.Minute).Wrap("synthetic", store), benchmarkClock{})
+				return journal.NewService(cachestore.New(storage, 2*time.Minute).Wrap("synthetic", store), benchmarkClock{})
 			}
 			service := newService()
 			page := func() {
