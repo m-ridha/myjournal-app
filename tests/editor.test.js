@@ -20,6 +20,7 @@ function element() {
 }
 
 function setup({ draft = null, initial = response('server'), storageThrows = false, signOut = false, legacy = null, sessionValues = new Map(), localValues = new Map() } = {}) {
+  const auth = element(); auth.hidden = true;
   const trash = element(); const panel = element(); const mine = element(); const other = element(); const both = element();
   const text = element(); const status = element(); const save = element(); const retry = element(); const old = element(); const button = element(); const disconnect = element();
   const fields = { '[data-entry-delete]': trash, '[data-entry-conflict]': panel, '[data-conflict-mine]': mine, '[data-conflict-other]': other, '[data-conflict-both]': both, '[data-entry-text]': text, '[data-entry-status]': status, '[data-entry-save]': save,
@@ -38,7 +39,7 @@ function setup({ draft = null, initial = response('server'), storageThrows = fal
   globalThis.clearTimeout = (id) => timers.delete(id);
   const docEvents = {}; const winEvents = {};
   globalThis.document = { body: { dataset: { messages: '{}', draftScope: 'account-a', today: '2026-10-08' } },
-    querySelector: (s) => s === '[data-entry-editor]' ? (signOut ? null : editor) : s === '[data-sign-out]' ? (signOut ? button : null) : s === '[data-disconnect]' ? (signOut ? disconnect : null) : s === '[data-sign-out-status]' ? status : null,
+    querySelector: (s) => s === '[data-auth-expired]' ? auth : s === '[data-entry-editor]' ? (signOut ? null : editor) : s === '[data-sign-out]' ? (signOut ? button : null) : s === '[data-disconnect]' ? (signOut ? disconnect : null) : s === '[data-sign-out-status]' ? status : null,
     addEventListener: (name, fn) => { docEvents[name] = fn; } };
   globalThis.window = { location: { href: '' }, confirm: () => true, addEventListener: (name, fn) => { winEvents[name] = fn; } };
   const calls = []; const queue = [initial];
@@ -46,7 +47,7 @@ function setup({ draft = null, initial = response('server'), storageThrows = fal
   if (typeof require === 'function') (0, eval)(require('node:fs').readFileSync('assets/static/js/app.js', 'utf8'));
   else load('assets/static/js/app.js');
   docEvents.DOMContentLoaded();
-  return { docEvents, async advance(ms) {
+  return { auth, docEvents, async advance(ms) {
     const end = now + ms;
     while (true) {
       const due = [...timers].filter(([, timer]) => timer.at <= end).sort((a,b) => a[1].at - b[1].at)[0];
@@ -406,6 +407,25 @@ async function run() {
   const removeAfterDisconnect=sessionStorage.removeItem;sessionStorage.removeItem=k=>{if(k===key)throw new Error('cleanup denied');removeAfterDisconnect(k);};
   f.disconnect.fire('click');await tick();assert(f.status.textContent==='settings.signedOutCleanupFailed' && !f.disconnect.disabled && f.button.disabled,'confirmed disconnect with cleanup failure permits only cleanup retry');
   sessionStorage.removeItem=removeAfterDisconnect;f.disconnect.fire('click');await tick();assert(f.calls.length===1 && !f.values.has(key),'cleanup retry never repeats revocation');
+  f = setup(); await tick(); f.input('keep after expiry');
+  f.queue.push(response('', '', 401)); f.save.fire('click'); await tick();
+  assert(f.calls[1].options.headers['X-Myjournal-Account']==='account-a', 'protected editor requests carry their original account scope');
+  assert(!f.auth.hidden && f.text.value==='keep after expiry' && f.values.has(key) && window.location.href==='', '401 shows reconnect without navigating or deleting editor draft');
+  const expiredCalls=f.calls.length;
+  f.input('later typing after expiry'); await f.advance(10000); f.text.fire('blur'); f.winEvents.pagehide(); await tick();
+  assert(f.calls.length===expiredCalls && !f.text.readOnly && JSON.parse(f.values.get(key)).text==='later typing after expiry', '401 pauses idle/blur/pagehide writes and keeps later typing');
+  f.queue.push(response('server','v1'),response('later typing after expiry','v2')); f.save.fire('click'); await tick();
+  assert(f.auth.hidden && f.calls[expiredCalls].options.cache==='no-store' && f.calls[expiredCalls+1].options.method==='PUT' && !f.values.has(key), 'manual retry after reconnect verifies fresh content before saving');
+  f=setup({draft:{text:'recovered after expiry',baseVersion:'v0',versionKnown:true},initial:response('', '',401)}); await tick();
+  assert(!f.auth.hidden && f.text.value==='recovered after expiry' && f.values.has(key) && !f.retry.hidden && f.save.disabled, 'initial 401 retains recovered text and requires valid load');
+  f=setup(); await tick(); f.queue.push(response('', '',401)); f.trash.fire('click'); await tick();
+  assert(!f.auth.hidden && f.text.value==='server' && f.values.has(key) && !localStorage.getItem('mj-signout:account-a'), 'DELETE 401 preserves text and does not announce logout');
+  f=setup({signOut:true,sessionValues:new Map([[key,'recovery']])}); f.queue.length=0; f.queue.push(response('', '',401)); f.disconnect.fire('click'); await tick();
+  assert(!f.auth.hidden && f.values.get(key)==='recovery' && window.location.href==='', 'disconnect 401 preserves session drafts and offers reconnect');
+  f=setup({storageThrows:true});await tick();f.input('copy this text');f.queue.push(response('', '',401));f.save.fire('click');await tick();
+  assert(!f.auth.hidden && f.text.value==='copy this text' && window.location.href==='' && f.status.textContent.includes('editor.backupUnavailable'), '401 with blocked storage retains text and truthful backup warning');
+  f=setup({draft:{text:'mine',baseVersion:'old',versionKnown:true},initial:response('other','new')});await tick();f.queue.push(response('', '',401));f.mine.fire('click');await tick();
+  assert(!f.auth.hidden && f.text.value==='mine' && f.values.has(key) && f.calls.length===2, '401 during conflict resolution preserves mine without PUT');
   output('PASS editor interaction regressions');
 }
 

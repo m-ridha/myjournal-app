@@ -13,6 +13,34 @@
     );
   }
 
+  let authenticationExpired = false;
+  let authenticationGeneration = 0;
+  let protectEditorOnExpiry = () => {};
+
+  async function protectedFetch(url, options, isCurrent = () => true) {
+    const generation = authenticationGeneration;
+    const retrying = authenticationExpired;
+    const scope = document.body.dataset.draftScope;
+    if (scope) options = { ...options, headers: { ...options?.headers, 'X-Myjournal-Account': scope } };
+    const response = await fetch(url, options);
+    if (!isCurrent()) return response;
+    const banner = document.querySelector('[data-auth-expired]');
+    if (response.status === 401) {
+      const firstExpiry = !authenticationExpired;
+      authenticationExpired = true;
+      authenticationGeneration += 1;
+      if (banner) banner.hidden = false;
+      const message = document.querySelector('[data-auth-message]');
+      if (message) message.textContent = t('auth.expired');
+      if (firstExpiry) banner?.scrollIntoView?.({ block: 'start' });
+      protectEditorOnExpiry();
+    } else if (response.ok && retrying && generation === authenticationGeneration) {
+      authenticationExpired = false;
+      if (banner) banner.hidden = true;
+    }
+    return response;
+  }
+
   function formatDate(date) {
     const year = date.getUTCFullYear();
     const month = String(date.getUTCMonth() + 1).padStart(2, '0');
@@ -92,6 +120,16 @@
     let autosaveTimer = null;
     let autosaveReady = false;
     let autosavePaused = false;
+
+    protectEditorOnExpiry = () => {
+      cancelAutosave();
+      autosavePaused = true;
+      saveNeedsVerification = true;
+      if (loaded || isDirty()) {
+        unverifiedDraft = true;
+        persistDraft();
+      }
+    };
 
     function setStatus(text) {
       status.textContent = text;
@@ -211,7 +249,7 @@
       notice(t('editor.loading'));
       try {
         const recoveryRead = draft !== null || legacyDraft !== null || edited;
-        const response = await fetch(`/api/v1/entries/${date}`, recoveryRead
+        const response = await protectedFetch(`/api/v1/entries/${date}`, recoveryRead
           ? { cache: 'no-store', headers: { 'Cache-Control': 'no-store' } }
           : undefined);
         if (!response.ok) throw new Error('load failed');
@@ -255,7 +293,7 @@
         // A failed acknowledgement can hide a successful upload. Only an explicit
         // retry reads first; differing text never silently adopts a new version.
         if (!automatic && saveNeedsVerification) {
-          response = await fetch(`/api/v1/entries/${date}`, { cache: 'no-store', headers: { 'Cache-Control': 'no-store' } });
+          response = await protectedFetch(`/api/v1/entries/${date}`, { cache: 'no-store', headers: { 'Cache-Control': 'no-store' } });
           if (response.ok) {
             const current = await response.json();
             if (typeof current.text !== 'string' || typeof current.version !== 'string' ||
@@ -268,7 +306,7 @@
           }
         }
         if (!response) {
-          response = await fetch(`/api/v1/entries/${date}`, {
+          response = await protectedFetch(`/api/v1/entries/${date}`, {
             method: 'PUT',
             keepalive,
             headers: { 'Content-Type': 'application/json' },
@@ -330,7 +368,7 @@
       setSaveState('');
       notice(t('editor.deleting'));
       try {
-        const response = await fetch(`/api/v1/entries/${date}`, { method: 'DELETE' });
+        const response = await protectedFetch(`/api/v1/entries/${date}`, { method: 'DELETE' });
         if (signedOut) return;
         if (response.status !== 204) {
           autosavePaused = true;
@@ -376,7 +414,7 @@
       notice(t('editor.loading'));
       let shouldSave = false;
       try {
-        const response = await fetch(`/api/v1/entries/${date}`, { cache: 'no-store', headers: { 'Cache-Control': 'no-store' } });
+        const response = await protectedFetch(`/api/v1/entries/${date}`, { cache: 'no-store', headers: { 'Cache-Control': 'no-store' } });
         if (!response.ok) throw new Error('load failed');
         const entry = await response.json();
         if (typeof entry.text !== 'string' || typeof entry.version !== 'string') throw new Error('invalid entry');
@@ -542,7 +580,7 @@
           return;
         }
         try {
-          const response = await fetch(revoking ? '/api/v1/disconnect' : '/api/v1/logout', { method: 'POST' });
+          const response = await (revoking ? protectedFetch('/api/v1/disconnect', { method: 'POST' }) : fetch('/api/v1/logout', { method: 'POST' }));
           if (revoking ? response.status !== 204 : !response.ok) throw new Error('connection not ended');
           loggedOut = true;
         } catch (error) {
@@ -586,7 +624,7 @@
       if (retry) { retry.disabled = true; retry.hidden = true; }
       listRoot.setAttribute('aria-busy', 'true');
       if (status) status.textContent = t('entries.loading');
-      return fetch(`/api/v1/entries?page=1&size=${listLimit}`)
+      return protectedFetch(`/api/v1/entries?page=1&size=${listLimit}`)
         .then(async (response) => {
           if (!response.ok) {
             throw new Error(t('entries.unavailable'));
@@ -738,7 +776,7 @@
       grid.setAttribute('aria-busy', 'true');
       try {
         grid.innerHTML = '';
-        const response = await fetch(`/api/v1/calendar?month=${requestedMonth}`);
+        const response = await protectedFetch(`/api/v1/calendar?month=${requestedMonth}`, undefined, () => request === calendarRequest);
         if (!response.ok) throw new Error(t('calendar.unavailable'));
         const data = await response.json();
         if (request !== calendarRequest) return;

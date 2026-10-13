@@ -3,6 +3,9 @@
   <p class="mj-kicker">{{t "landing.kicker"}}</p>
   <h1>{{t "landing.title"}}</h1>
   <p class="mj-lead">{{t "landing.description"}}</p>
+  {{if eq .Page "signin"}}
+    <p class="mj-signin-guidance">{{t "auth.instructions"}}<br>{{t "auth.unsavedReminder"}}</p>
+  {{end}}
 
   <div class="mj-actions">
     {{if .SignedIn}}

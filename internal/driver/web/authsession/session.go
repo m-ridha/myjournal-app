@@ -2,6 +2,9 @@
 package authsession
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
+	"encoding/json"
 	"net/http"
 	"time"
 
@@ -49,4 +52,11 @@ func Cookie(value string, issuedAt time.Time, secure bool) *http.Cookie {
 		c.MaxAge = int(provider.Lifetime.Seconds())
 	}
 	return c
+}
+
+// DraftScope identifies a provider/account independently of credentials and labels.
+func DraftScope(current provider.Session) string {
+	identity, _ := json.Marshal([2]string{current.ProviderID, current.AccountID})
+	sum := sha256.Sum256(identity)
+	return hex.EncodeToString(sum[:])
 }

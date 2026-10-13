@@ -1122,3 +1122,40 @@ html[data-theme="dark"] .icon-moon {
 :is(.mj-btn, .mj-theme-toggle, .mj-header-icon, .mj-icon-btn, .mj-language-trigger, .mj-editor-trash):not(:disabled):not([aria-disabled="true"]):focus-visible {
   border-color: var(--mj-text);
 }
+
+.mj-auth-expired {
+  margin-bottom: 2rem;
+  padding: clamp(1.5rem, 3vw, 2.25rem);
+  scroll-margin-top: 10rem;
+}
+
+.mj-auth-expired h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.25rem;
+  line-height: 1.3;
+  letter-spacing: -0.02em;
+}
+
+.mj-auth-expired p {
+  max-width: 68ch;
+  line-height: 1.75;
+}
+
+.mj-auth-expired p + p {
+  margin-top: 0.75rem;
+}
+
+.mj-auth-expired .mj-btn {
+  margin-top: 1.5rem;
+}
+.mj-auth-expired[hidden] { display: none; }
+
+.mj-signin-guidance {
+  margin-block: 1.5rem;
+  padding: 0.75rem clamp(1rem, 3vw, 1.5rem);
+  border: 1px solid var(--mj-border-strong);
+  border-radius: 0.875rem;
+  color: var(--mj-text);
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+}

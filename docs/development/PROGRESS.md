@@ -1,5 +1,9 @@
 # Progress
 
+## Authentication-expiry recovery (2026-10-13)
+
+Protected browser operations now share a localized sign-in-again banner. Reconnecting opens a new tab while the editor preserves text/backups and pauses automatic writes; manual save retry keeps fresh-read conflict reconciliation. A server-checked account-scope header prevents old editor/settings tabs from acting under a different reconnected account. The public, non-indexed `/sign-in` route offers login even with an existing cookie and supports language return navigation. [ADR 022](adr/022-authentication-expiry-recovery.md) records the decision; [validation evidence](findings.md#authentication-expiry-recovery-2026-10-13) records checks and limits.
+
 ## Testify and Mockery adoption (2026-10-13)
 
 Adopted Testify assertions and pinned Mockery generation for connection/provider, catalog, cookie-codec and HTTP service mocks. Replaced handwritten interface stubs in lifecycle, login, disconnect, settings and entry-handler tests; stateful storage/Drive fixtures, fault-injection wrappers and deterministic clocks remain explicit. Pagination and malformed-save cases now have named table-driven subtests. `make generate` includes `make generate-mocks`, PR CI checks generated-mock drift, and testifylint enforces assertion usage. Core tests receive a test-only dependency allowance; production rules are unchanged. [Validation and limits](findings.md#test-tooling-validation-2026-10-13) record the checks.

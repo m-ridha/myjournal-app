@@ -99,7 +99,7 @@ async def run_browser(base, axe_script):
         for theme in ['light', 'dark']:
             await page.evaluate('(theme) => localStorage.setItem("mj-theme", theme)', theme)
             for path in ['/entries/today', '/entries', '/calendar', '/settings',
-                         '/help', '/privacy', '/terms', '/sign-in-failed', '/invalid-page']:
+                         '/help', '/privacy', '/terms', '/sign-in', '/sign-in-failed', '/invalid-page']:
                 await page.goto(base + path)
                 if path == '/entries/today':
                     await page.wait_for_function("!document.querySelector('[data-entry-text]').readOnly")
@@ -134,6 +134,46 @@ async def run_browser(base, axe_script):
             scans.append(await audit(page, axe_script, theme + '/editor-conflict'))
             keyboard[theme + '/editor-conflict'] = await check_keyboard(page)
 
+            async def expired(route):
+                await route.fulfill(status=401, content_type='application/json', body='{}')
+            for path, endpoint in [('/entries', '**/api/v1/entries?*'),
+                                   ('/calendar', '**/api/v1/calendar?*')]:
+                await page.route(endpoint, expired)
+                await page.goto(base + path)
+                await expect(page.locator('[data-auth-expired]')).to_be_visible()
+                scans.append(await audit(page, axe_script, theme + path + '/auth-expired'))
+                keyboard[theme + path + '/auth-expired'] = await check_keyboard(page)
+                await page.unroute(endpoint, expired)
+
+            await page.goto(base + '/entries/2020-02-01')
+            await page.wait_for_function("!document.querySelector('[data-entry-text]').readOnly")
+            reconnect_text = 'Synthetic reconnect draft ' + theme
+            await page.locator('[data-entry-text]').fill(reconnect_text)
+            await page.route('**/api/v1/entries/2020-02-01', expired)
+            await page.locator('[data-entry-save]').click()
+            await expect(page.locator('[data-auth-expired]')).to_be_visible()
+            await expect(page.locator('[data-entry-text]')).to_have_value(reconnect_text)
+            await page.screenshot(path='/tmp/myjournal-auth-expired-' + theme + '.png', full_page=True)
+            scans.append(await audit(page, axe_script, theme + '/editor-auth-expired'))
+            keyboard[theme + '/editor-auth-expired'] = await check_keyboard(page)
+            await page.set_viewport_size({'width': 390, 'height': 844})
+            assert await page.evaluate('document.documentElement.scrollWidth <= window.innerWidth'), 'Reconnect banner overflows narrow viewport'
+            await page.screenshot(path='/tmp/myjournal-auth-expired-narrow-' + theme + '.png', full_page=True)
+            scans.append(await audit(page, axe_script, theme + '/editor-auth-expired-narrow'))
+            await page.set_viewport_size({'width': 1280, 'height': 720})
+            async with page.expect_popup() as popup_info:
+                await page.locator('[data-auth-expired] a').click()
+            popup = await popup_info.value
+            await expect(popup.get_by_role('link', name='Continue with Local Dev', exact=True)).to_be_visible()
+            await popup.get_by_role('link', name='Continue with Local Dev', exact=True).click()
+            await popup.wait_for_function("!document.querySelector('[data-entry-text]').readOnly")
+            await popup.close()
+            await expect(page.locator('[data-entry-text]')).to_have_value(reconnect_text)
+            await page.unroute('**/api/v1/entries/2020-02-01', expired)
+            await page.locator('[data-entry-save]').click()
+            await expect(page.locator('[data-entry-status]')).to_have_text('Saved')
+            await expect(page.locator('[data-auth-expired]')).to_be_hidden()
+
         # A separate cookie/storage context proves these are public pages even
         # after the authenticated editor checks above have established a session.
         public_context = await browser.new_context(timezone_id='Asia/Jakarta')
@@ -142,7 +182,7 @@ async def run_browser(base, axe_script):
         for theme in ['light', 'dark']:
             await public_page.goto(base + '/')
             await public_page.evaluate('(theme) => localStorage.setItem("mj-theme", theme)', theme)
-            for path in ['/', '/settings', '/help', '/privacy', '/terms', '/sign-in-failed', '/invalid-page']:
+            for path in ['/', '/settings', '/help', '/privacy', '/terms', '/sign-in', '/sign-in-failed', '/invalid-page']:
                 response = await public_page.goto(base + path)
                 assert response.status == (404 if path == '/invalid-page' else 200), path
                 assert public_page.url == base + path, public_page.url

@@ -13,9 +13,10 @@ function element() {
 }
 const payload=(page=1,hasNext=false,items=[])=>({ok:true,json:async()=>({page,pageSize:10,hasNext,items})});
 function setup(search='',initial=payload(),calendarMode=false,listLimit=10) {
+ const auth=element();auth.hidden=true;
  const list=element(),status=element(),retry=element();
  list.dataset={listLimit:String(listLimit)};
- const fields={'[data-entry-list]':list,'[data-entries-status]':status,'[data-entries-retry]':retry};
+ const fields={'[data-auth-expired]':auth,'[data-entry-list]':list,'[data-entries-status]':status,'[data-entries-retry]':retry};
  const calendar=element(),label=element(),grid=element(),prev=element(),next=element(),today=element();
  calendar.querySelector=s=>({'[data-calendar-month]':label,'[data-calendar-grid]':grid,'[data-calendar-prev]':prev,'[data-calendar-next]':next,'[data-calendar-today]':today}[s]||null);
  if(calendarMode){delete fields['[data-entry-list]'];fields['[data-calendar]']=calendar;}
@@ -23,7 +24,7 @@ function setup(search='',initial=payload(),calendarMode=false,listLimit=10) {
  globalThis.window={location:{search,href:''},addEventListener(){}};
  const calls=[],queue=[initial];globalThis.fetch=async(url)=>{calls.push(url);if(!queue.length)throw new Error('unplanned request');return queue.shift();};
  if(typeof require==='function')(0,eval)(require('node:fs').readFileSync('assets/static/js/app.js','utf8'));else load('assets/static/js/app.js');
- events.DOMContentLoaded();return {list,status,retry,calls,queue,label,grid,prev,next,today};
+ events.DOMContentLoaded();return {auth,list,status,retry,calls,queue,label,grid,prev,next,today};
 }
 async function run() {
  let custom=setup('',{ok:true,json:async()=>({page:1,pageSize:5,items:[]})},false,5);await tick();assert(custom.calls[0]==='/api/v1/entries?page=1&size=5' && custom.status.textContent==='', 'rendered limit controls requests and response validation');
@@ -49,6 +50,10 @@ async function run() {
  f=setup('',calendarData(2026,10),true);await tick();f.queue.push({ok:false,status:503});f.next.fire('click');await tick();assert(f.label.textContent==='calendar.unavailable' && f.grid.children.length===0 && f.grid['aria-busy']==='false','current failure clears grid and loading state');
  f.queue.push(calendarData(2026,10));f.today.fire('click');await tick();assert(f.label.textContent.includes('October'),'Today recovers calendar after a failed navigation');
  const slowBody=deferred();f=setup('',{ok:true,json:()=>slowBody.promise},true);await tick();f.queue.push(calendarData(2026,11));f.next.fire('click');await tick();slowBody.resolve({year:2026,month:10,weeks:[]});await tick();assert(f.label.textContent.includes('November'),'stale JSON parsing completion cannot replace latest month');
+ f=setup('',{ok:false,status:401});await tick();assert(!f.auth.hidden && window.location.href==='', 'entries 401 offers reconnect without redirect');
+ f.queue.push(payload());f.retry.fire('click');await tick();assert(f.auth.hidden,'successful explicit list retry clears reconnect banner');
+ f=setup('',{ok:false,status:401},true);await tick();assert(!f.auth.hidden && f.grid.children.length===0,'calendar 401 offers shared reconnect');
+ const obsoleteAuth=deferred();f=setup('',obsoleteAuth.promise,true);f.queue.push(calendarData(2026,11));f.next.fire('click');await tick();obsoleteAuth.resolve({ok:false,status:401});await tick();assert(f.auth.hidden && f.label.textContent.includes('November'),'obsolete calendar 401 cannot replace current success or show expired prompt');
  output('PASS browsing interaction regressions');
 }
 run().catch(error=>{output(error.stack||String(error));if(typeof quit==='function')quit(1);else process.exitCode=1;});
