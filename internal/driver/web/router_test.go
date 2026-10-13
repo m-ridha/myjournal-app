@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
+
 	"github/mridha/myjournal-app/internal/config"
 	provider "github/mridha/myjournal-app/internal/core/connection"
 	"github/mridha/myjournal-app/internal/driven/clock"
@@ -266,9 +268,7 @@ func addLocalSessionCookie(t *testing.T, req *http.Request, secret string, issue
 		Connection: provider.Connection{ProviderID: "local", AccountID: "dev", AccountEmail: "dev@localhost", Credentials: "local-dev-user"},
 		IssuedAt:   when,
 	})
-	if err != nil {
-		t.Fatalf("session.Encode() error = %v", err)
-	}
+	require.NoError(t, err, "session.Encode() error = %v", err)
 	req.AddCookie(&http.Cookie{Name: authsession.CookieName, Value: encoded})
 }
 
@@ -347,9 +347,8 @@ func TestAPIPanicReturnsGenericEnvelope(t *testing.T) {
 	res := httptest.NewRecorder()
 	h.ServeHTTP(res, req)
 	var body map[string]string
-	if err := json.Unmarshal(res.Body.Bytes(), &body); err != nil {
-		t.Fatalf("GET panicking API decode = %v, want JSON envelope", err)
-	}
+	err := json.Unmarshal(res.Body.Bytes(), &body)
+	require.NoError(t, err, "GET panicking API decode = %v, want JSON envelope", err)
 	if res.Code != http.StatusInternalServerError || body["message"] != "Something went wrong. Please try again." || len(body) != 1 || res.Header().Get("Content-Type") != "application/json" {
 		t.Fatalf("GET panicking API = (%d, %v, %q), want generic JSON 500", res.Code, body, res.Header().Get("Content-Type"))
 	}
@@ -379,9 +378,7 @@ func TestPublicPagesAlwaysExposeSettings(t *testing.T) {
 						Connection: provider.Connection{ProviderID: provider.LocalID, AccountID: "dev"},
 						IssuedAt:   tc.issuedAt,
 					})
-					if err != nil {
-						t.Fatal(err)
-					}
+					require.NoError(t, err)
 					req.AddCookie(&http.Cookie{Name: authsession.CookieName, Value: encoded})
 				} else if tc.invalid {
 					req.AddCookie(&http.Cookie{Name: authsession.CookieName, Value: "invalid"})

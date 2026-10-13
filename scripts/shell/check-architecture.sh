@@ -66,4 +66,9 @@ internal/driven/cache/local/lru/architectureprobe/architecture_canary.go archite
 internal/driven/cache/local/lru/architectureprobe/architecture_canary.go architectureprobe github/mridha/myjournal-app/internal/config
 internal/core/journal/architectureprobe/architecture_canary.go architectureprobe github/mridha/myjournal-app/internal/testutil
 internal/config/architectureprobe/architecture_canary.go architectureprobe github/mridha/myjournal-app/internal/driven/provider/local
+internal/driver/web/authsession/architecture_canary.go authsession github/mridha/myjournal-app/internal/driven/session
+internal/driver/web/handler/architecture_canary.go handler github/mridha/myjournal-app/internal/driven/session
+internal/driver/web/architectureprobe/architecture_canary.go architectureprobe github/mridha/myjournal-app/internal/driven/session
+internal/core/connection/architectureprobe/architecture_canary.go architectureprobe github.com/stretchr/testify/assert
+internal/core/connection/architectureprobe/architecture_canary_test.go architectureprobe github/mridha/myjournal-app/internal/driven/session
 CASES

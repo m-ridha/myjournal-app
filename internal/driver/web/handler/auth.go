@@ -12,7 +12,6 @@ import (
 
 	provider "github/mridha/myjournal-app/internal/core/connection"
 	"github/mridha/myjournal-app/internal/core/journal"
-	"github/mridha/myjournal-app/internal/driven/session"
 	"github/mridha/myjournal-app/internal/driver/web/api"
 	"github/mridha/myjournal-app/internal/driver/web/authsession"
 )
@@ -37,7 +36,7 @@ func (s *Server) StartProviderLogin(w http.ResponseWriter, r *http.Request, prov
 		return
 	}
 	if result.Pending != nil {
-		encoded, err := session.EncodeLoginFlow(s.cfg.SessionKey, *result.Pending)
+		encoded, err := s.cfg.Codec.EncodeLoginFlow(*result.Pending)
 		if err != nil {
 			api.WriteError(w, http.StatusInternalServerError, s.message("errors.session"))
 			return
@@ -50,14 +49,14 @@ func (s *Server) StartProviderLogin(w http.ResponseWriter, r *http.Request, prov
 }
 
 func (s *Server) CompleteProviderLogin(w http.ResponseWriter, r *http.Request, providerName api.CompleteProviderLoginParamsProvider, params api.CompleteProviderLoginParams) {
-	p, ok := s.registry.Get(string(providerName))
+	p, ok := s.registry.Lookup(string(providerName))
 	if !ok {
 		s.writeLoginFailure(w, r, http.StatusNotFound, s.message("errors.providerUnavailable"))
 		return
 	}
 
 	input := provider.CompleteInput{ProviderID: p.ID()}
-	if p.ID() != provider.LocalID {
+	if p.RequiresLoginFlow() {
 		http.SetCookie(w, s.loginCookie("", -1))
 		flow, valid := s.callbackFlow(r, params)
 		if !valid {
@@ -86,7 +85,7 @@ func (s *Server) CompleteProviderLogin(w http.ResponseWriter, r *http.Request, p
 		return
 	}
 
-	encoded, err := session.Encode(s.cfg.SessionKey, stored)
+	encoded, err := s.cfg.Codec.Encode(stored)
 	if err != nil {
 		s.writeLoginFailure(w, r, http.StatusInternalServerError, s.message("errors.session"))
 		return
@@ -133,7 +132,7 @@ func (s *Server) callbackFlow(r *http.Request, params api.CompleteProviderLoginP
 	if err != nil || len(cookie.Value) > authsession.MaxCookieBytes {
 		return provider.LoginFlow{}, false
 	}
-	flow, err := session.DecodeLoginFlow(s.cfg.SessionKey, cookie.Value)
+	flow, err := s.cfg.Codec.DecodeLoginFlow(cookie.Value)
 	// ParseQuery reports malformed encoding instead of silently dropping fields.
 	query, queryErr := url.ParseQuery(r.URL.RawQuery)
 	if err != nil || queryErr != nil {

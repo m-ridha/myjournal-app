@@ -71,3 +71,9 @@ output paths, not browser/API routes or storage locations.
 The refactor preserves process-local mutation/cache coordination and accepted
 Drive external-writer/deployment-overlap limitations. It does not establish new
 performance, live Google, accessibility or release acceptance evidence.
+
+## Delivery-port follow-up (2026-10-13)
+
+[ADR 021](021-delivery-ports-and-login-capabilities.md) supersedes the concrete
+session-codec exception: cmd/app injects Codec, ConnectionService and Catalog
+contracts into web. Web retains HTTP cookie adaptation without a driven import.

@@ -27,7 +27,9 @@ import (
 	"github/mridha/myjournal-app/internal/driven/clock"
 	googleProvider "github/mridha/myjournal-app/internal/driven/provider/google"
 	localProvider "github/mridha/myjournal-app/internal/driven/provider/local"
+	"github/mridha/myjournal-app/internal/driven/session"
 	"github/mridha/myjournal-app/internal/driver/web"
+	"github/mridha/myjournal-app/internal/driver/web/authsession"
 	webHandler "github/mridha/myjournal-app/internal/driver/web/handler"
 )
 
@@ -49,6 +51,9 @@ func BuildApp(cfg config.Config) (*App, func(), error) {
 		newRenderer,
 		newWebOptions,
 		newConnectionService,
+		newSessionCodec,
+		wire.Bind(new(provider.Catalog), new(*provider.Registry)),
+		wire.Bind(new(webHandler.ConnectionService), new(*provider.Service)),
 		newHTTPServer,
 		newApp,
 	))
@@ -191,7 +196,14 @@ func newApp(logger *slog.Logger, registry *provider.Registry, server *http.Serve
 func newConnectionService(registry *provider.Registry, clk journal.Clock) *provider.Service {
 	return provider.NewService(registry, clk, rand.Reader)
 }
-func newWebOptions(cfg config.Config) web.Options {
+func newWebOptions(cfg config.Config, codec *session.Codec) web.Options {
 	origin, _ := url.Parse(cfg.BaseURL)
-	return web.Options{BaseURL: cfg.BaseURL, Session: webHandler.Options{SessionKey: cfg.SessionKey, CookieSecure: cfg.CookieSecure}, HTTPS: origin != nil && origin.Scheme == "https"}
+	return web.Options{BaseURL: cfg.BaseURL, Session: webHandler.Options{Codec: codec, CookieSecure: cfg.CookieSecure}, HTTPS: origin != nil && origin.Scheme == "https"}
 }
+
+var (
+	_ authsession.Codec            = (*session.Codec)(nil)
+	_ webHandler.ConnectionService = (*provider.Service)(nil)
+)
+
+func newSessionCodec(cfg config.Config) *session.Codec { return session.NewCodec(cfg.SessionKey) }

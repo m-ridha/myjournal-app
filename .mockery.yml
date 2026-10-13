@@ -1,0 +1,38 @@
+template: testify
+formatter: goimports
+formatter-options:
+  goimports:
+    local-prefix: github/mridha/myjournal-app
+filename: 'mock_{{.InterfaceName}}_test.go'
+pkgname: '{{.SrcPackageName}}'
+structname: 'mock{{.InterfaceName}}'
+packages:
+  github/mridha/myjournal-app/internal/driver/web/handler:
+    interfaces:
+      JournalService:
+      ConnectionService:
+  github/mridha/myjournal-app/internal/driver/web/authsession:
+    interfaces:
+      Codec:
+        configs:
+          - dir: internal/driver/web/authsession
+          - dir: internal/driver/web/handler
+            pkgname: handler
+  github/mridha/myjournal-app/internal/core/connection:
+    interfaces:
+      Gateway:
+      Catalog:
+        configs:
+          - dir: internal/core/connection
+          - dir: internal/driver/web/handler
+            pkgname: handler
+      Provider:
+        configs:
+          - dir: internal/core/connection
+          - dir: internal/driver/web/handler
+            pkgname: handler
+          - dir: internal/driver/web/authsession
+            pkgname: authsession
+          - dir: internal/driver/web
+            pkgname: web
+      FolderLocator:

@@ -15,7 +15,7 @@ import (
 
 // Options contains only browser-session transport configuration.
 type Options struct {
-	SessionKey   string
+	Codec        authsession.Codec
 	CookieSecure bool
 }
 
@@ -30,6 +30,14 @@ type JournalService interface {
 	Month(ctx context.Context, year int, month time.Month) (journal.MonthView, error)
 }
 
+// ConnectionService is the connection use-case boundary consumed by HTTP delivery.
+type ConnectionService interface {
+	Begin(context.Context, provider.BeginInput) (provider.BeginResult, error)
+	Complete(context.Context, provider.CompleteInput) (provider.Session, error)
+	Disconnect(context.Context, provider.Session) error
+	Settings(context.Context, provider.Session) (provider.Settings, error)
+}
+
 // ServiceFactory resolves a journal service for the validated browser session.
 type ServiceFactory func(context.Context, provider.Session) (JournalService, error)
 
@@ -38,8 +46,8 @@ var ErrUnauthenticated = errors.New("authentication required")
 // Server implements the generated OpenAPI chi server interface.
 type Server struct {
 	cfg            Options
-	connections    *provider.Service
-	registry       *provider.Registry
+	connections    ConnectionService
+	registry       provider.Catalog
 	serviceFactory ServiceFactory
 	messages       i18n.Catalog
 	now            func() time.Time
@@ -47,14 +55,14 @@ type Server struct {
 
 var _ api.ServerInterface = (*Server)(nil)
 
-func New(cfg Options, registry *provider.Registry, service ServiceFactory, messages i18n.Catalog, clk journal.Clock, connections *provider.Service) *Server {
+func New(cfg Options, registry provider.Catalog, service ServiceFactory, messages i18n.Catalog, clk journal.Clock, connections ConnectionService) *Server {
 	return &Server{connections: connections, cfg: cfg, registry: registry, serviceFactory: service, messages: messages, now: clk.Now}
 }
 
 func (s *Server) message(key string) string { return s.messages.Text(key) }
 
 func (s *Server) currentSession(r *http.Request) (provider.Session, error) {
-	return authsession.Read(r, s.cfg.SessionKey, s.registry, s.now())
+	return authsession.Read(r, s.cfg.Codec, s.registry, s.now())
 }
 
 func (s *Server) service(r *http.Request) (JournalService, error) {

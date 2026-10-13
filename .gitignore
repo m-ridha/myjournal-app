@@ -33,6 +33,7 @@ build/
 
 # generated
 /generated
+/.omm
 # wire_gen.go
 
 # Editor/IDE

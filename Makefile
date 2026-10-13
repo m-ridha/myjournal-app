@@ -1,8 +1,8 @@
 GOCMD ?= go
-GOTEST ?= $(GOCMD) test ./...
+GOTEST ?= $(GOCMD) test -coverprofile=coverage.out ./...
 GOLINT ?= golangci-lint
 
-.PHONY: run generate generate-openapi generate-wire fmt lint test test-js test-architecture
+.PHONY: run generate generate-openapi generate-wire generate-mocks fmt lint test test-js test-architecture
 
 all: generate fmt lint test run
 
@@ -11,7 +11,8 @@ run:
 	$(GOCMD) run ./cmd/app
 
 generate: generate-openapi \
-	generate-wire	
+	generate-wire \
+	generate-mocks
 
 generate-openapi:
 	@mkdir -p internal/driver/web/api
@@ -19,6 +20,9 @@ generate-openapi:
 
 generate-wire:
 	wire ./...
+
+generate-mocks:
+	mockery
 
 fmt:
 	$(GOLINT) fmt ./...

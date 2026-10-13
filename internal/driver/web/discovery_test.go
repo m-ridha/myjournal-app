@@ -7,6 +7,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+
 	"github/mridha/myjournal-app/internal/config"
 	provider "github/mridha/myjournal-app/internal/core/connection"
 	"github/mridha/myjournal-app/internal/driven/clock"
@@ -45,9 +47,8 @@ func TestPublicDiscoveryRoutes(t *testing.T) {
 						Locations []string `xml:"loc"`
 					} `xml:"url"`
 				}
-				if err := xml.Unmarshal(res.Body.Bytes(), &sitemap); err != nil {
-					t.Fatalf("decode sitemap: %v", err)
-				}
+				err := xml.Unmarshal(res.Body.Bytes(), &sitemap)
+				require.NoError(t, err, "decode sitemap: %v", err)
 				want := []string{origin + "/", origin + "/help", origin + "/privacy", origin + "/terms"}
 				if len(sitemap.URLs) != 4 {
 					t.Fatalf("sitemap URL records = %d, want 4", len(sitemap.URLs))
