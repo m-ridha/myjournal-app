@@ -12,6 +12,12 @@ This summary supersedes pending language in the dated evidence below; those reco
 - English and Bahasa Indonesia are implemented with public language preferences, a globe/code header pill, an always-visible Settings gear and Help; Privacy is reached from Help. Account actions still require a valid session. Earlier English-only and conditional-Settings notes are historical.
 - Current footer/release/logging and date-format behavior is consolidated in [the implementation summary](#footer-release-metadata-and-date-formatting-2026-10-12). Final footer visuals and Docker/deployed-version checks remain unverified; no new release is implied.
 
+## Mutation-triggered cache warming (2026-10-13)
+
+- Google's OAuth token source captures the Store construction context. A new operation view alone cannot detach it; warming therefore constructs a new provider client with its own bounded context. The synthetic Google test cancels the original PUT request and evicts its access token before releasing warming, forces token refresh through the independent client, and proves the next detail read hits the snapshot; DELETE similarly warms confirmed absence.
+- Cache tests gate warming to prove mutation responses do not wait, confirm that stored text/version rather than acknowledgement data seeds content, and verify that ordinary readers join warming while fresh reads stay separate. A later successful mutation coalesces into another attempt and rejects the old fill. Admission tests retain at most 64 dates with four active workers; ten-second attempt expiry and shutdown cancellation/join/queue cleanup are covered. Failed mutations schedule no warming.
+- Warming spends optional upstream requests and can be skipped, fail, or finish after navigation begins. It does not warm index/calendar snapshots or establish live latency gains, atomic external-writer safety or cross-process coherence. See [request counts](performance-benchmark.md#mutation-triggered-cache-warming-2026-10-13).
+
 ## Shared entry/preview content (2026-10-13)
 
 - Complete-file tests cover meaningful text beyond 64 KiB, the 1 MiB boundary/overflow, invalid trailing UTF-8, missing/mismatched checksum and retry after failed validation. Both raw Google and decorated storage pass shared Store contracts.

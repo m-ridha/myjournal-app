@@ -12,6 +12,11 @@ This summary supersedes pending language in the dated evidence below; those reco
 - English and Bahasa Indonesia are implemented with public language preferences, a globe/code header pill, an always-visible Settings gear and Help; Privacy is reached from Help. Account actions still require a valid session. Earlier English-only and conditional-Settings notes are historical.
 - Current footer/release/logging and date-format behavior is consolidated in [the implementation summary](#footer-release-metadata-and-date-formatting-2026-10-12). Final footer visuals and Docker/deployed-version checks remain unverified; no new release is implied.
 
+## Mutation-triggered cache warming (2026-10-13)
+
+- Successful PUT and DELETE now schedule bounded backend read-through warming for the affected date. Save/delete acknowledgements remain independent, and recovery/conflict reads remain fresh. [ADR 020](adr/020-entry-content-cache.md#mutation-triggered-backend-warming-2026-10-13) records lifecycle and resource policy.
+- Validation: regenerated Wire output, `make fmt lint test`, targeted app/cache/Google/web race checks, twenty repeated focused warming runs, all 31 sequential architecture probes, and local browser navigation/recovery checks with 38 accessibility scans passed. Evidence and tradeoffs are in [findings](findings.md#mutation-triggered-cache-warming-2026-10-13). Live Drive latency and deployment remain unverified.
+
 ## Shared entry/preview cache (2026-10-13)
 
 - Implemented the approved shared-content design: previews and details reuse full entries and confirmed absence, with two-minute TTL, ten decorated preview workers, targeted invalidation and independent fresh recovery reads. See [ADR 020](adr/020-entry-content-cache.md).

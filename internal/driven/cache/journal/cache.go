@@ -39,6 +39,7 @@ type Cache struct {
 	disabled       atomic.Bool
 	reads          readGroup
 	previewBatches readGroup
+	warmer         *cacheWarmer
 	readEpochs     [64]atomic.Uint64
 }
 
@@ -47,6 +48,7 @@ type Store struct {
 	cache   *Cache
 	account string
 	base    journal.Store
+	factory func(context.Context) (journal.Store, error)
 }
 
 var (
@@ -199,22 +201,27 @@ func (c *Cache) readEpoch(account string) *atomic.Uint64 {
 func (s *Store) Put(ctx context.Context, d civil.Date, text string, base journal.Version) (journal.Entry, error) {
 	epoch := s.cache.readEpoch(s.account)
 	epoch.Add(1)
-	defer epoch.Add(1)
 	entry, err := s.base.Put(ctx, d, text, base)
 	// Failed uploads can be ambiguous; invalidate affected data without retrying.
 	s.cache.invalidateDate(ctx, s.account, d, err != nil || base == "")
+	// Finish the mutation epoch before warming can join subsequent read flights.
+	epoch.Add(1)
 	if err != nil {
 		return journal.Entry{}, err
 	}
+	s.warm(d)
 	return entry, nil
 }
 
 func (s *Store) Trash(ctx context.Context, d civil.Date) error {
 	epoch := s.cache.readEpoch(s.account)
 	epoch.Add(1)
-	defer epoch.Add(1)
 	err := s.base.Trash(ctx, d)
 	s.cache.invalidateDate(ctx, s.account, d, true)
+	epoch.Add(1)
+	if err == nil {
+		s.warm(d)
+	}
 	return err
 }
 
@@ -341,5 +348,5 @@ func (s *Store) ForOperation() journal.Store {
 	if scoped, ok := base.(journal.OperationStore); ok {
 		base = scoped.ForOperation()
 	}
-	return s.cache.Wrap(s.account, base)
+	return s.cache.WrapWithFactory(s.account, base, s.factory)
 }

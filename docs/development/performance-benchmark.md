@@ -219,3 +219,9 @@ Controlled Drive-transport fixture: eight synthetic entries across two years, 80
 Ten repeated runs passed the shared-content and eight-tab browsing count assertions. Identical cold twenty-entry lists still use eight metadata requests and twenty downloads with snapshots disabled. Keeping the bounded batch coordinator avoids 14–15 metadata requests observed when independent date leaders scattered across request-owned discovery views.
 
 Full-file retrieval increases cold-list transfer versus the former prefix limit; a 1 MiB serialized entry can exceed an individual BigCache shard queue and bypass retention. Capacity tests verify correct full content despite repeated backing reads, and continued caching of smaller entries. The 16 MiB byte-queue setting excludes maps and runtime overhead. No live timing or total-memory reduction is claimed. Earlier tables remain historical evidence for their implementation stage.
+
+## Mutation-triggered cache warming (2026-10-13)
+
+The synthetic Google adapter test releases warming only after a successful PUT's original request has been canceled. Warming uses three metadata lists and one validated content download. The following ordinary detail read makes zero additional upstream requests. After DELETE, warming uses three metadata lists and zero downloads to confirm absence; the following missing-date read also makes zero additional requests. Twenty repeated focused test runs passed.
+
+These requests move the next read ahead of navigation; they do not remove upstream work. Four warming workers share the ordinary date flights with foreground readers, while fresh recovery reads remain separate. Warming does not populate index/calendar snapshots. No live latency improvement or original performance-target acceptance is claimed.
