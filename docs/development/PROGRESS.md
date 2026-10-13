@@ -1,5 +1,9 @@
 # Progress
 
+## Selective PR checks (2026-10-13)
+
+Application PR checks use `run_code_checks`: code, tests, dependencies, build/CI configuration, Makefile and unknown paths run the full suite, including combined JavaScript and race-enabled Go tests. Markdown, recorded benchmark results, .gitignore, LICENSE, Markdown lint configuration and .gitkeep-only changes skip application checks while retaining the required job result. A separate `run_build_checks` flag gates workflow/configuration validation and container builds for Docker, GitHub configuration, Railway, Go dependency manifests, Makefile, environment example, release version input and deployment/CI-selector script changes. Ordinary feature-code changes skip those three extra steps. Deleted/renamed paths remain included. Local validation passed: 12 Python tests (including whole-PR/rename detection against a temporary Git repository), actionlint, YAML/JSON parsing, `make fmt lint test` and `git diff --check`. The first hosted run remains pending. Docker is installed but its daemon is unavailable, so the container build was not verified locally.
+
 ## List-index warming (2026-10-13)
 
 Successful entry creation and trash now warm the shared year list and affected year's index before the entry snapshot. Existing-entry updates retain entry-only warming. This closes the post-mutation Entries index gap; live Drive latency improvement remains unmeasured. Warming stays optional, bounded and independent of the mutation response, with the existing two-minute TTL and fresh-read bypass.
