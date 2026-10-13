@@ -24,7 +24,7 @@ Chrome 155.0.8059.40 and axe-core 4.10.3 passed 18 WCAG A/AA-tagged scans: seven
 
 The scanner leaves arrow-glyph contrast as incomplete. Supplemental computed foreground/background measurements for enabled previous/next controls passed 4.5:1, with observed ratios 13.98–17.40:1. These measurements do not certify all non-text control boundaries or focus-indicator contrast. Incomplete results remain in the report instead of being discarded. Native screen-reader and native zoom checks remain open.
 
-The optional scripts/check-accessibility.py tool uses an owned ephemeral-port server, temporary synthetic local data, and a random session key. It shuts down the server and removes data. It is separate from ordinary CI and adds no runtime dependency or page request to a CDN. Supply a locally downloaded axe script; do not run this against real journal data.
+The optional scripts/python/check-accessibility.py tool uses an owned ephemeral-port server, temporary synthetic local data, and a random session key. It shuts down the server and removes data. It is separate from ordinary CI and adds no runtime dependency or page request to a CDN. Supply a locally downloaded axe script; do not run this against real journal data.
 
 Example setup/run (requires Python, installed Chrome, and network access for initial QA tools):
 
@@ -33,7 +33,7 @@ python3 -m venv /tmp/myjournal-a11y-venv
 /tmp/myjournal-a11y-venv/bin/pip install playwright
 curl --fail --location https://cdn.jsdelivr.net/npm/axe-core@4.10.3/axe.min.js -o /tmp/myjournal-axe.min.js
 go build -o /tmp/myjournal-a11y-app ./cmd/app
-/tmp/myjournal-a11y-venv/bin/python scripts/check-accessibility.py \
+/tmp/myjournal-a11y-venv/bin/python scripts/python/check-accessibility.py \
   --app-binary /tmp/myjournal-a11y-app \
   --axe-script /tmp/myjournal-axe.min.js \
   --report /tmp/myjournal-a11y-report.json
@@ -75,14 +75,14 @@ Result: the focused local Chrome UI acceptance checklist is complete with the re
 
 ## Expanded automated QA matrix (2026-10-11)
 
-scripts/check-accessibility.py now includes signed-in /terms and a separate signed-out browser context for Home, Help, Privacy, Terms and styled 404 in both themes. Public-page checks assert expected status, no login redirect and no signed-in Settings link; Home must expose Local Dev login. The defined matrix is 30 axe scans: eight signed-in routes plus failed-save/conflict states per theme (20), plus five signed-out routes per theme (10). Both route matrices run keyboard checks; conflict retains its existing keyboard check. This is planned executable coverage, not a claim that 30 fresh scans passed. Script syntax was checked; the expanded Playwright/axe browser run was not executed in this task. Earlier 18-scan results remain historical evidence.
+scripts/python/check-accessibility.py now includes signed-in /terms and a separate signed-out browser context for Home, Help, Privacy, Terms and styled 404 in both themes. Public-page checks assert expected status, no login redirect and no signed-in Settings link; Home must expose Local Dev login. The defined matrix is 30 axe scans: eight signed-in routes plus failed-save/conflict states per theme (20), plus five signed-out routes per theme (10). Both route matrices run keyboard checks; conflict retains its existing keyboard check. This is planned executable coverage, not a claim that 30 fresh scans passed. Script syntax was checked; the expanded Playwright/axe browser run was not executed in this task. Earlier 18-scan results remain historical evidence.
 
 ## Expanded automated matrix execution (2026-10-11)
 
 Built the current app with go build -o /tmp/myjournal-a11y-app ./cmd/app and ran the expanded script using the existing local axe file and Python Playwright environment:
 
 ```sh
-/tmp/myjournal-a11y-venv/bin/python scripts/check-accessibility.py \
+/tmp/myjournal-a11y-venv/bin/python scripts/python/check-accessibility.py \
   --app-binary /tmp/myjournal-a11y-app \
   --axe-script /tmp/myjournal-axe.min.js \
   --report /tmp/myjournal-a11y-expanded-20261011.json
@@ -96,4 +96,4 @@ The script used its owned ephemeral-port server, random session key and temporar
 
 ### Public-header accessibility regression (2026-10-12)
 
-scripts/check-accessibility.py now expects the Settings gear in both session states, adds signed-out Settings to both themes, checks that account actions are absent there, and scans the open header language menu. Fresh local execution passed 34 axe scans with zero violations, 30 keyboard-focus checks and zero page errors. Report: /private/tmp/myjournal-header-a11y-20261012.json. Axe retains incomplete aria-controls checks and sampled contrast checks; direct DOM assertions confirmed each controlled ID is unique and references a listbox, open menus render below their trigger, and computed header-language-button contrast exceeds 4.5:1 in both themes. The existing arrow contrast assertions also passed. These checks do not establish native screen-reader announcements or full WCAG conformance. Historical “no signed-in Settings link” coverage above is superseded by the user-approved always-visible public Settings navigation.
+scripts/python/check-accessibility.py now expects the Settings gear in both session states, adds signed-out Settings to both themes, checks that account actions are absent there, and scans the open header language menu. Fresh local execution passed 34 axe scans with zero violations, 30 keyboard-focus checks and zero page errors. Report: /private/tmp/myjournal-header-a11y-20261012.json. Axe retains incomplete aria-controls checks and sampled contrast checks; direct DOM assertions confirmed each controlled ID is unique and references a listbox, open menus render below their trigger, and computed header-language-button contrast exceeds 4.5:1 in both themes. The existing arrow contrast assertions also passed. These checks do not establish native screen-reader announcements or full WCAG conformance. Historical “no signed-in Settings link” coverage above is superseded by the user-approved always-visible public Settings navigation.

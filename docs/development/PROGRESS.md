@@ -1,5 +1,13 @@
 # Progress
 
+## Script layout (2026-10-13)
+
+Standalone scripts are grouped under `scripts/javascript/`, `scripts/shell/` and `scripts/python/`. Makefile, PR/release workflows, benchmark regressions, CI path routing and documented commands use the relocated paths. The architecture script still resolves the repository root independently of its caller's working directory. Python test discovery targets `scripts/python`; sibling test imports remain colocated. Validation passed: `make fmt lint test`, 12 Python tests, all 31 architecture probes, actionlint, Python/JavaScript/shell syntax checks and `git diff --check`. No references to the old flat script paths remain in the repository text.
+
+## Selective PR checks (2026-10-13)
+
+Application PR checks use `run_code_checks`: code, tests, dependencies, build/CI configuration, Makefile and unknown paths run the full suite, including combined JavaScript and race-enabled Go tests. Markdown, recorded benchmark results, .gitignore, LICENSE, Markdown lint configuration and .gitkeep-only changes skip application checks while retaining the required job result. A separate `run_build_checks` flag gates workflow/configuration validation and container builds for Docker, GitHub configuration, Railway, Go dependency manifests, Makefile, environment example, release version input and deployment/CI-selector script changes. Ordinary feature-code changes skip those three extra steps. Deleted/renamed paths remain included. Local validation passed: 12 Python tests (including whole-PR/rename detection against a temporary Git repository), actionlint, YAML/JSON parsing, `make fmt lint test` and `git diff --check`. The first hosted run remains pending. Docker is installed but its daemon is unavailable, so the container build was not verified locally.
+
 ## List-index warming (2026-10-13)
 
 Successful entry creation and trash now warm the shared year list and affected year's index before the entry snapshot. Existing-entry updates retain entry-only warming. This closes the post-mutation Entries index gap; live Drive latency improvement remains unmeasured. Warming stays optional, bounded and independent of the mutation response, with the existing two-minute TTL and fresh-read bypass.
@@ -586,7 +594,7 @@ Focused local Chrome checks confirmed public Settings, stable header before/afte
 
 ### Public-header accessibility regression (2026-10-12)
 
-scripts/check-accessibility.py now expects the Settings gear in both session states, adds signed-out Settings to both themes, checks that account actions are absent there, and scans the open header language menu. Fresh local execution passed 34 axe scans with zero violations, 30 keyboard-focus checks and zero page errors. Report: /private/tmp/myjournal-header-a11y-20261012.json. Axe retains incomplete aria-controls checks and sampled contrast checks; direct DOM assertions confirmed each controlled ID is unique and references a listbox, open menus render below their trigger, and computed header-language-button contrast exceeds 4.5:1 in both themes. The existing arrow contrast assertions also passed. These checks do not establish native screen-reader announcements or full WCAG conformance. Historical “no signed-in Settings link” coverage above is superseded by the user-approved always-visible public Settings navigation.
+scripts/python/check-accessibility.py now expects the Settings gear in both session states, adds signed-out Settings to both themes, checks that account actions are absent there, and scans the open header language menu. Fresh local execution passed 34 axe scans with zero violations, 30 keyboard-focus checks and zero page errors. Report: /private/tmp/myjournal-header-a11y-20261012.json. Axe retains incomplete aria-controls checks and sampled contrast checks; direct DOM assertions confirmed each controlled ID is unique and references a listbox, open menus render below their trigger, and computed header-language-button contrast exceeds 4.5:1 in both themes. The existing arrow contrast assertions also passed. These checks do not establish native screen-reader announcements or full WCAG conformance. Historical “no signed-in Settings link” coverage above is superseded by the user-approved always-visible public Settings navigation.
 
 ### Header language pill (2026-10-12)
 

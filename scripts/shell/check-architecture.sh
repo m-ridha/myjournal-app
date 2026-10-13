@@ -1,7 +1,7 @@
 #!/bin/sh
 # Prove depguard rejects forbidden production imports, then remove each probe.
 set -eu
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../.."
 canary=
 # Dedicated nested packages keep probes acyclic and verify recursive matching.
 probe_dirs="internal/driven/cache/journal/architectureprobe internal/core/journal/architectureprobe internal/core/connection/architectureprobe internal/driver/web/architectureprobe internal/driven/provider/local/architectureprobe internal/driven/cache/local/lru/architectureprobe internal/config/architectureprobe"
