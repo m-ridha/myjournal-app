@@ -15,9 +15,9 @@ import (
 	"golang.org/x/oauth2"
 	"google.golang.org/api/idtoken"
 
-	provider "github/mridha/myjournal-app/internal/core/connection"
-	"github/mridha/myjournal-app/internal/core/journal"
-	"github/mridha/myjournal-app/internal/testutil"
+	provider "github/m-ridha/myjournal-app/internal/core/connection"
+	"github/m-ridha/myjournal-app/internal/core/journal"
+	"github/m-ridha/myjournal-app/internal/testutil"
 )
 
 func TestExchangeAndRefresh(t *testing.T) {

@@ -4,8 +4,8 @@ import (
 	"testing"
 	"time"
 
-	"github/mridha/myjournal-app/internal/config"
-	"github/mridha/myjournal-app/internal/testutil"
+	"github/m-ridha/myjournal-app/internal/config"
+	"github/m-ridha/myjournal-app/internal/testutil"
 )
 
 func TestBuildApp(t *testing.T) {

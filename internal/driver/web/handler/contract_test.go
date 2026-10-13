@@ -13,13 +13,13 @@ import (
 	openapi_types "github.com/oapi-codegen/runtime/types"
 	"github.com/stretchr/testify/require"
 
-	"github/mridha/myjournal-app/internal/config"
-	provider "github/mridha/myjournal-app/internal/core/connection"
-	"github/mridha/myjournal-app/internal/core/journal"
-	"github/mridha/myjournal-app/internal/driven/clock"
-	"github/mridha/myjournal-app/internal/driven/provider/local"
-	"github/mridha/myjournal-app/internal/driver/web/api"
-	"github/mridha/myjournal-app/internal/testutil"
+	"github/m-ridha/myjournal-app/internal/config"
+	provider "github/m-ridha/myjournal-app/internal/core/connection"
+	"github/m-ridha/myjournal-app/internal/core/journal"
+	"github/m-ridha/myjournal-app/internal/driven/clock"
+	"github/m-ridha/myjournal-app/internal/driven/provider/local"
+	"github/m-ridha/myjournal-app/internal/driver/web/api"
+	"github/m-ridha/myjournal-app/internal/testutil"
 )
 
 func assertJSONError(t *testing.T, res *httptest.ResponseRecorder, status int, message string) {

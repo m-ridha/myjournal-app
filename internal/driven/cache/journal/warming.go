@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github/mridha/myjournal-app/internal/core/journal"
+	"github/m-ridha/myjournal-app/internal/core/journal"
 )
 
 const (

@@ -9,10 +9,10 @@ import (
 
 	"cloud.google.com/go/civil"
 
-	"github/mridha/myjournal-app/internal/config"
-	"github/mridha/myjournal-app/internal/core/journal"
-	"github/mridha/myjournal-app/internal/core/journal/storetest"
-	"github/mridha/myjournal-app/internal/testutil"
+	"github/m-ridha/myjournal-app/internal/config"
+	"github/m-ridha/myjournal-app/internal/core/journal"
+	"github/m-ridha/myjournal-app/internal/core/journal/storetest"
+	"github/m-ridha/myjournal-app/internal/testutil"
 )
 
 func TestLocalStorePutAndGet(t *testing.T) {

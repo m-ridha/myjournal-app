@@ -6,12 +6,12 @@ import (
 	"testing"
 	"time"
 
-	"github/mridha/myjournal-app/internal/core/journal"
-	"github/mridha/myjournal-app/internal/core/journal/storetest"
-	"github/mridha/myjournal-app/internal/driven/cache/journal"
-	cacheAdapter "github/mridha/myjournal-app/internal/driven/cache/local/bigcache"
-	"github/mridha/myjournal-app/internal/driven/cache/local/lru"
-	"github/mridha/myjournal-app/internal/driven/provider/local"
+	"github/m-ridha/myjournal-app/internal/core/journal"
+	"github/m-ridha/myjournal-app/internal/core/journal/storetest"
+	cachestore "github/m-ridha/myjournal-app/internal/driven/cache/journal"
+	cacheAdapter "github/m-ridha/myjournal-app/internal/driven/cache/local/bigcache"
+	"github/m-ridha/myjournal-app/internal/driven/cache/local/lru"
+	"github/m-ridha/myjournal-app/internal/driven/provider/local"
 )
 
 func TestCachedLocalStoreContract(t *testing.T) {

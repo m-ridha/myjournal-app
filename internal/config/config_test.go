@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github/mridha/myjournal-app/internal/testutil"
+	"github/m-ridha/myjournal-app/internal/testutil"
 )
 
 func setConfigEnvironment(t *testing.T) {

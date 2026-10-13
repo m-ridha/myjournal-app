@@ -10,7 +10,7 @@ import (
 	"syscall"
 	_ "time/tzdata" // Keep IANA locations available in minimal deployment images.
 
-	"github/mridha/myjournal-app/internal/config"
+	"github/m-ridha/myjournal-app/internal/config"
 )
 
 // version is set from the validated release tag by the container build.

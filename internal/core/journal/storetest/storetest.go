@@ -7,7 +7,7 @@ import (
 
 	"cloud.google.com/go/civil"
 
-	"github/mridha/myjournal-app/internal/core/journal"
+	"github/m-ridha/myjournal-app/internal/core/journal"
 )
 
 // Factory returns a fresh, empty Store for one contract test.

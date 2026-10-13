@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github/mridha/myjournal-app/assets"
+	"github/m-ridha/myjournal-app/assets"
 )
 
 func TestEmbeddedTranslationsAreComplete(t *testing.T) {

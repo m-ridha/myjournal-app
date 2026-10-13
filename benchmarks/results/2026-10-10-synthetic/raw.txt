@@ -1,6 +1,6 @@
 goos: darwin
 goarch: arm64
-pkg: github/mridha/myjournal-app/internal/provider/google
+pkg: github/m-ridha/myjournal-app/internal/provider/google
 cpu: Apple M4
 BenchmarkDriveBaseline/open-10         	      20	    678169 ns/op	         1.000 download/op	         4.000 http/op	         3.000 list/op	  104414 B/op	    1180 allocs/op
 BenchmarkDriveBaseline/open-10         	      20	    676965 ns/op	         1.000 download/op	         4.000 http/op	         3.000 list/op	  106044 B/op	    1179 allocs/op
@@ -51,4 +51,4 @@ BenchmarkDriveBaseline/calendar-warm-10          	      20	      1869 ns/op	    
 BenchmarkDriveBaseline/calendar-warm-10          	      20	      2517 ns/op	         0 http/op	    5144 B/op	      10 allocs/op
 BenchmarkDriveBaseline/calendar-warm-10          	      20	      2496 ns/op	         0 http/op	    5144 B/op	      10 allocs/op
 PASS
-ok  	github/mridha/myjournal-app/internal/provider/google	5.312s
+ok  	github/m-ridha/myjournal-app/internal/provider/google	5.312s

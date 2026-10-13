@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github/mridha/myjournal-app/internal/config"
+	"github/m-ridha/myjournal-app/internal/config"
 )
 
 func TestHTTPServerLogOmitsRawDetails(t *testing.T) {

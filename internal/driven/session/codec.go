@@ -1,6 +1,6 @@
 package session
 
-import provider "github/mridha/myjournal-app/internal/core/connection"
+import provider "github/m-ridha/myjournal-app/internal/core/connection"
 
 // Codec binds the configured secret to the existing authenticated cookie format.
 // Transport consumers receive its methods, never the raw key.

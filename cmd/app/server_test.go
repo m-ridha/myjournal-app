@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github/mridha/myjournal-app/internal/config"
+	"github/m-ridha/myjournal-app/internal/config"
 )
 
 func TestServeWaitsForActiveRequest(t *testing.T) {

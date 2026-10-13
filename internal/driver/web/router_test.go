@@ -12,15 +12,15 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	"github/mridha/myjournal-app/internal/config"
-	provider "github/mridha/myjournal-app/internal/core/connection"
-	"github/mridha/myjournal-app/internal/driven/clock"
-	googleProvider "github/mridha/myjournal-app/internal/driven/provider/google"
-	localProvider "github/mridha/myjournal-app/internal/driven/provider/local"
-	"github/mridha/myjournal-app/internal/driven/session"
-	"github/mridha/myjournal-app/internal/driver/web/authsession"
-	"github/mridha/myjournal-app/internal/driver/web/handler"
-	"github/mridha/myjournal-app/internal/testutil"
+	"github/m-ridha/myjournal-app/internal/config"
+	provider "github/m-ridha/myjournal-app/internal/core/connection"
+	"github/m-ridha/myjournal-app/internal/driven/clock"
+	googleProvider "github/m-ridha/myjournal-app/internal/driven/provider/google"
+	localProvider "github/m-ridha/myjournal-app/internal/driven/provider/local"
+	"github/m-ridha/myjournal-app/internal/driven/session"
+	"github/m-ridha/myjournal-app/internal/driver/web/authsession"
+	"github/m-ridha/myjournal-app/internal/driver/web/handler"
+	"github/m-ridha/myjournal-app/internal/testutil"
 )
 
 func TestLocalLoginRedirect(t *testing.T) {

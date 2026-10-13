@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github/mridha/myjournal-app/internal/driven/cache/journal"
+	cachestore "github/m-ridha/myjournal-app/internal/driven/cache/journal"
 )
 
 const defaultCapacity = 2048

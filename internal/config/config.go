@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	provider "github/mridha/myjournal-app/internal/core/connection"
+	provider "github/m-ridha/myjournal-app/internal/core/connection"
 )
 
 // Config contains the application-level settings used by the server at startup.

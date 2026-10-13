@@ -11,11 +11,11 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	"github/mridha/myjournal-app/internal/config"
-	provider "github/mridha/myjournal-app/internal/core/connection"
-	"github/mridha/myjournal-app/internal/core/journal"
-	"github/mridha/myjournal-app/internal/driver/web/authsession"
-	"github/mridha/myjournal-app/internal/testutil"
+	"github/m-ridha/myjournal-app/internal/config"
+	provider "github/m-ridha/myjournal-app/internal/core/connection"
+	"github/m-ridha/myjournal-app/internal/core/journal"
+	"github/m-ridha/myjournal-app/internal/driver/web/authsession"
+	"github/m-ridha/myjournal-app/internal/testutil"
 )
 
 func TestDisconnectRevokesBeforeClearingSession(t *testing.T) {

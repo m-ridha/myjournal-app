@@ -12,8 +12,8 @@ import (
 
 	"google.golang.org/api/drive/v3"
 
-	"github/mridha/myjournal-app/internal/core/journal"
-	"github/mridha/myjournal-app/internal/driven/cache/journal"
+	"github/m-ridha/myjournal-app/internal/core/journal"
+	cachestore "github/m-ridha/myjournal-app/internal/driven/cache/journal"
 )
 
 func TestSmallUploadDoesNotAllocateDefaultChunk(t *testing.T) {

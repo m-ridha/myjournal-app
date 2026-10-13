@@ -12,9 +12,9 @@ import (
 	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/option"
 
-	"github/mridha/myjournal-app/internal/core/journal"
-	"github/mridha/myjournal-app/internal/driven/cache/journal"
-	cacheAdapter "github/mridha/myjournal-app/internal/driven/cache/local/bigcache"
+	"github/m-ridha/myjournal-app/internal/core/journal"
+	cachestore "github/m-ridha/myjournal-app/internal/driven/cache/journal"
+	cacheAdapter "github/m-ridha/myjournal-app/internal/driven/cache/local/bigcache"
 )
 
 type benchmarkClock struct{}

@@ -7,7 +7,7 @@ import (
 	"testing/synctest"
 	"time"
 
-	"github/mridha/myjournal-app/internal/driven/cache/journal"
+	cachestore "github/m-ridha/myjournal-app/internal/driven/cache/journal"
 )
 
 func TestBlockedStorageReadCancellation(t *testing.T) {

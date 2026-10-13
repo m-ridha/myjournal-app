@@ -7,7 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	"github/mridha/myjournal-app/internal/core/journal"
+	"github/m-ridha/myjournal-app/internal/core/journal"
 )
 
 // Account encoding makes separators unambiguous without retaining credentials.

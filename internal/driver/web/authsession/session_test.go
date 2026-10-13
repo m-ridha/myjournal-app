@@ -9,9 +9,9 @@ import (
 
 	"github.com/stretchr/testify/require"
 
-	provider "github/mridha/myjournal-app/internal/core/connection"
-	"github/mridha/myjournal-app/internal/core/journal"
-	"github/mridha/myjournal-app/internal/driven/session"
+	provider "github/m-ridha/myjournal-app/internal/core/connection"
+	"github/m-ridha/myjournal-app/internal/core/journal"
+	"github/m-ridha/myjournal-app/internal/driven/session"
 )
 
 func TestSessionPolicyAndCookieLifecycle(t *testing.T) {

@@ -13,8 +13,8 @@ import (
 	"cloud.google.com/go/civil"
 	openapi_types "github.com/oapi-codegen/runtime/types"
 
-	"github/mridha/myjournal-app/internal/core/journal"
-	"github/mridha/myjournal-app/internal/driver/web/api"
+	"github/m-ridha/myjournal-app/internal/core/journal"
+	"github/m-ridha/myjournal-app/internal/driver/web/api"
 )
 
 func (s *Server) ListEntries(w http.ResponseWriter, r *http.Request, params api.ListEntriesParams) {

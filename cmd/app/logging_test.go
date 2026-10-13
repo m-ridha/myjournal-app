@@ -10,8 +10,8 @@ import (
 	"strings"
 	"testing"
 
-	"github/mridha/myjournal-app/internal/config"
-	middleware "github/mridha/myjournal-app/internal/driver/web/middleware"
+	"github/m-ridha/myjournal-app/internal/config"
+	middleware "github/m-ridha/myjournal-app/internal/driver/web/middleware"
 )
 
 type captureHandler struct {

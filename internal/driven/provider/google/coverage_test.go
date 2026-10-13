@@ -12,8 +12,8 @@ import (
 	"golang.org/x/oauth2"
 	"google.golang.org/api/googleapi"
 
-	provider "github/mridha/myjournal-app/internal/core/connection"
-	"github/mridha/myjournal-app/internal/core/journal"
+	provider "github/m-ridha/myjournal-app/internal/core/connection"
+	"github/m-ridha/myjournal-app/internal/core/journal"
 )
 
 func TestProviderIdentityConfigurationAndErrorBoundaries(t *testing.T) {

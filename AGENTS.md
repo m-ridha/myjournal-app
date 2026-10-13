@@ -13,7 +13,7 @@ Read the user's current instructions first, then consult:
 
 ## Stack, setup, and checks
 
-Use Go, chi, `html/template`, embedded assets, Google Wire, and oapi-codegen. Preserve module `github/mridha/myjournal-app` and the declared Go version (currently 1.27.2). Prefer the standard library and existing dependencies.
+Use Go, chi, `html/template`, embedded assets, Google Wire, and oapi-codegen. Preserve module `github/m-ridha/myjournal-app` and the declared Go version (currently 1.27.2). Prefer the standard library and existing dependencies.
 
 Follow [README prerequisites and quick start](README.md#prerequisites) for a fresh clone. Required tools are Go 1.27.2, Git, Make and OpenSSL; checks additionally need Node.js 24 or macOS JavaScriptCore, Wire v0.7.0, oapi-codegen v2.8.0, Mockery v3.8.1 and golangci-lint v2.14.0. The README contains pinned `go install` commands and PATH setup (`GOBIN`, or `$(go env GOPATH)/bin`). Mockery v2 is incompatible with the current v3 configuration; use `go install github.com/vektra/mockery/v3@v3.8.1`, not `/v2@latest`. Do not silently upgrade generators. Go module dependencies, including Testify, need no separate installation. Python 3, Docker and browser QA dependencies are optional task-specific tools.
 
@@ -35,7 +35,7 @@ make generate-mocks    # after mocked-interface/config edits; requires installed
 - Edit `cmd/app/wire.go`, regenerate `cmd/app/wire_gen.go`, and version both. Edit `docs/api/openapi.yml`, regenerate `internal/driver/web/api/openapi.gen.go`. Never hand-edit generated code or restore top-level generated directories.
 - The schema declares OpenAPI 3.2.1 and the generated header identifies oapi-codegen v2.8.0. Verify installed compatibility; do not silently downgrade. `make generate` runs OpenAPI, Wire and Mockery generators; `go generate ./cmd/app` also runs Wire. Inspect generated diffs.
 - `make test` runs JavaScript regressions and `go test ./...`. JavaScript requires Node.js or macOS JavaScriptCore, without npm packages. Preserve the JavaScriptCore success-marker check so asynchronous assertions cannot appear to pass.
-- `make fmt` runs the installed `golangci-lint fmt ./...` with gofmt and gci. Group imports as standard library, third-party packages, then `github/mridha/myjournal-app` packages, separated by blank lines and sorted alphabetically by import path within each group (including aliased imports). Apply this to all handwritten Go files, including tests, Wire inputs and spikes. `make lint` rejects drift. Generated code stays generator-owned and is excluded from formatter rewrites; regenerate it with the owning tool instead.
+- `make fmt` runs the installed `golangci-lint fmt ./...` with gofmt and gci. Group imports as standard library, third-party packages, then `github/m-ridha/myjournal-app` packages, separated by blank lines and sorted alphabetically by import path within each group (including aliased imports). Apply this to all handwritten Go files, including tests, Wire inputs and spikes. `make lint` rejects drift. Generated code stays generator-owned and is excluded from formatter rewrites; regenerate it with the owning tool instead.
 - Lint uses golangci-lint v2.14.0 (v2.13.2 cannot read Go 1.27.2 export data). For documentation-only changes, check links/paths, consistency, and `git diff --check`; runtime tests are unnecessary. Report unavailable tools and exact commands/results; never present historical checks as a fresh run.
 - Spikes also use port 3030. Do not kill an existing listener without establishing ownership.
 

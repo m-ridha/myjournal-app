@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github/mridha/myjournal-app/internal/driven/cache/journal"
+	cachestore "github/m-ridha/myjournal-app/internal/driven/cache/journal"
 )
 
 func TestStorageOwnershipAndPrefixDeletion(t *testing.T) {
