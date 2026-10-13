@@ -685,3 +685,7 @@ Full formatting/lint/tests, focused race checks and 38 local accessibility scans
 ### Confirmed blank-page caching (2026-10-13)
 
 Confirmed missing entries now share the two-minute TTL and same-date mutation invalidation. Fresh recovery/conflict reads still bypass retained absence; operational failures remain uncached. Full checks and focused race tests passed. See [absence-cache evidence](findings.md#confirmed-absence-cache-validation-2026-10-13).
+
+## Cache package directory alignment (2026-10-13)
+
+Renamed `internal/driven/cache/journal` to `internal/driven/cache/cachestore` by user decision, matching the existing Go package name. Updated imports, architecture rules/probes and current documentation, and regenerated Wire. Historical validation commands above retain their original paths. Fresh `make generate-wire`, `make fmt lint test` (zero lint issues), and the separate `make test-architecture` (all 36 probes) passed; `git diff --check` passed. Runtime behavior is unchanged.

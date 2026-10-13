@@ -58,7 +58,7 @@ make generate-mocks    # after mocked-interface/config edits; requires installed
 | `internal/core/journal/`, `internal/core/journal/storetest/` | Domain/use cases, Store/Clock ports, shared contracts |
 | `internal/core/connection/` | Connection/session models, lifecycle policy, ports, registry and application services |
 | `internal/driven/provider/{local,google}/` | Development filesystem and Google OAuth/Drive adapters |
-| `internal/driven/cache/journal/` | Journal cache decorator and consumer-owned byte-cache port |
+| `internal/driven/cache/cachestore/` | Journal cache decorator and consumer-owned byte-cache port |
 | `internal/driven/cache/local/{bigcache,lru}/`, `internal/driven/clock/` | Interchangeable BigCache (currently wired) and LRU storage, and system clock adapters |
 | `internal/driven/session/`, `internal/config/` | AES-GCM cookie codec and environment validation |
 | `internal/driver/web/`, `internal/driver/web/handler/`, `internal/driver/web/middleware/` | Router/pages, thin API handlers, focused middleware |

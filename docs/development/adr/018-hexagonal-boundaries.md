@@ -39,7 +39,7 @@ Preserve existing encrypted JSON fields, key derivation, authenticated purpose,
 cookie values/attributes and lifetimes. Synthetic pre-migration ciphertext
 fixtures pin compatibility. Stateless replay limits remain as recorded in ADR 002.
 
-The journal Store decorator lives in `internal/driven/cache/journal` (Go package
+The journal Store decorator lives in `internal/driven/cache/cachestore` (Go package
 cachestore), owning its supporting ByteCache port. Concrete in-process storage is
 explicitly grouped in `internal/driven/cache/local/{bigcache,lru}`. Selection is explicit in the composition root; ADR 017 records lifecycle compatibility and current selection. No runtime selector, remote adapter or distributed
 coordination is introduced. ADR 017's expiry/invalidation/memory guarantees remain.

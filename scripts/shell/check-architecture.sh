@@ -4,7 +4,7 @@ set -eu
 cd "$(dirname "$0")/../.."
 canary=
 # Dedicated nested packages keep probes acyclic and verify recursive matching.
-probe_dirs="internal/driven/cache/journal/architectureprobe internal/core/journal/architectureprobe internal/core/connection/architectureprobe internal/driver/web/architectureprobe internal/driven/provider/local/architectureprobe internal/driven/cache/local/lru/architectureprobe internal/config/architectureprobe"
+probe_dirs="internal/driven/cache/cachestore/architectureprobe internal/core/journal/architectureprobe internal/core/connection/architectureprobe internal/driver/web/architectureprobe internal/driven/provider/local/architectureprobe internal/driven/cache/local/lru/architectureprobe internal/config/architectureprobe"
 created_dirs=
 cleanup() {
   if [ -n "$canary" ]; then rm -f "$canary"; fi
@@ -39,15 +39,15 @@ internal/core/journal/architecture_canary.go journal net/http
 internal/core/journal/storetest/architecture_canary.go storetest net/http/httptest
 internal/driver/web/architecture_canary.go web github/m-ridha/myjournal-app/internal/driven/provider/local
 internal/driver/web/handler/architecture_canary.go handler github/m-ridha/myjournal-app/internal/driven/clock
-internal/driven/session/architecture_canary.go session github/m-ridha/myjournal-app/internal/driven/cache/journal
+internal/driven/session/architecture_canary.go session github/m-ridha/myjournal-app/internal/driven/cache/cachestore
 internal/driven/provider/local/architecture_canary.go local github/m-ridha/myjournal-app/internal/driver/web/api
 internal/driven/provider/google/architecture_canary.go google github/m-ridha/myjournal-app/internal/driver/web/api
 internal/core/journal/architecture_canary.go journal github.com/allegro/bigcache
 internal/core/journal/storetest/architecture_canary.go storetest github/m-ridha/myjournal-app/internal/driven/cache/local/bigcache
 internal/driver/web/handler/architecture_canary.go handler github/m-ridha/myjournal-app/internal/driven/cache/local/bigcache
 internal/driven/session/architecture_canary.go session github.com/allegro/bigcache
-internal/driven/cache/journal/architectureprobe/architecture_canary.go architectureprobe github/m-ridha/myjournal-app/internal/driven/cache/local/bigcache
-internal/driven/cache/journal/architecture_canary.go cachestore github.com/allegro/bigcache
+internal/driven/cache/cachestore/architectureprobe/architecture_canary.go architectureprobe github/m-ridha/myjournal-app/internal/driven/cache/local/bigcache
+internal/driven/cache/cachestore/architecture_canary.go cachestore github.com/allegro/bigcache
 internal/driven/cache/local/bigcache/architecture_canary.go bigcache github/m-ridha/myjournal-app/internal/driver/web/api
 internal/driven/cache/local/lru/architecture_canary.go lru github/m-ridha/myjournal-app/internal/driver/web/api
 internal/core/journal/architectureprobe/architecture_canary.go architectureprobe github/m-ridha/myjournal-app/internal/config
@@ -58,8 +58,8 @@ internal/core/connection/architectureprobe/architecture_canary.go architecturepr
 internal/core/connection/architectureprobe/architecture_canary.go architectureprobe net/http
 internal/driver/web/architectureprobe/architecture_canary.go architectureprobe github/m-ridha/myjournal-app/internal/config
 internal/driver/web/architectureprobe/architecture_canary.go architectureprobe github/m-ridha/myjournal-app/internal/driven/cache/local/lru
-internal/driven/cache/journal/architectureprobe/architecture_canary.go architectureprobe github/m-ridha/myjournal-app/internal/config
-internal/driven/cache/journal/architectureprobe/architecture_canary.go architectureprobe github/m-ridha/myjournal-app/internal/driver/web/api
+internal/driven/cache/cachestore/architectureprobe/architecture_canary.go architectureprobe github/m-ridha/myjournal-app/internal/config
+internal/driven/cache/cachestore/architectureprobe/architecture_canary.go architectureprobe github/m-ridha/myjournal-app/internal/driver/web/api
 internal/driven/provider/local/architectureprobe/architecture_canary.go architectureprobe github/m-ridha/myjournal-app/internal/config
 internal/driven/provider/local/architectureprobe/architecture_canary.go architectureprobe github/m-ridha/myjournal-app/internal/driven/session
 internal/driven/cache/local/lru/architectureprobe/architecture_canary.go architectureprobe github/m-ridha/myjournal-app/internal/driver/web/api
