@@ -29,8 +29,8 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         run: |
-          python3 -B -m unittest discover -s scripts -p test_pr_checks.py
-          python3 -B scripts/pr_checks.py
+          python3 -B -m unittest discover -s scripts/python -p test_pr_checks.py
+          python3 -B scripts/python/pr_checks.py
 
       - name: Set up Go
         if: steps.changes.outputs.run_code_checks == 'true' || steps.changes.outputs.run_build_checks == 'true'
@@ -73,7 +73,7 @@ jobs:
 
       - name: Test release deployment handling
         if: steps.changes.outputs.run_code_checks == 'true'
-        run: python3 -B -m unittest discover -s scripts -p test_deploy_railway.py
+        run: python3 -B -m unittest discover -s scripts/python -p test_deploy_railway.py
 
       # These probes temporarily add forbidden imports; do not run in parallel.
       - name: Verify architecture boundaries

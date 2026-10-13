@@ -23,8 +23,8 @@ def requires_build_checks(paths):
     return any(not is_non_runtime_file(path) and (
         path.startswith(".github/") or path in {
             "Dockerfile", ".dockerignore", "railway.json", "go.mod", "go.sum",
-            "Makefile", ".env.example", "RELEASE_VERSION", "scripts/deploy-railway.py",
-            "scripts/test_deploy_railway.py", "scripts/pr_checks.py", "scripts/test_pr_checks.py",
+            "Makefile", ".env.example", "RELEASE_VERSION", "scripts/python/deploy-railway.py",
+            "scripts/python/test_deploy_railway.py", "scripts/python/pr_checks.py", "scripts/python/test_pr_checks.py",
         }
     ) for path in paths)
 

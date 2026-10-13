@@ -24,8 +24,8 @@ class ChangeSelectionTests(unittest.TestCase):
             "assets/static/js/app.js": True,
             "tests/editor.test.js": True,
             ".golangci.yml": True,
-            "scripts/check-architecture.sh": True,
-            "scripts/deploy-railway.py": True,
+            "scripts/shell/check-architecture.sh": True,
+            "scripts/python/deploy-railway.py": True,
             ".github/workflows/pr-checks.yml": True,
             ".github/workflows/release.yml": True,
             ".github/dependabot.yml": True,
@@ -33,7 +33,7 @@ class ChangeSelectionTests(unittest.TestCase):
             ".dockerignore": True,
             "railway.json": True,
             "Makefile": True,
-            "scripts/pr_checks.py": True,
+            "scripts/python/pr_checks.py": True,
             "new-language.rs": True,
         }
         for path, expected in cases.items():
@@ -55,8 +55,8 @@ class BuildSelectionTests(unittest.TestCase):
     def test_build_inputs(self):
         for path in ["Dockerfile", ".dockerignore", "railway.json", "go.mod", "go.sum",
                      "Makefile", ".env.example", "RELEASE_VERSION", ".github/dependabot.yml",
-                     ".github/workflows/release.yml", "scripts/deploy-railway.py",
-                     "scripts/test_deploy_railway.py", "scripts/pr_checks.py", "scripts/test_pr_checks.py"]:
+                     ".github/workflows/release.yml", "scripts/python/deploy-railway.py",
+                     "scripts/python/test_deploy_railway.py", "scripts/python/pr_checks.py", "scripts/python/test_pr_checks.py"]:
             with self.subTest(path=path):
                 self.assertTrue(requires_build_checks([path]))
 

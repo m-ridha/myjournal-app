@@ -41,4 +41,4 @@ test-js:
 
 # Run separately: this temporarily adds forbidden imports and invokes lint.
 test-architecture:
-	sh scripts/check-architecture.sh
+	sh scripts/shell/check-architecture.sh

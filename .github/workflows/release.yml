@@ -49,7 +49,7 @@ jobs:
           install-only: true
       - name: Validate release code
         run: |
-          python3 -B -m unittest discover -s scripts -p test_deploy_railway.py
+          python3 -B -m unittest discover -s scripts/python -p test_deploy_railway.py
           make fmt lint test
           git diff --exit-code -- '*.go'
           make test-architecture
@@ -66,4 +66,4 @@ jobs:
           source_dir=$(mktemp -d)
           git archive HEAD | tar -x -C "$source_dir"
           printf '%s\n' "$RELEASE_TAG" > "$source_dir/RELEASE_VERSION"
-          python3 scripts/deploy-railway.py "$source_dir" "$(git rev-parse HEAD)"
+          python3 scripts/python/deploy-railway.py "$source_dir" "$(git rev-parse HEAD)"

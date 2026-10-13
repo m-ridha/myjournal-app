@@ -58,7 +58,7 @@ hint caches deferred under the existing user decisions.
    although current composition and external scripts implement those changes.
    Separate historical observations from a concise current phase/status table;
    retain old evidence and explicit waivers rather than rewriting history.
-3. Extend scripts/check-accessibility.py beyond its current signed-in seven-route
+3. Extend scripts/python/check-accessibility.py beyond its current signed-in seven-route
    set to cover /terms and the signed-out homepage/public pages in both themes.
    Existing scans cannot stand as evidence for routes they never visit.
 4. Add race tests and govulncheck to PR or scheduled checks. PR checks currently
