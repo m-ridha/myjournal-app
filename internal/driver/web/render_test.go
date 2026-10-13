@@ -80,7 +80,7 @@ func TestFooterBuildVersion(t *testing.T) {
 					t.Fatal("missing footer")
 				}
 				footer := body[start:end]
-				if !strings.Contains(footer, version) || !strings.Contains(footer, `href="https://github.com/mridha-work"`) || !strings.Contains(footer, "2026") {
+				if !strings.Contains(footer, version) || !strings.Contains(footer, `href="https://github.com/m-ridha"`) || !strings.Contains(footer, "2026") {
 					t.Errorf("%s footer missing build metadata", locale)
 				}
 				if strings.Contains(footer, `aria-hidden="true"> · </span>`) != (version != "") {

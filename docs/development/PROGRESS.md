@@ -522,7 +522,7 @@ Markdown lint is unavailable on PATH; documentation paths/consistency were check
 
 ## PR #20 review follow-up (2026-10-11)
 
-Checked the single outstanding [review finding](https://github.com/mridha-work/myjournal-app/pull/20#discussion_r4240673309) against the current source and depguard configuration. The local AGENTS.md and ADR 017 corrections replace intermediate provider/cache paths with internal/driven/provider/{local,google} and internal/driven/cache/local/{bigcache,lru}, and identify the port as cachestore.ByteCache. The architecture table now lists both concrete local cache packages explicitly. Verified directory existence, the ByteCache declaration, the cache-storage depguard pattern, and absence of superseded names in these two guides. Documentation-only review follow-up; git diff --check passed. No remote reply, thread resolution, commit or push was performed.
+Checked the single outstanding [review finding](https://github.com/m-ridha/myjournal-app/pull/20#discussion_r4240673309) against the current source and depguard configuration. The local AGENTS.md and ADR 017 corrections replace intermediate provider/cache paths with internal/driven/provider/{local,google} and internal/driven/cache/local/{bigcache,lru}, and identify the port as cachestore.ByteCache. The architecture table now lists both concrete local cache packages explicitly. Verified directory existence, the ByteCache declaration, the cache-storage depguard pattern, and absence of superseded names in these two guides. Documentation-only review follow-up; git diff --check passed. No remote reply, thread resolution, commit or push was performed.
 
 ## Interface assertion placement (2026-10-11)
 
@@ -664,7 +664,7 @@ Automated and local accessibility checks passed. Live Drive latency after these 
 
 Completed the configurable browser list limit, now ten entries, and raised cache preview concurrency to ten. Requests, response validation and both localized descriptions derive from the same rendering constant. Earlier twenty-entry QA records remain historical.
 
-Pre-PR checks passed and the changes were committed/pushed in [PR #26](https://github.com/mridha-work/myjournal-app/pull/26). See [configuration and concurrency findings](findings.md#entries-limit-and-preview-concurrency-2026-10-12) for implementation details and evidence.
+Pre-PR checks passed and the changes were committed/pushed in [PR #26](https://github.com/m-ridha/myjournal-app/pull/26). See [configuration and concurrency findings](findings.md#entries-limit-and-preview-concurrency-2026-10-12) for implementation details and evidence.
 
 ## Browser sign-in failure recovery (2026-10-12)
 
