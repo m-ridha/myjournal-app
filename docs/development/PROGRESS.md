@@ -1,5 +1,9 @@
 # Progress
 
+## Calendar month/year picker (2026-10-13)
+
+Added a dependency-free picker opened from the Calendar month heading, with 12-month and 12-year grids, theme-aware styling and keyboard dismissal/focus return. Future months/years and next-month navigation are disabled using the page's resolved today snapshot. Browsing the picker stays local; selecting a month loads the calendar. Loading/error feedback has a separate live status, preserving the selected month heading and latest-request guards. The Makefile runs a seventh JavaScript regression suite. [Validation evidence](findings.md#calendar-monthyear-picker-2026-10-13) records the checks and limits.
+
 ## Authentication-expiry recovery (2026-10-13)
 
 Protected browser operations now share a localized sign-in-again banner. Reconnecting opens a new tab while the editor preserves text/backups and pauses automatic writes; manual save retry keeps fresh-read conflict reconciliation. A server-checked account-scope header prevents old editor/settings tabs from acting under a different reconnected account. The public, non-indexed `/sign-in` route offers login even with an existing cookie and supports language return navigation. [ADR 022](adr/022-authentication-expiry-recovery.md) records the decision; [validation evidence](findings.md#authentication-expiry-recovery-2026-10-13) records checks and limits.

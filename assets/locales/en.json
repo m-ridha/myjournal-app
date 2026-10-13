@@ -237,5 +237,13 @@
   "auth.expired": "Your session has expired or account access is no longer available.",
   "auth.instructions": "Sign in with the same account, then return to your original tab and retry. Keep that tab open.",
   "auth.unsavedReminder": "If you have unsaved text, copy it before closing the tab.",
-  "auth.signInAgain": "Sign in again (opens in a new tab)"
+  "auth.signInAgain": "Sign in again (opens in a new tab)",
+  "calendar.chooseMonth": "Choose month and year",
+  "calendar.chooseYear": "Choose year",
+  "calendar.showMonths": "Show months for {year}",
+  "calendar.previousYear": "Previous year",
+  "calendar.nextYear": "Next year",
+  "calendar.previousYears": "Previous 12 years",
+  "calendar.nextYears": "Next 12 years",
+  "calendar.closePicker": "Close month picker"
 }

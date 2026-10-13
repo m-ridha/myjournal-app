@@ -714,7 +714,7 @@
   function shiftMonth(month, delta) {
     const date = new Date(`${month}-01T00:00:00Z`);
     date.setUTCMonth(date.getUTCMonth() + delta);
-    return `${date.getUTCFullYear()}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
+    return `${String(date.getUTCFullYear()).padStart(4, '0')}-${String(date.getUTCMonth() + 1).padStart(2, '0')}`;
   }
 
   function initCalendar() {
@@ -728,6 +728,28 @@
     const todayBtn = calendar.querySelector('[data-calendar-today]');
     let month = currentMonth();
     let calendarRequest = 0;
+    const maximumMonth = currentMonth();
+    const calendarStatus = calendar.querySelector('[data-calendar-status]');
+    const picker = window.mjInitMonthPicker?.(calendar, {
+      month, max: maximumMonth, text: t,
+      onSelect(value) {
+        if (value < '0001-01' || value > maximumMonth) return;
+        month = value;
+        loadCalendar();
+      },
+    });
+
+    function updateMonthControls() {
+      monthLabel.textContent = new Date(`${month}-01T00:00:00Z`).toLocaleDateString(document.documentElement.lang, {
+        month: 'long', year: 'numeric', timeZone: 'UTC',
+      });
+      const trigger = calendar.querySelector('[data-month-trigger]');
+      if (trigger) trigger.setAttribute('aria-label', `${t('calendar.chooseMonth')}: ${monthLabel.textContent}`);
+      prevBtn.disabled = month <= '0001-01';
+      nextBtn.disabled = month >= maximumMonth;
+      picker?.setMonth(month);
+    }
+
 
     function renderDay(day) {
       const button = document.createElement('button');
@@ -772,7 +794,8 @@
     async function loadCalendar() {
       const request = ++calendarRequest;
       const requestedMonth = month;
-      monthLabel.textContent = t('calendar.loading');
+      updateMonthControls();
+      if (calendarStatus) calendarStatus.textContent = t('calendar.loading');
       grid.setAttribute('aria-busy', 'true');
       try {
         grid.innerHTML = '';
@@ -781,11 +804,7 @@
         const data = await response.json();
         if (request !== calendarRequest) return;
         if (`${String(data.year).padStart(4, '0')}-${String(data.month).padStart(2, '0')}` !== requestedMonth || !Array.isArray(data.weeks)) throw new Error('invalid calendar');
-        monthLabel.textContent = new Date(`${requestedMonth}-01T00:00:00Z`).toLocaleDateString(document.documentElement.lang, {
-          month: 'long',
-          year: 'numeric',
-          timeZone: 'UTC',
-        });
+        if (calendarStatus) calendarStatus.textContent = '';
 
         Array.from({ length: 7 }, (_, offset) => {
           const weekday = new Date(Date.UTC(2024, 0, 1 + offset));
@@ -799,22 +818,24 @@
       } catch (error) {
         if (request !== calendarRequest) return;
         grid.innerHTML = '';
-        monthLabel.textContent = t('calendar.unavailable');
+        if (calendarStatus) calendarStatus.textContent = t('calendar.unavailable');
       } finally {
         if (request === calendarRequest) grid.setAttribute('aria-busy', 'false');
       }
     }
 
     prevBtn.addEventListener('click', () => {
+      if (prevBtn.disabled) return;
       month = shiftMonth(month, -1);
       loadCalendar();
     });
     nextBtn.addEventListener('click', () => {
+      if (nextBtn.disabled) return;
       month = shiftMonth(month, 1);
       loadCalendar();
     });
     todayBtn.addEventListener('click', () => {
-      month = currentMonth();
+      month = maximumMonth;
       loadCalendar();
     });
     loadCalendar();

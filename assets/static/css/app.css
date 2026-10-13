@@ -1159,3 +1159,36 @@ html[data-theme="dark"] .icon-moon {
   line-height: 1.75;
   overflow-wrap: anywhere;
 }
+
+/* Month/year navigation shares the calendar's monochrome controls. */
+.mj-month-picker-anchor { position: relative; min-width: 0; }
+.mj-month-trigger { gap: 0.6rem; padding: 0.6rem 0.9rem; font-weight: 600; }
+.mj-month-chevron { width: 0.8rem; height: 0.8rem; background: currentColor; mask: url('/static/svgs/chevron-down.svg') center / contain no-repeat; }
+.mj-month-trigger[aria-expanded="true"] .mj-month-chevron { transform: rotate(180deg); }
+.mj-month-picker {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 0.75rem);
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(20rem, calc(100vw - 4rem));
+  padding: 1rem;
+  max-height: 65vh;
+  overflow-y: auto;
+  border: 1px solid var(--mj-border-strong);
+  border-radius: 1rem;
+  background: var(--mj-surface);
+  box-shadow: 0 12px 32px var(--mj-shadow);
+}
+.mj-month-picker[hidden] { display: none; }
+.mj-month-picker-title, .mj-month-picker-header { display: flex; align-items: center; justify-content: space-between; gap: 0.5rem; margin-bottom: 0.75rem; }
+.mj-month-picker-title h2 { margin: 0; font-size: 1rem; }
+.mj-month-picker .mj-icon-btn { width: 2.75rem; height: 2.75rem; flex-shrink: 0; }
+.mj-month-options { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; }
+.mj-month-option { min-height: 2.75rem; padding: 0.5rem 0.2rem; border: 1px solid var(--mj-border); border-radius: 0.65rem; background: transparent; color: var(--mj-text); cursor: pointer; }
+.mj-month-option[aria-pressed="true"] { border: 2px solid var(--mj-text); font-weight: 700; background: var(--mj-surface-strong); }
+.mj-month-option:not(:disabled):hover, .mj-month-option:focus-visible { border-color: var(--mj-text); }
+.mj-month-option:disabled { opacity: 0.4; cursor: not-allowed; }
+.mj-calendar-status:empty { display: none; }
+
+.mj-month-option:focus-visible { outline: 2px solid var(--mj-text); outline-offset: 2px; }
