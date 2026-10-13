@@ -1,10 +1,10 @@
-// Package lru preserves the former map/list cache storage as an optional adapter.
-// Production dependency injection continues to select BigCache.
+// Package lru implements cachestore.ByteCache using entry-count-bounded LRU storage.
 package lru
 
 import (
 	"container/list"
 	"context"
+	"errors"
 	"strings"
 	"time"
 
@@ -13,6 +13,8 @@ import (
 
 const defaultCapacity = 2048
 
+var errClosed = errors.New("cache is closed")
+
 type item struct {
 	key       string
 	value     []byte
@@ -20,9 +22,11 @@ type item struct {
 }
 
 // Adapter is an entry-count-bounded LRU with lazy expiry. It owns no goroutines
-// and requires no shutdown cleanup. The capacity is not a byte-memory limit.
+// and supports the same explicit Close lifecycle as BigCache.
+// The capacity is not a byte-memory limit.
 type Adapter struct {
 	gate     chan struct{}
+	closed   bool
 	ttl      time.Duration
 	capacity int
 	now      func() time.Time
@@ -32,16 +36,19 @@ type Adapter struct {
 
 var _ cachestore.ByteCache = (*Adapter)(nil)
 
-// New constructs an LRU with the previous 2048-entry default capacity.
-func New(ttl time.Duration) *Adapter { return NewWithCapacity(ttl, defaultCapacity) }
+// New constructs an LRU with a 2048-entry default capacity and positive TTL.
+func New(ttl time.Duration) (*Adapter, error) { return NewWithCapacity(ttl, defaultCapacity) }
 
 // NewWithCapacity constructs an LRU with an explicit entry bound. Nonpositive
-// capacity selects the default; nonpositive TTL disables storage.
-func NewWithCapacity(ttl time.Duration, capacity int) *Adapter {
+// capacity selects the default; TTL must be positive.
+func NewWithCapacity(ttl time.Duration, capacity int) (*Adapter, error) {
+	if ttl <= 0 {
+		return nil, errors.New("cache TTL must be positive")
+	}
 	if capacity <= 0 {
 		capacity = defaultCapacity
 	}
-	return &Adapter{gate: make(chan struct{}, 1), ttl: ttl, capacity: capacity, now: time.Now, items: make(map[string]*list.Element)}
+	return &Adapter{gate: make(chan struct{}, 1), ttl: ttl, capacity: capacity, now: time.Now, items: make(map[string]*list.Element)}, nil
 }
 
 func (a *Adapter) lock(ctx context.Context) error {
@@ -56,6 +63,10 @@ func (a *Adapter) lock(ctx context.Context) error {
 	if err := ctx.Err(); err != nil {
 		a.unlock()
 		return err
+	}
+	if a.closed {
+		a.unlock()
+		return errClosed
 	}
 	return nil
 }
@@ -86,9 +97,6 @@ func (a *Adapter) Set(ctx context.Context, key string, value []byte) error {
 		return err
 	}
 	defer a.unlock()
-	if a.ttl <= 0 {
-		return nil
-	}
 	if element := a.items[key]; element != nil {
 		stored := element.Value.(*item)
 		stored.value = append([]byte(nil), value...)
@@ -137,4 +145,17 @@ func (a *Adapter) DeletePrefix(ctx context.Context, prefix string) error {
 func (a *Adapter) remove(element *list.Element) {
 	delete(a.items, element.Value.(*item).key)
 	a.lru.Remove(element)
+}
+
+// Close releases retained bytes exactly once; later operations fail explicitly.
+func (a *Adapter) Close() error {
+	a.gate <- struct{}{}
+	defer a.unlock()
+	if a.closed {
+		return nil
+	}
+	a.closed = true
+	clear(a.items)
+	a.lru.Init()
+	return nil
 }

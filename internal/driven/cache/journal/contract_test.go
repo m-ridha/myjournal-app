@@ -16,22 +16,31 @@ import (
 
 func TestCachedLocalStoreContract(t *testing.T) {
 	storetest.Run(t, func(t *testing.T) journal.Store {
-		backend, err := cacheAdapter.New(time.Minute)
+		storage, err := cacheAdapter.New(time.Minute)
 		if err != nil {
 			t.Fatal(err)
 		}
 		t.Cleanup(func() {
-			if err := backend.Close(); err != nil {
+			if err := storage.Close(); err != nil {
 				t.Error(err)
 			}
 		})
-		return cachestore.New(backend, time.Minute).Wrap("local/dev", local.NewStore(t.TempDir()))
+		return cachestore.New(storage, time.Minute).Wrap("local/dev", local.NewStore(t.TempDir()))
 	})
 }
 
 func TestLRUCachedLocalStoreContract(t *testing.T) {
 	storetest.Run(t, func(t *testing.T) journal.Store {
-		return cachestore.New(lru.New(time.Minute), time.Minute).Wrap("local/dev", local.NewStore(t.TempDir()))
+		storage, err := lru.New(time.Minute)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() {
+			if err := storage.Close(); err != nil {
+				t.Error(err)
+			}
+		})
+		return cachestore.New(storage, time.Minute).Wrap("local/dev", local.NewStore(t.TempDir()))
 	})
 }
 
@@ -48,12 +57,12 @@ func (s *countedStore) Get(ctx context.Context, d journal.Date) (journal.Entry, 
 	return s.Store.Get(ctx, d)
 }
 func TestSharedContentBigCacheCapacity(t *testing.T) {
-	backend, err := cacheAdapter.New(2 * time.Minute)
+	storage, err := cacheAdapter.New(2 * time.Minute)
 	if err != nil {
 		t.Fatal(err)
 	}
 	t.Cleanup(func() {
-		if err := backend.Close(); err != nil {
+		if err := storage.Close(); err != nil {
 			t.Error(err)
 		}
 	})
@@ -68,7 +77,7 @@ func TestSharedContentBigCacheCapacity(t *testing.T) {
 	if _, err := base.Put(ctx, small, "small", ""); err != nil {
 		t.Fatal(err)
 	}
-	store := cachestore.New(backend, 2*time.Minute).Wrap("local:dev", base)
+	store := cachestore.New(storage, 2*time.Minute).Wrap("local:dev", base)
 	for range 2 {
 		previews, err := store.Previews(ctx, []journal.Date{large}, 4)
 		if err != nil || previews[large] != "aaaa" {

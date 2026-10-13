@@ -41,8 +41,7 @@ fixtures pin compatibility. Stateless replay limits remain as recorded in ADR 00
 
 The journal Store decorator lives in `internal/driven/cache/journal` (Go package
 cachestore), owning its supporting ByteCache port. Concrete in-process storage is
-explicitly grouped in `internal/driven/cache/local/{bigcache,lru}`. BigCache remains
-selected; LRU is optional. No runtime selector, remote adapter or distributed
+explicitly grouped in `internal/driven/cache/local/{bigcache,lru}`. Selection is explicit in the composition root; ADR 017 records lifecycle compatibility and current selection. No runtime selector, remote adapter or distributed
 coordination is introduced. ADR 017's expiry/invalidation/memory guarantees remain.
 
 Core/journal owns a pure date eligibility rule shared with editor routes. Local

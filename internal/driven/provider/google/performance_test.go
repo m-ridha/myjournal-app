@@ -14,7 +14,6 @@ import (
 
 	"github/mridha/myjournal-app/internal/core/journal"
 	"github/mridha/myjournal-app/internal/driven/cache/journal"
-	"github/mridha/myjournal-app/internal/driven/cache/local/lru"
 )
 
 func TestSmallUploadDoesNotAllocateDefaultChunk(t *testing.T) {
@@ -161,7 +160,7 @@ func TestColdAndPostSaveEntriesRequestCounts(t *testing.T) {
 		if _, err := store.Put(context.Background(), journal.Date{Year: 2020, Month: 1, Day: 1}, "synthetic", ""); err != nil {
 			t.Fatal(err)
 		}
-		service := journal.NewService(cachestore.New(lru.New(time.Minute), time.Minute).Wrap("synthetic", store), benchmarkClock{})
+		service := journal.NewService(cachestore.New(newLRUStorage(t, time.Minute), time.Minute).Wrap("synthetic", store), benchmarkClock{})
 		check := func(label string, wantLists, wantDownloads int) {
 			counts.counts = make(map[string]int)
 			start := time.Now()

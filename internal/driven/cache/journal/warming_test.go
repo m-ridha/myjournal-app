@@ -19,7 +19,7 @@ func TestMutationWarmsValidatedContentAndAbsence(t *testing.T) {
 		}
 		t.Run(name, func(t *testing.T) {
 			synctest.Test(t, func(t *testing.T) {
-				cache, stop := NewWithWarming(newTestBackend(), 2*time.Minute)
+				cache, stop := NewWithWarming(newTestStorage(), 2*time.Minute)
 				defer stop()
 				base := newFakeStore()
 				date := journal.Date{Year: 2020, Month: 1, Day: 1}
@@ -83,7 +83,7 @@ func TestMutationWarmsValidatedContentAndAbsence(t *testing.T) {
 
 func TestWarmingCoalescesLaterMutationWithoutStaleFill(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
-		cache, stop := NewWithWarming(newTestBackend(), 2*time.Minute)
+		cache, stop := NewWithWarming(newTestStorage(), 2*time.Minute)
 		defer stop()
 		date := journal.Date{Year: 2020, Month: 1, Day: 1}
 		base := newFakeStore()
@@ -121,7 +121,7 @@ func TestWarmingCoalescesLaterMutationWithoutStaleFill(t *testing.T) {
 
 func TestWarmingFailureAndShutdown(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
-		cache, stop := NewWithWarming(newTestBackend(), 2*time.Minute)
+		cache, stop := NewWithWarming(newTestStorage(), 2*time.Minute)
 		defer stop()
 		base := newFakeStore()
 		date := journal.Date{Year: 2020, Month: 1, Day: 1}
@@ -156,7 +156,7 @@ func TestWarmingFailureAndShutdown(t *testing.T) {
 
 func TestWarmingAdmissionAndTimeout(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
-		cache, stop := NewWithWarming(newTestBackend(), 2*time.Minute)
+		cache, stop := NewWithWarming(newTestStorage(), 2*time.Minute)
 		defer stop()
 		base := newFakeStore()
 		var active, peak, ended atomic.Int32
@@ -195,7 +195,7 @@ func TestWarmingAdmissionAndTimeout(t *testing.T) {
 
 func TestFailedMutationDoesNotWarm(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
-		cache, stop := NewWithWarming(newTestBackend(), 2*time.Minute)
+		cache, stop := NewWithWarming(newTestStorage(), 2*time.Minute)
 		defer stop()
 		var factories atomic.Int32
 		store := cache.WrapWithFactory("google:a", &ambiguousWriteStore{newFakeStore()}, func(context.Context) (journal.Store, error) {
@@ -218,7 +218,7 @@ func TestFailedMutationDoesNotWarm(t *testing.T) {
 
 func TestForegroundReadSharesWarmingAndFreshReadStaysSeparate(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
-		cache, stop := NewWithWarming(newTestBackend(), 2*time.Minute)
+		cache, stop := NewWithWarming(newTestStorage(), 2*time.Minute)
 		defer stop()
 		date := journal.Date{Year: 2020, Month: 1, Day: 1}
 		base := newFakeStore()
@@ -252,6 +252,100 @@ func TestForegroundReadSharesWarmingAndFreshReadStaysSeparate(t *testing.T) {
 			t.Fatal("fresh read joined warming")
 		}
 		close(release)
+		if err := <-done; err != nil {
+			t.Fatal(err)
+		}
+		synctest.Wait()
+	})
+}
+
+func TestMembershipMutationWarmsIndexes(t *testing.T) {
+	for _, operation := range []string{"create", "delete", "update"} {
+		t.Run(operation, func(t *testing.T) {
+			synctest.Test(t, func(t *testing.T) {
+				cache, stop := NewWithWarming(newTestStorage(), 2*time.Minute)
+				defer stop()
+				base := newFakeStore()
+				date := journal.Date{Year: 2020, Month: 1, Day: 1}
+				base.years = []int{2020}
+				base.entries[2020] = []journal.EntryMeta{{Date: date}}
+				base.contents[date] = journal.Entry{Date: date, Text: "old", Version: "v1", Exists: true}
+				store := cache.WrapWithFactory("google:a", base, func(context.Context) (journal.Store, error) { return base, nil })
+				ctx := context.Background()
+				if operation == "delete" {
+					if err := store.Trash(ctx, date); err != nil {
+						t.Fatal(err)
+					}
+				} else {
+					version := journal.Version("")
+					if operation == "update" {
+						version = "v1"
+					}
+					if _, err := store.Put(ctx, date, "saved", version); err != nil {
+						t.Fatal(err)
+					}
+				}
+				synctest.Wait()
+				base.mu.Lock()
+				before := base.calls
+				base.mu.Unlock()
+				if _, err := store.ListYears(ctx); err != nil {
+					t.Fatal(err)
+				}
+				if _, err := store.ListYear(ctx, 2020); err != nil {
+					t.Fatal(err)
+				}
+				base.mu.Lock()
+				defer base.mu.Unlock()
+				want := before
+				if operation == "update" {
+					want += 2
+				}
+				if base.calls != want {
+					t.Fatalf("backing calls = %d, want %d", base.calls, want)
+				}
+			})
+		})
+	}
+}
+
+type warmingIndexStore struct {
+	journal.Store
+	started chan struct{}
+	release chan struct{}
+	reads   atomic.Int32
+}
+
+func (s *warmingIndexStore) ListYears(ctx context.Context) ([]int, error) {
+	if s.reads.Add(1) == 1 {
+		close(s.started)
+	}
+	select {
+	case <-s.release:
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+	return s.Store.ListYears(ctx)
+}
+
+func TestForegroundIndexReadSharesWarming(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		cache, stop := NewWithWarming(newTestStorage(), 2*time.Minute)
+		defer stop()
+		backing := &warmingIndexStore{Store: newFakeStore(), started: make(chan struct{}), release: make(chan struct{})}
+		store := cache.WrapWithFactory("google:a", backing, func(context.Context) (journal.Store, error) { return backing, nil })
+		date := journal.Date{Year: 2020, Month: 1, Day: 1}
+		if _, err := store.Put(context.Background(), date, "saved", ""); err != nil {
+			t.Fatal(err)
+		}
+		<-backing.started
+		done := make(chan error, 1)
+		go func() { _, err := store.ListYears(context.Background()); done <- err }()
+		synctest.Wait()
+		if backing.reads.Load() != 1 {
+			t.Fatal("foreground index read did not share warming")
+		}
+		close(backing.release)
 		if err := <-done; err != nil {
 			t.Fatal(err)
 		}

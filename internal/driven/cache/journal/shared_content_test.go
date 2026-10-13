@@ -23,7 +23,7 @@ func TestBidirectionalEntryPreviewCache(t *testing.T) {
 			base := newFakeStore()
 			text := "\n\u2003 meaningful 🙂 first line\nfull second line"
 			base.contents[date] = journal.Entry{Date: date, Text: text, Version: "v1", Exists: true}
-			cache := New(newTestBackend(), 2*time.Minute)
+			cache := New(newTestStorage(), 2*time.Minute)
 			first, second := cache.Wrap("google:account", base), cache.Wrap("google:account", base)
 			if listFirst {
 				if _, err := first.Previews(ctx, []journal.Date{date}, 10); err != nil {
@@ -68,7 +68,7 @@ func TestListDetailAndFreshFlights(t *testing.T) {
 			}
 			return journal.Entry{Date: d, Text: "synthetic", Version: "v1", Exists: true}, nil
 		}}
-		cache := New(newTestBackend(), 2*time.Minute)
+		cache := New(newTestStorage(), 2*time.Minute)
 		store := cache.Wrap("google:a", base)
 		done := make(chan error, 2)
 		go func() { _, err := store.Previews(ctx, []journal.Date{date}, 4); done <- err }()
@@ -97,7 +97,7 @@ func TestMissingPreviewSharesAbsenceAndMutationInvalidation(t *testing.T) {
 	ctx := context.Background()
 	date := journal.Date{Year: 2020, Month: 1, Day: 1}
 	base := newFakeStore()
-	store := New(newTestBackend(), 2*time.Minute).Wrap("google:a", base)
+	store := New(newTestStorage(), 2*time.Minute).Wrap("google:a", base)
 	previews, err := store.Previews(ctx, []journal.Date{date}, 4)
 	if err != nil || len(previews) != 0 {
 		t.Fatalf("previews=%v err=%v", previews, err)

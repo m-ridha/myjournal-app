@@ -177,7 +177,7 @@ func TestPreviewChecksumValidation(t *testing.T) {
 				t.Fatal(err)
 			}
 			f.files[file.Id].Md5Checksum = version
-			cache := cachestore.New(lru.New(2*time.Minute), 2*time.Minute)
+			cache := cachestore.New(newLRUStorage(t, 2*time.Minute), 2*time.Minute)
 			previews, err := cache.Wrap("google:synthetic", s.ForOperation()).Previews(ctx, []journal.Date{d}, 10)
 			if !errors.Is(err, journal.ErrUnavailable) || previews != nil {
 				t.Fatalf("unchecked version accepted: %v", err)
@@ -232,7 +232,7 @@ func TestSharedContentBrowsingRequestCounts(t *testing.T) {
 				t.Fatal(err)
 			}
 		}
-		newCache := func() *cachestore.Cache { return cachestore.New(lru.New(2*time.Minute), 2*time.Minute) }
+		newCache := func() *cachestore.Cache { return cachestore.New(newLRUStorage(t, 2*time.Minute), 2*time.Minute) }
 		service := func(cache *cachestore.Cache) *journal.Service {
 			return journal.NewService(cache.Wrap("google:synthetic-account", collapseStore(t, p, ctx)), benchmarkClock{})
 		}
@@ -323,6 +323,20 @@ func TestSharedContentBrowsingRequestCounts(t *testing.T) {
 func TestCachedGoogleStoreContract(t *testing.T) {
 	storetest.Run(t, func(t *testing.T) journal.Store {
 		raw, _ := testStore(t)
-		return cachestore.New(lru.New(2*time.Minute), 2*time.Minute).Wrap("google:synthetic-account", raw)
+		return cachestore.New(newLRUStorage(t, 2*time.Minute), 2*time.Minute).Wrap("google:synthetic-account", raw)
 	})
+}
+
+func newLRUStorage(t *testing.T, ttl time.Duration) *lru.Adapter {
+	t.Helper()
+	storage, err := lru.New(ttl)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := storage.Close(); err != nil {
+			t.Error(err)
+		}
+	})
+	return storage
 }

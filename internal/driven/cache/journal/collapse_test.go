@@ -393,7 +393,7 @@ func TestOldEntryFlightCannotRefillAfterSave(t *testing.T) {
 					}
 					return journal.Entry{Date: d, Text: "new", Version: "v2", Exists: true}, nil
 				}}
-				cache := New(newTestBackend(), 2*time.Minute)
+				cache := New(newTestStorage(), 2*time.Minute)
 				store := cache.Wrap("account", base)
 				done := make(chan error, 1)
 				go func() { _, err := store.Get(ctx, date); done <- err }()

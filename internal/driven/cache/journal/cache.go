@@ -32,7 +32,7 @@ type cacheKey struct {
 // Generation guards coordinate only this process, even with a remote ByteCache.
 type Cache struct {
 	gate           chan struct{}
-	backend        ByteCache
+	storage        ByteCache
 	ttl            time.Duration
 	now            func() time.Time
 	generation     uint64
@@ -59,8 +59,8 @@ var (
 
 // New constructs a shared decorator coordinator. Nil storage or nonpositive TTL
 // disables snapshots; bounded in-flight read sharing remains enabled.
-func New(backend ByteCache, ttl time.Duration) *Cache {
-	return &Cache{backend: backend, ttl: ttl, now: time.Now, gate: make(chan struct{}, 1)}
+func New(storage ByteCache, ttl time.Duration) *Cache {
+	return &Cache{storage: storage, ttl: ttl, now: time.Now, gate: make(chan struct{}, 1)}
 }
 
 // Wrap shares snapshots and overlapping reads by provider/account. The caller
@@ -209,7 +209,7 @@ func (s *Store) Put(ctx context.Context, d civil.Date, text string, base journal
 	if err != nil {
 		return journal.Entry{}, err
 	}
-	s.warm(d)
+	s.warm(d, base == "")
 	return entry, nil
 }
 
@@ -220,7 +220,7 @@ func (s *Store) Trash(ctx context.Context, d civil.Date) error {
 	s.cache.invalidateDate(ctx, s.account, d, true)
 	epoch.Add(1)
 	if err == nil {
-		s.warm(d)
+		s.warm(d, true)
 	}
 	return err
 }
@@ -243,7 +243,7 @@ func (c *Cache) lock(ctx context.Context) bool {
 func (c *Cache) unlock() { <-c.gate }
 
 func (c *Cache) active(account string) bool {
-	return c.backend != nil && c.ttl > 0 && account != "" && !c.disabled.Load()
+	return c.storage != nil && c.ttl > 0 && account != "" && !c.disabled.Load()
 }
 
 func (c *Cache) get(ctx context.Context, key cacheKey) (any, uint64, bool) {
@@ -261,7 +261,7 @@ func (c *Cache) read(ctx context.Context, key cacheKey) (any, bool) {
 	if !c.active(key.account) {
 		return nil, false
 	}
-	data, err := c.backend.Get(ctx, key.string())
+	data, err := c.storage.Get(ctx, key.string())
 	if errors.Is(err, ErrMiss) {
 		return nil, false
 	}
@@ -287,7 +287,7 @@ func (c *Cache) set(ctx context.Context, key cacheKey, value any, generation uin
 	}
 	data, err := encodeSnapshot(key.kind, value, c.now().Add(c.ttl))
 	if err == nil {
-		err = c.backend.Set(ctx, key.string(), data)
+		err = c.storage.Set(ctx, key.string(), data)
 	}
 	if err != nil && !errors.Is(err, ErrCapacity) {
 		c.disabled.Store(true)
@@ -325,7 +325,7 @@ func (c *Cache) invalidateDate(ctx context.Context, account string, date civil.D
 	if !c.active(account) {
 		return
 	}
-	if err := c.backend.Delete(ctx, (cacheKey{account: account, kind: "entry", date: date}).string()); err != nil {
+	if err := c.storage.Delete(ctx, (cacheKey{account: account, kind: "entry", date: date}).string()); err != nil {
 		c.disabled.Store(true)
 		return
 	}
@@ -334,7 +334,7 @@ func (c *Cache) invalidateDate(ctx context.Context, account string, date civil.D
 		retain bool
 	}{{yearsKey, retainYears}, {yearKey, retainYear}} {
 		if !item.retain {
-			if err := c.backend.Delete(ctx, item.key.string()); err != nil {
+			if err := c.storage.Delete(ctx, item.key.string()); err != nil {
 				c.disabled.Store(true)
 				return
 			}

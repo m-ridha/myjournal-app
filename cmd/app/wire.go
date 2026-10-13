@@ -64,12 +64,12 @@ func newClock() journal.Clock {
 
 func newJournalCache() (*cachestore.Cache, func(), error) {
 	const ttl = 2 * time.Minute
-	backend, err := cacheAdapter.New(ttl)
+	storage, err := cacheAdapter.New(ttl)
 	if err != nil {
 		return nil, nil, fmt.Errorf("initialize journal cache: %w", err)
 	}
-	cache, stopWarming := cachestore.NewWithWarming(backend, ttl)
-	return cache, func() { stopWarming(); _ = backend.Close() }, nil
+	cache, stopWarming := cachestore.NewWithWarming(storage, ttl)
+	return cache, func() { stopWarming(); _ = storage.Close() }, nil
 }
 
 func newServiceFactory(registry *provider.Registry, cache *cachestore.Cache, clk journal.Clock) webHandler.ServiceFactory {

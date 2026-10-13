@@ -1,5 +1,9 @@
 # Progress
 
+## List-index warming (2026-10-13)
+
+Successful entry creation and trash now warm the shared year list and affected year's index before the entry snapshot. Existing-entry updates retain entry-only warming. This closes the post-mutation Entries index gap; live Drive latency improvement remains unmeasured. Warming stays optional, bounded and independent of the mutation response, with the existing two-minute TTL and fresh-read bypass.
+
 ## Current status (2026-10-13)
 
 This summary supersedes pending language in the dated evidence below; those records describe what was known at the time, not new work to repeat.
@@ -13,6 +17,8 @@ This summary supersedes pending language in the dated evidence below; those reco
 - Current footer/release/logging and date-format behavior is consolidated in [the implementation summary](#footer-release-metadata-and-date-formatting-2026-10-12). Final footer visuals and Docker/deployed-version checks remain unverified; no new release is implied.
 
 ## Mutation-triggered cache warming (2026-10-13)
+
+- Naming follow-up: byte-cache fields, constructor parameters, startup wiring, test fixtures and benchmarks consistently use `storage`; Wire output was regenerated. This changes names only. `make fmt lint test` passed.
 
 - Successful PUT and DELETE now schedule bounded backend read-through warming for the affected date. Save/delete acknowledgements remain independent, and recovery/conflict reads remain fresh. [ADR 020](adr/020-entry-content-cache.md#mutation-triggered-backend-warming-2026-10-13) records lifecycle and resource policy.
 - Validation: regenerated Wire output, `make fmt lint test`, targeted app/cache/Google/web race checks, twenty repeated focused warming runs, all 31 sequential architecture probes, and local browser navigation/recovery checks with 38 accessibility scans passed. Evidence and tradeoffs are in [findings](findings.md#mutation-triggered-cache-warming-2026-10-13). Live Drive latency and deployment remain unverified.

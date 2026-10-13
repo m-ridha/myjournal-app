@@ -12,11 +12,30 @@ This summary supersedes pending language in the dated evidence below; those reco
 - English and Bahasa Indonesia are implemented with public language preferences, a globe/code header pill, an always-visible Settings gear and Help; Privacy is reached from Help. Account actions still require a valid session. Earlier English-only and conditional-Settings notes are historical.
 - Current footer/release/logging and date-format behavior is consolidated in [the implementation summary](#footer-release-metadata-and-date-formatting-2026-10-12). Final footer visuals and Docker/deployed-version checks remain unverified; no new release is implied.
 
+## DELETE to Entries diagnostic (2026-10-13)
+
+A temporary synthetic Drive diagnostic seeded eight entries across two years, deleted one date, allowed backend warming to finish during a simulated five-second wait, and requested the latest ten entries. Twenty race-detector runs passed. The diagnostic file was removed afterward; its output is retained locally at `/private/tmp/myjournal-delete-list-diagnostic.log`. No runtime behavior was changed.
+
+| Before DELETE | First list metadata requests | First list content downloads | Immediate repeat requests |
+| --- | ---: | ---: | ---: |
+| Entries list already loaded within TTL | 3 | 0 | 0 |
+| Entries list/content cold | 4 | 7 | 0 |
+
+DELETE warming itself used three metadata requests and no downloads to confirm absence. It calls ordinary Get only. DELETE invalidates the shared year list and affected year index, so waiting does not repopulate those index snapshots. The next Entries request still traverses ListYears/ListYear; surviving full-entry snapshots do avoid content downloads when already present. Metadata discovery within warming is operation-local and does not populate the decorator's retained index snapshots.
+
+This demonstrates a coverage gap in the warming policy, rather than proving the cache is globally broken or diagnosing the user's live timing. A potential follow-up is to warm ListYears and the affected ListYear before Get, through the shared decorator and a fresh operation, after membership-changing mutations. That would target invalidated indexes without seeding acknowledgement data. Newly visible or previously uncached entries would still require content reads. The follow-up is now implemented: creation and trash warm both indexes through the ordinary decorator before Get. Regression tests prove post-warm index hits, existing-entry update scope and foreground index singleflight sharing. The synthetic Google fixture retains three metadata requests per warm and subsequent detail/index reads make no upstream requests. Live latency, expiry/eviction and process identity remain relevant to actual hit rates. Follow-up validation: `make fmt lint test`, cache/Google race tests, all 31 architecture probes and `git diff --check` passed.
+
+## LRU adapter compatibility (2026-10-13)
+
+- The mismatch was in construction/lifecycle, not ByteCache methods: LRU previously returned one value from New, accepted nonpositive TTL and lacked Close. Regression tests verify invalid TTL rejection, repeated Close, released entries, explicit post-close errors and concurrent Close/operations. Existing ownership, exact expiry, LRU eviction and cancellation tests remain.
+- Validation: `make fmt lint test`, focused app/cache/Google race checks and all 31 sequential architecture probes passed; temporary probes were removed. `git diff --check` passed.
+- Shared journal Store contracts run through LRU with construction errors checked and storage closed after use. Google synthetic fixtures likewise own/close LRU storage. Both adapters support the same construction/warming/cleanup shape; current wire.go and generated startup select BigCache. Capacity policy remains adapter-specific; no production memory/latency improvement is claimed.
+
 ## Mutation-triggered cache warming (2026-10-13)
 
 - Google's OAuth token source captures the Store construction context. A new operation view alone cannot detach it; warming therefore constructs a new provider client with its own bounded context. The synthetic Google test cancels the original PUT request and evicts its access token before releasing warming, forces token refresh through the independent client, and proves the next detail read hits the snapshot; DELETE similarly warms confirmed absence.
 - Cache tests gate warming to prove mutation responses do not wait, confirm that stored text/version rather than acknowledgement data seeds content, and verify that ordinary readers join warming while fresh reads stay separate. A later successful mutation coalesces into another attempt and rejects the old fill. Admission tests retain at most 64 dates with four active workers; ten-second attempt expiry and shutdown cancellation/join/queue cleanup are covered. Failed mutations schedule no warming.
-- Warming spends optional upstream requests and can be skipped, fail, or finish after navigation begins. It does not warm index/calendar snapshots or establish live latency gains, atomic external-writer safety or cross-process coherence. See [request counts](performance-benchmark.md#mutation-triggered-cache-warming-2026-10-13).
+- Warming spends optional upstream requests and can be skipped, fail, or finish after navigation begins. The original entry-only implementation did not warm index/calendar snapshots; the list-index follow-up above extends creation/trash warming. These tests do not establish live latency gains, atomic external-writer safety or cross-process coherence. See [request counts](performance-benchmark.md#mutation-triggered-cache-warming-2026-10-13).
 
 ## Shared entry/preview content (2026-10-13)
 

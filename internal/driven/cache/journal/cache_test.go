@@ -92,7 +92,7 @@ func TestCacheWrapsListYear(t *testing.T) {
 	base.entries[2026] = []journal.EntryMeta{{Date: civil.Date{Year: 2026, Month: 9, Day: 20}, ModifiedTime: time.Now()}}
 	base.contents[civil.Date{Year: 2026, Month: 9, Day: 20}] = journal.Entry{Date: civil.Date{Year: 2026, Month: 9, Day: 20}, Text: "hello", Version: journal.Version("v1"), Exists: true}
 
-	store := New(newTestBackend(), 5*time.Minute).Wrap("user-1", base)
+	store := New(newTestStorage(), 5*time.Minute).Wrap("user-1", base)
 
 	first, err := store.ListYear(context.Background(), 2026)
 	if err != nil {
@@ -120,7 +120,7 @@ func TestCacheRetainsExistingMembershipOnPut(t *testing.T) {
 	base.entries[2026] = []journal.EntryMeta{{Date: civil.Date{Year: 2026, Month: 9, Day: 20}, ModifiedTime: time.Now()}}
 	base.contents[civil.Date{Year: 2026, Month: 9, Day: 20}] = journal.Entry{Date: civil.Date{Year: 2026, Month: 9, Day: 20}, Text: "old", Version: journal.Version("old"), Exists: true}
 
-	store := New(newTestBackend(), 5*time.Minute).Wrap("user-1", base)
+	store := New(newTestStorage(), 5*time.Minute).Wrap("user-1", base)
 	if _, err := store.ListYear(context.Background(), 2026); err != nil {
 		t.Fatalf("ListYear() initial call error: %v", err)
 	}
@@ -140,7 +140,7 @@ func TestCacheRetainsExistingMembershipOnPut(t *testing.T) {
 func TestCachePreviewsReturnValue(t *testing.T) {
 	base := newFakeStore()
 	base.contents[civil.Date{Year: 2026, Month: 9, Day: 20}] = journal.Entry{Date: civil.Date{Year: 2026, Month: 9, Day: 20}, Text: "preview text", Version: journal.Version("v1"), Exists: true}
-	store := New(newTestBackend(), 5*time.Minute).Wrap("user-1", base)
+	store := New(newTestStorage(), 5*time.Minute).Wrap("user-1", base)
 
 	first, err := store.Previews(context.Background(), []civil.Date{{Year: 2026, Month: 9, Day: 20}}, 4)
 	if err != nil {
@@ -164,7 +164,7 @@ func TestCachePreviewsReturnValue(t *testing.T) {
 
 func TestCacheExpiresEntries(t *testing.T) {
 	base := newFakeStore()
-	cache := New(newTestBackend(), time.Minute)
+	cache := New(newTestStorage(), time.Minute)
 	now := time.Date(2026, 10, 1, 12, 0, 0, 0, time.UTC)
 	cache.now = func() time.Time { return now }
 	store := cache.Wrap("user-1", base)
@@ -188,7 +188,7 @@ func TestCacheExpiresEntries(t *testing.T) {
 }
 
 func TestCacheIsSharedPerAccountAndIsolatedAcrossAccounts(t *testing.T) {
-	cache := New(newTestBackend(), time.Minute)
+	cache := New(newTestStorage(), time.Minute)
 	firstBase := newFakeStore()
 	firstBase.years = []int{2026}
 	first := cache.Wrap("user-1", firstBase)
@@ -222,7 +222,7 @@ func TestPreviewBudgetsShareEntryContent(t *testing.T) {
 	base := newFakeStore()
 	date := civil.Date{Year: 2026, Month: 9, Day: 20}
 	base.contents[date] = journal.Entry{Date: date, Text: "preview text", Version: "v1", Exists: true}
-	store := New(newTestBackend(), time.Minute).Wrap("user-1", base)
+	store := New(newTestStorage(), time.Minute).Wrap("user-1", base)
 
 	short, err := store.Previews(context.Background(), []civil.Date{date}, 4)
 	if err != nil {
@@ -242,7 +242,7 @@ func TestPreviewBudgetsShareEntryContent(t *testing.T) {
 
 func TestCacheWrapReturnsErrNotFoundForMissingValue(t *testing.T) {
 	base := newFakeStore()
-	store := New(newTestBackend(), 5*time.Minute).Wrap("user-1", base)
+	store := New(newTestStorage(), 5*time.Minute).Wrap("user-1", base)
 	_, err := store.Get(context.Background(), civil.Date{Year: 2026, Month: 9, Day: 20})
 	if !errors.Is(err, journal.ErrNotFound) {
 		t.Fatalf("Get() error = %v, want ErrNotFound", err)
@@ -250,7 +250,7 @@ func TestCacheWrapReturnsErrNotFoundForMissingValue(t *testing.T) {
 }
 
 func TestInvalidationEpochRejectsOldFillAfterAccountChurn(t *testing.T) {
-	c := New(newTestBackend(), time.Minute)
+	c := New(newTestStorage(), time.Minute)
 	key := cacheKey{account: "original", kind: "years"}
 	_, epoch, _ := c.get(context.Background(), key)
 	for range 1000 {
@@ -270,7 +270,7 @@ func TestEntryCacheTTLInvalidationAndFreshReads(t *testing.T) {
 	base.contents[date] = journal.Entry{Date: date, Text: "first", Version: "v1", Exists: true}
 	base.contents[other] = journal.Entry{Date: other, Text: "other", Version: "v1", Exists: true}
 	now := time.Date(2026, 10, 13, 0, 0, 0, 0, time.UTC)
-	cache := New(newTestBackend(), 2*time.Minute)
+	cache := New(newTestStorage(), 2*time.Minute)
 	cache.now = func() time.Time { return now }
 	store := cache.Wrap("google:account", base)
 	read := func(d civil.Date) journal.Entry {
@@ -331,7 +331,7 @@ func TestMissingEntriesCacheExpiryAndFreshBypass(t *testing.T) {
 	ctx := context.Background()
 	date := civil.Date{Year: 2020, Month: 1, Day: 1}
 	base := newFakeStore()
-	cache := New(newTestBackend(), 2*time.Minute)
+	cache := New(newTestStorage(), 2*time.Minute)
 	now := time.Date(2026, 10, 13, 0, 0, 0, 0, time.UTC)
 	cache.now = func() time.Time { return now }
 	store := cache.Wrap("account", base)
@@ -373,7 +373,7 @@ func TestEntryFailuresAreNotCached(t *testing.T) {
 		t.Run(failure.Error(), func(t *testing.T) {
 			var calls int
 			base := slowReadStore{get: func(context.Context, civil.Date) (journal.Entry, error) { calls++; return journal.Entry{}, failure }}
-			store := New(newTestBackend(), 2*time.Minute).Wrap("account", base)
+			store := New(newTestStorage(), 2*time.Minute).Wrap("account", base)
 			for range 2 {
 				if _, err := store.Get(context.Background(), civil.Date{Year: 2020, Month: 1, Day: 1}); !errors.Is(err, failure) {
 					t.Fatal(err)

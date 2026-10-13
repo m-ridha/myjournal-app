@@ -19,9 +19,9 @@ implements the port with the installed `github.com/allegro/bigcache` v1.2.1.
 Only `cmd/app` constructs the production adapter; Wire supplies cleanup after
 request draining. No Redis adapter is introduced. By follow-up user decision, the former map/list
 LRU is retained in `internal/driven/cache/local/lru` as an optional backup adapter;
-BigCache remains the only production selection. The LRU implements the same port
+BigCache was the original production selection; the 2026-10-13 follow-up below records interchangeable lifecycle support and current wiring. The LRU implements the same port
 with a 2048-entry default, explicit capacity override, lazy TTL expiry, copied
-bytes and cancelable lock waits. It owns no goroutines and needs no cleanup.
+bytes and cancelable lock waits. It owns no goroutines; Close releases values and rejects later operations.
 Its entry-count bound is not a byte-memory limit. Selecting it requires an
 explicit composition-root change; no runtime fallback or environment selector
 is added. The journal decorator lives in `internal/driven/cache/journal`; providers live
@@ -68,3 +68,9 @@ serialization and backend-failure fallback. Depguard and temporary probes enforc
 the new import boundaries without introducing infrastructure into journal or web.
 
 2026-10-13: ADR 020 supersedes the original Get-bypass policy with two-minute full-entry snapshots and explicit fresh reads for recovery/conflict handling. Storage capacity and TTL policies are unchanged.
+
+## Adapter lifecycle compatibility (2026-10-13)
+
+LRU now matches BigCache's startup and shutdown surface: New(ttl) returns a concrete adapter and error, rejects nonpositive TTL, and Close is idempotent and makes later operations fail. NewWithCapacity follows the same TTL/error convention while preserving the nonpositive-capacity default. Close remains a composition-root lifecycle concern, outside the journal ByteCache port.
+
+The current composition root selects BigCache; generated Wire output follows that selection. Switching between these adapters requires changing the cacheAdapter import and regenerating Wire, without changing newJournalCache's construction/cleanup logic. This is not a deployment or runtime selector. The resource policies remain different: LRU bounds 2048 entries by default and permits an explicit entry capacity, while BigCache bounds byte queues. Neither bound is a total process-memory ceiling. Full-entry caching can make an entry-count budget retain substantially more bytes; constructors/lifecycle compatibility does not equate the memory budgets.

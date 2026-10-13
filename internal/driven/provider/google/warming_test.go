@@ -12,7 +12,6 @@ import (
 
 	"github/mridha/myjournal-app/internal/core/journal"
 	"github/mridha/myjournal-app/internal/driven/cache/journal"
-	"github/mridha/myjournal-app/internal/driven/cache/local/lru"
 )
 
 func TestWarmingUsesIndependentGoogleClient(t *testing.T) {
@@ -32,7 +31,7 @@ func TestWarmingUsesIndependentGoogleClient(t *testing.T) {
 			defer counts.mu.Unlock()
 			return maps.Clone(counts.counts)
 		}
-		cache, stop := cachestore.NewWithWarming(lru.New(2*time.Minute), 2*time.Minute)
+		cache, stop := cachestore.NewWithWarming(newLRUStorage(t, 2*time.Minute), 2*time.Minute)
 		defer stop()
 		ctx, cancel := context.WithCancel(context.Background())
 		release := make(chan struct{})
@@ -65,8 +64,14 @@ func TestWarmingUsesIndependentGoogleClient(t *testing.T) {
 		if err != nil || entry.Text != "synthetic" {
 			t.Fatalf("entry=%+v err=%v", entry, err)
 		}
+		if _, err := store.ListYears(context.Background()); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := store.ListYear(context.Background(), 2020); err != nil {
+			t.Fatal(err)
+		}
 		if !maps.Equal(snapshot(), before) {
-			t.Fatal("detail did not hit warmed content")
+			t.Fatal("detail or indexes did not hit warmed snapshots")
 		}
 		fresh := cache.WrapWithFactory("google:synthetic-account", collapseStore(t, p, context.Background()), func(work context.Context) (journal.Store, error) { return p.Store(work, collapseConnection()) })
 		if err := fresh.Trash(context.Background(), date); err != nil {
@@ -82,8 +87,14 @@ func TestWarmingUsesIndependentGoogleClient(t *testing.T) {
 		if _, err := fresh.Get(context.Background(), date); !errors.Is(err, journal.ErrNotFound) {
 			t.Fatal(err)
 		}
+		if _, err := fresh.ListYears(context.Background()); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := fresh.ListYear(context.Background(), 2020); err != nil {
+			t.Fatal(err)
+		}
 		if !maps.Equal(snapshot(), before) {
-			t.Fatal("blank date did not hit warmed absence")
+			t.Fatal("blank date or indexes did not hit warmed snapshots")
 		}
 	})
 }

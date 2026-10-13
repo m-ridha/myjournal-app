@@ -11,7 +11,7 @@ import (
 )
 
 func TestStorageOwnershipAndPrefixDeletion(t *testing.T) {
-	a := New(time.Minute)
+	a := newTestAdapter(t, time.Minute, 0)
 	ctx := context.Background()
 	if _, err := a.Get(ctx, "absent"); !errors.Is(err, cachestore.ErrMiss) {
 		t.Fatalf("miss: %v", err)
@@ -60,7 +60,7 @@ func TestStorageOwnershipAndPrefixDeletion(t *testing.T) {
 }
 
 func TestLRUEvictionAndUpdates(t *testing.T) {
-	a := NewWithCapacity(time.Minute, 2)
+	a := newTestAdapter(t, time.Minute, 2)
 	ctx := context.Background()
 	for _, key := range []string{"a", "b"} {
 		if err := a.Set(ctx, key, []byte(key)); err != nil {
@@ -95,7 +95,7 @@ func TestLRUEvictionAndUpdates(t *testing.T) {
 }
 
 func TestExpiryAndReplacementTTL(t *testing.T) {
-	a := New(time.Minute)
+	a := newTestAdapter(t, time.Minute, 0)
 	now := time.Date(2026, 10, 11, 0, 0, 0, 0, time.UTC)
 	a.now = func() time.Time { return now }
 	ctx := context.Background()
@@ -124,18 +124,9 @@ func TestExpiryAndReplacementTTL(t *testing.T) {
 	}
 }
 
-func TestDisabledTTLAndDefaultCapacity(t *testing.T) {
-	for _, ttl := range []time.Duration{0, -time.Second} {
-		a := New(ttl)
-		if err := a.Set(context.Background(), "a", nil); err != nil {
-			t.Fatal(err)
-		}
-		if _, err := a.Get(context.Background(), "a"); !errors.Is(err, cachestore.ErrMiss) {
-			t.Fatal("disabled cache hit")
-		}
-	}
+func TestDefaultCapacity(t *testing.T) {
 	for _, capacity := range []int{0, -1} {
-		a := NewWithCapacity(time.Minute, capacity)
+		a := newTestAdapter(t, time.Minute, capacity)
 		if a.capacity != 2048 {
 			t.Fatalf("default capacity: %d", a.capacity)
 		}
@@ -143,7 +134,7 @@ func TestDisabledTTLAndDefaultCapacity(t *testing.T) {
 }
 
 func TestCancellation(t *testing.T) {
-	a := New(time.Minute)
+	a := newTestAdapter(t, time.Minute, 0)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 	for _, op := range []func() error{
@@ -157,7 +148,7 @@ func TestCancellation(t *testing.T) {
 }
 
 func TestLockWaitCancellation(t *testing.T) {
-	a := New(time.Minute)
+	a := newTestAdapter(t, time.Minute, 0)
 	a.gate <- struct{}{}
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Millisecond)
 	defer cancel()
@@ -176,7 +167,7 @@ func TestLockWaitCancellation(t *testing.T) {
 }
 
 func TestConcurrentStorage(t *testing.T) {
-	a := NewWithCapacity(time.Minute, 512)
+	a := newTestAdapter(t, time.Minute, 512)
 	done := make(chan error, 8)
 	for worker := range 8 {
 		go func() {
@@ -205,6 +196,93 @@ func TestConcurrentStorage(t *testing.T) {
 		}()
 	}
 	for range 8 {
+		if err := <-done; err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func TestAdapterCloseAndConstructorCompatibility(t *testing.T) {
+	for _, ttl := range []time.Duration{0, -time.Second} {
+		if a, err := New(ttl); err == nil || a != nil {
+			t.Fatalf("invalid TTL accepted: %v", ttl)
+		}
+		if a, err := NewWithCapacity(ttl, 2); err == nil || a != nil {
+			t.Fatalf("capacity constructor accepted invalid TTL: %v", ttl)
+		}
+	}
+	a, err := New(time.Minute)
+	if err != nil {
+		t.Fatal(err)
+	}
+	ctx := context.Background()
+	if err := a.Set(ctx, "key", []byte("value")); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := a.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if len(a.items) != 0 || a.lru.Len() != 0 {
+		t.Fatal("Close retained stored values")
+	}
+	for _, op := range []func() error{
+		func() error { _, err := a.Get(ctx, "key"); return err },
+		func() error { return a.Set(ctx, "key", []byte("new")) },
+		func() error { return a.Delete(ctx, "key") },
+		func() error { return a.DeletePrefix(ctx, "") },
+	} {
+		if err := op(); !errors.Is(err, errClosed) {
+			t.Fatalf("operation after Close: %v", err)
+		}
+	}
+}
+
+func newTestAdapter(t *testing.T, ttl time.Duration, capacity int) *Adapter {
+	t.Helper()
+	a, err := NewWithCapacity(ttl, capacity)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if err := a.Close(); err != nil {
+			t.Error(err)
+		}
+	})
+	return a
+}
+
+func TestConcurrentCloseAndOperations(t *testing.T) {
+	a := newTestAdapter(t, time.Minute, 0)
+	start := make(chan struct{})
+	done := make(chan error, 16)
+	for worker := range 8 {
+		go func() {
+			<-start
+			ctx := context.Background()
+			key := fmt.Sprintf("worker-%d", worker)
+			for range 20 {
+				if err := a.Set(ctx, key, []byte("value")); err != nil && !errors.Is(err, errClosed) {
+					done <- err
+					return
+				}
+				if _, err := a.Get(ctx, key); err != nil && !errors.Is(err, errClosed) {
+					done <- err
+					return
+				}
+				if err := a.Delete(ctx, key); err != nil && !errors.Is(err, errClosed) {
+					done <- err
+					return
+				}
+			}
+			done <- nil
+		}()
+		go func() { <-start; done <- a.Close() }()
+	}
+	close(start)
+	for range 16 {
 		if err := <-done; err != nil {
 			t.Fatal(err)
 		}

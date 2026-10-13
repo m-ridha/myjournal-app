@@ -18,7 +18,7 @@ func TestSaveRetainsUnrelatedPreviewsButRefreshesSavedDate(t *testing.T) {
 	base.entries[2020] = []journal.EntryMeta{{Date: a}, {Date: b}}
 	base.contents[a] = journal.Entry{Date: a, Text: "old", Version: "old", Exists: true}
 	base.contents[b] = journal.Entry{Date: b, Text: "unrelated", Version: "b", Exists: true}
-	cache := New(newTestBackend(), time.Minute)
+	cache := New(newTestStorage(), time.Minute)
 	store := cache.Wrap("account", base)
 	_, _ = store.ListYears(ctx)
 	_, _ = store.ListYear(ctx, 2020)
@@ -43,7 +43,7 @@ func TestSaveRetainsUnrelatedPreviewsButRefreshesSavedDate(t *testing.T) {
 
 func TestRetainedCacheTTLDoesNotExtendOnSave(t *testing.T) {
 	base := newFakeStore()
-	cache := New(newTestBackend(), time.Minute)
+	cache := New(newTestStorage(), time.Minute)
 	now := time.Date(2026, 10, 10, 0, 0, 0, 0, time.UTC)
 	cache.now = func() time.Time { return now }
 	ctx := context.Background()
@@ -77,7 +77,7 @@ func TestSaveRejectsRacingOldPreviewFill(t *testing.T) {
 	base := &delayedPreviewStore{fakeStore: newFakeStore(), started: make(chan struct{}), release: make(chan struct{})}
 	d := journal.Date{Year: 2020, Month: 1, Day: 1}
 	base.contents[d] = journal.Entry{Date: d, Text: "old"}
-	store := New(newTestBackend(), time.Minute).Wrap("account", base)
+	store := New(newTestStorage(), time.Minute).Wrap("account", base)
 	ctx := context.Background()
 	done := make(chan error, 1)
 	go func() { _, err := store.Previews(ctx, []journal.Date{d}, 44); done <- err }()
@@ -98,7 +98,7 @@ func TestSaveRejectsRacingOldPreviewFill(t *testing.T) {
 func TestCreateAndTrashRefreshOnlyAffectedIndexes(t *testing.T) {
 	ctx := context.Background()
 	base := newFakeStore()
-	cache := New(newTestBackend(), time.Minute)
+	cache := New(newTestStorage(), time.Minute)
 	store := cache.Wrap("account", base)
 	d := journal.Date{Year: 2020, Month: 1, Day: 1}
 	base.years = []int{2019}
@@ -145,7 +145,7 @@ func TestAmbiguousSaveDiscardsAffectedPreviewWithoutRetry(t *testing.T) {
 	ctx := context.Background()
 	d := journal.Date{Year: 2020, Month: 1, Day: 1}
 	base.contents[d] = journal.Entry{Date: d, Text: "old"}
-	store := New(newTestBackend(), time.Minute).Wrap("account", base)
+	store := New(newTestStorage(), time.Minute).Wrap("account", base)
 	_, _ = store.Previews(ctx, []journal.Date{d}, 44)
 	before := base.calls
 	if _, err := store.Put(ctx, d, "new", "old"); err != journal.ErrUnavailable {
@@ -164,7 +164,7 @@ func TestOffPageUpdateRetainsKnownYearListWithoutYearIndex(t *testing.T) {
 	ctx := context.Background()
 	base := newFakeStore()
 	base.years = []int{2026, 2020}
-	store := New(newTestBackend(), time.Minute).Wrap("account", base)
+	store := New(newTestStorage(), time.Minute).Wrap("account", base)
 	_, _ = store.ListYears(ctx)
 	d := journal.Date{Year: 2020, Month: 1, Day: 1}
 	if _, err := store.Put(ctx, d, "new", "existing"); err != nil {
@@ -181,7 +181,7 @@ func TestUpdateRefreshesYearListMissingExternallyAddedYear(t *testing.T) {
 	ctx := context.Background()
 	base := newFakeStore()
 	base.years = []int{2026}
-	store := New(newTestBackend(), time.Minute).Wrap("account", base)
+	store := New(newTestStorage(), time.Minute).Wrap("account", base)
 	_, _ = store.ListYears(ctx)
 	d := journal.Date{Year: 2020, Month: 1, Day: 1}
 	base.entries[2020] = []journal.EntryMeta{{Date: d}}

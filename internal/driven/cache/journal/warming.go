@@ -23,6 +23,7 @@ type warmTask struct {
 	account  string
 	factory  func(context.Context) (journal.Store, error)
 	revision uint64
+	indexes  bool
 }
 
 type cacheWarmer struct {
@@ -37,10 +38,10 @@ type cacheWarmer struct {
 }
 
 // NewWithWarming enables best-effort read-through after successful mutations.
-// The owner must call stop before closing the byte backend. Only wrappers created
+// The owner must call stop before closing the byte storage. Only wrappers created
 // with WrapWithFactory warm; factories must construct clients with the supplied context.
-func NewWithWarming(backend ByteCache, ttl time.Duration) (*Cache, func()) {
-	cache := New(backend, ttl)
+func NewWithWarming(storage ByteCache, ttl time.Duration) (*Cache, func()) {
+	cache := New(storage, ttl)
 	ctx, cancel := context.WithCancel(context.Background())
 	w := &cacheWarmer{cache: cache, ctx: ctx, cancel: cancel, tasks: make(map[string]*warmTask), jobs: make(chan *warmTask, maxWarmDates)}
 	cache.warmer = w
@@ -56,7 +57,7 @@ func (c *Cache) WrapWithFactory(account string, base journal.Store, factory func
 	return &Store{cache: c, account: account, base: base, factory: factory}
 }
 
-func (s *Store) warm(date journal.Date) {
+func (s *Store) warm(date journal.Date, indexes bool) {
 	w := s.cache.warmer
 	if w == nil || s.factory == nil || !s.cache.active(s.account) {
 		return
@@ -70,13 +71,14 @@ func (s *Store) warm(date journal.Date) {
 	if task := w.tasks[key]; task != nil {
 		// A later mutation needs a new attempt if an older read is still running.
 		task.factory = s.factory
+		task.indexes = task.indexes || indexes
 		task.revision++
 		return
 	}
 	if len(w.tasks) >= maxWarmDates {
 		return
 	}
-	task := &warmTask{key: key, date: date, account: s.account, factory: s.factory}
+	task := &warmTask{key: key, date: date, account: s.account, factory: s.factory, indexes: indexes}
 	w.tasks[key] = task
 	w.jobs <- task // Capacity covers every admitted date, including active ones.
 }
@@ -89,7 +91,7 @@ func (w *cacheWarmer) run() {
 		case task := <-w.jobs:
 			for w.ctx.Err() == nil {
 				w.mu.Lock()
-				factory, revision := task.factory, task.revision
+				factory, revision, indexes := task.factory, task.revision, task.indexes
 				w.mu.Unlock()
 				ctx, cancel := context.WithTimeout(w.ctx, warmTimeout)
 				base, err := factory(ctx)
@@ -98,7 +100,17 @@ func (w *cacheWarmer) run() {
 					if scoped, ok := base.(journal.OperationStore); ok {
 						base = scoped.ForOperation()
 					}
-					_, err = w.cache.Wrap(task.account, base).Get(ctx, task.date)
+					store := w.cache.Wrap(task.account, base)
+					var yearsErr, yearErr error
+					if indexes {
+						_, yearsErr = store.ListYears(ctx)
+						_, yearErr = store.ListYear(ctx, task.date.Year)
+					}
+					_, err = store.Get(ctx, task.date)
+					if errors.Is(err, journal.ErrNotFound) {
+						err = nil // Confirmed absence is a successful warm.
+					}
+					err = errors.Join(yearsErr, yearErr, err)
 				}
 				cancel()
 				if err != nil && !errors.Is(err, journal.ErrNotFound) {
