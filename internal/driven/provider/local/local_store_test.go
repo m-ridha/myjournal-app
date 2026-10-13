@@ -9,8 +9,8 @@ import (
 
 	"cloud.google.com/go/civil"
 
-	provider "github/mridha/myjournal-app/internal/core/connection"
-	"github/mridha/myjournal-app/internal/testutil"
+	provider "github/m-ridha/myjournal-app/internal/core/connection"
+	"github/m-ridha/myjournal-app/internal/testutil"
 )
 
 func TestStoreSaveAndGet(t *testing.T) {

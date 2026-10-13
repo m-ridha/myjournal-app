@@ -3,7 +3,7 @@ package connection
 import (
 	"context"
 
-	"github/mridha/myjournal-app/internal/core/journal"
+	"github/m-ridha/myjournal-app/internal/core/journal"
 )
 
 // Stable provider identifiers are shared by configuration, adapters, and delivery.

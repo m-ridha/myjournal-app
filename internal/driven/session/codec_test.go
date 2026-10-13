@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	provider "github/mridha/myjournal-app/internal/core/connection"
+	provider "github/m-ridha/myjournal-app/internal/core/connection"
 )
 
 func TestInjectedCodecPreservesFormatAndPurpose(t *testing.T) {

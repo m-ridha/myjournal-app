@@ -19,18 +19,18 @@ import (
 
 	"github.com/google/wire"
 
-	"github/mridha/myjournal-app/internal/config"
-	provider "github/mridha/myjournal-app/internal/core/connection"
-	"github/mridha/myjournal-app/internal/core/journal"
-	"github/mridha/myjournal-app/internal/driven/cache/journal"
-	cacheAdapter "github/mridha/myjournal-app/internal/driven/cache/local/bigcache"
-	"github/mridha/myjournal-app/internal/driven/clock"
-	googleProvider "github/mridha/myjournal-app/internal/driven/provider/google"
-	localProvider "github/mridha/myjournal-app/internal/driven/provider/local"
-	"github/mridha/myjournal-app/internal/driven/session"
-	"github/mridha/myjournal-app/internal/driver/web"
-	"github/mridha/myjournal-app/internal/driver/web/authsession"
-	webHandler "github/mridha/myjournal-app/internal/driver/web/handler"
+	"github/m-ridha/myjournal-app/internal/config"
+	provider "github/m-ridha/myjournal-app/internal/core/connection"
+	"github/m-ridha/myjournal-app/internal/core/journal"
+	"github/m-ridha/myjournal-app/internal/driven/cache/journal"
+	cacheAdapter "github/m-ridha/myjournal-app/internal/driven/cache/local/bigcache"
+	"github/m-ridha/myjournal-app/internal/driven/clock"
+	googleProvider "github/m-ridha/myjournal-app/internal/driven/provider/google"
+	localProvider "github/m-ridha/myjournal-app/internal/driven/provider/local"
+	"github/m-ridha/myjournal-app/internal/driven/session"
+	"github/m-ridha/myjournal-app/internal/driver/web"
+	"github/m-ridha/myjournal-app/internal/driver/web/authsession"
+	webHandler "github/m-ridha/myjournal-app/internal/driver/web/handler"
 )
 
 // App is the runtime composition built in the cmd/app layer.

@@ -6,11 +6,11 @@ import (
 	"net/http"
 	"time"
 
-	provider "github/mridha/myjournal-app/internal/core/connection"
-	"github/mridha/myjournal-app/internal/core/journal"
-	"github/mridha/myjournal-app/internal/driver/web/api"
-	"github/mridha/myjournal-app/internal/driver/web/authsession"
-	"github/mridha/myjournal-app/internal/driver/web/i18n"
+	provider "github/m-ridha/myjournal-app/internal/core/connection"
+	"github/m-ridha/myjournal-app/internal/core/journal"
+	"github/m-ridha/myjournal-app/internal/driver/web/api"
+	"github/m-ridha/myjournal-app/internal/driver/web/authsession"
+	"github/m-ridha/myjournal-app/internal/driver/web/i18n"
 )
 
 // Options contains only browser-session transport configuration.

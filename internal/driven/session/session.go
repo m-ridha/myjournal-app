@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"io"
 
-	provider "github/mridha/myjournal-app/internal/core/connection"
+	provider "github/m-ridha/myjournal-app/internal/core/connection"
 )
 
 func keyFromSecret(secret string) []byte {

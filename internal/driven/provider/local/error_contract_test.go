@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github/mridha/myjournal-app/internal/core/journal"
+	"github/m-ridha/myjournal-app/internal/core/journal"
 )
 
 func TestOperationalErrorsAreUnavailable(t *testing.T) {

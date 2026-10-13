@@ -23,9 +23,9 @@ import (
 	"google.golang.org/api/googleapi"
 	"google.golang.org/api/option"
 
-	provider "github/mridha/myjournal-app/internal/core/connection"
-	"github/mridha/myjournal-app/internal/core/journal"
-	"github/mridha/myjournal-app/internal/core/journal/storetest"
+	provider "github/m-ridha/myjournal-app/internal/core/connection"
+	"github/m-ridha/myjournal-app/internal/core/journal"
+	"github/m-ridha/myjournal-app/internal/core/journal/storetest"
 )
 
 type fakeDrive struct {

@@ -4,7 +4,7 @@ package clock
 import (
 	"time"
 
-	"github/mridha/myjournal-app/internal/core/journal"
+	"github/m-ridha/myjournal-app/internal/core/journal"
 )
 
 // System returns the current wall-clock time.

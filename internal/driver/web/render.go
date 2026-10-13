@@ -9,8 +9,8 @@ import (
 	"regexp"
 	"strings"
 
-	"github/mridha/myjournal-app/assets"
-	"github/mridha/myjournal-app/internal/driver/web/i18n"
+	"github/m-ridha/myjournal-app/assets"
+	"github/m-ridha/myjournal-app/internal/driver/web/i18n"
 )
 
 // recentEntriesLimit controls browser browsing; the API retains its own pagination bounds.

@@ -8,10 +8,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github/mridha/myjournal-app/internal/config"
-	provider "github/mridha/myjournal-app/internal/core/connection"
-	localProvider "github/mridha/myjournal-app/internal/driven/provider/local"
-	"github/mridha/myjournal-app/internal/testutil"
+	"github/m-ridha/myjournal-app/internal/config"
+	provider "github/m-ridha/myjournal-app/internal/core/connection"
+	localProvider "github/m-ridha/myjournal-app/internal/driven/provider/local"
+	"github/m-ridha/myjournal-app/internal/testutil"
 )
 
 func TestSignInOffersLoginWithOrWithoutExistingSession(t *testing.T) {

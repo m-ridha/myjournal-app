@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github/mridha/myjournal-app/internal/core/journal"
+	"github/m-ridha/myjournal-app/internal/core/journal"
 )
 
 func TestCanceledIndexes(t *testing.T) {

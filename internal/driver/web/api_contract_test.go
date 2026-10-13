@@ -11,13 +11,13 @@ import (
 	"testing"
 	"time"
 
-	"github/mridha/myjournal-app/internal/config"
-	provider "github/mridha/myjournal-app/internal/core/connection"
-	"github/mridha/myjournal-app/internal/core/journal"
-	"github/mridha/myjournal-app/internal/driven/provider/local"
-	"github/mridha/myjournal-app/internal/driver/web/api"
-	"github/mridha/myjournal-app/internal/driver/web/handler"
-	"github/mridha/myjournal-app/internal/testutil"
+	"github/m-ridha/myjournal-app/internal/config"
+	provider "github/m-ridha/myjournal-app/internal/core/connection"
+	"github/m-ridha/myjournal-app/internal/core/journal"
+	"github/m-ridha/myjournal-app/internal/driven/provider/local"
+	"github/m-ridha/myjournal-app/internal/driver/web/api"
+	"github/m-ridha/myjournal-app/internal/driver/web/handler"
+	"github/m-ridha/myjournal-app/internal/testutil"
 )
 
 func TestAPIRouterErrorEnvelopes(t *testing.T) {

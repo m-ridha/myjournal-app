@@ -7,8 +7,8 @@ import (
 	"net/url"
 	"testing"
 
-	provider "github/mridha/myjournal-app/internal/core/connection"
-	"github/mridha/myjournal-app/internal/testutil"
+	provider "github/m-ridha/myjournal-app/internal/core/connection"
+	"github/m-ridha/myjournal-app/internal/testutil"
 )
 
 func TestAuthorizationHandoff(t *testing.T) {

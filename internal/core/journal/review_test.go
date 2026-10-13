@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github/mridha/myjournal-app/internal/testutil"
+	"github/m-ridha/myjournal-app/internal/testutil"
 )
 
 func TestServiceRejectsInvalidDates(t *testing.T) {

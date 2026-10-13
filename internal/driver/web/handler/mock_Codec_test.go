@@ -7,7 +7,7 @@ package handler
 import (
 	mock "github.com/stretchr/testify/mock"
 
-	"github/mridha/myjournal-app/internal/core/connection"
+	"github/m-ridha/myjournal-app/internal/core/connection"
 )
 
 // newMockCodec creates a new instance of mockCodec. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.
