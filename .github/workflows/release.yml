@@ -50,14 +50,17 @@ jobs:
       - name: Validate release code
         run: |
           python3 -B -m unittest discover -s scripts/python -p test_deploy_railway.py
+          test -z "$(gofmt -l .railway/railway.go)"
+          (cd .railway && go mod verify && go vet ./...)
           make fmt lint test
           git diff --exit-code -- '*.go'
           make test-architecture
           go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 ./...
       - name: Install pinned Railway CLI
-        run: npm install --global @railway/cli@5.64.2
+        run: npm install --global @railway/cli@5.68.0
       - name: Deploy release source and verify health
         env:
+          APP_BASE_URL: ${{ vars.APP_BASE_URL }}
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
           RAILWAY_SERVICE_ID: ${{ vars.RAILWAY_SERVICE_ID }}
           RAILWAY_ENVIRONMENT_ID: ${{ vars.RAILWAY_ENVIRONMENT_ID }}

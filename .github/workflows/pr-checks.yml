@@ -99,7 +99,8 @@ jobs:
         if: steps.changes.outputs.run_build_checks == 'true'
         run: |
           ruby -ryaml -e 'YAML.load_file(".github/dependabot.yml") if File.exist?(".github/dependabot.yml")'
-          if [ -f railway.json ]; then python3 -m json.tool railway.json > /dev/null; fi
+          test -z "$(gofmt -l .railway/railway.go)"
+          (cd .railway && go mod verify && go vet ./...)
 
       - name: Build container
         if: steps.changes.outputs.run_build_checks == 'true'

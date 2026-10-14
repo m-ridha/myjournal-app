@@ -1,5 +1,9 @@
 # Progress
 
+## Release-only Railway Go IaC (2026-10-15)
+
+Replaced `railway.json` with `.railway/railway.go` in an isolated pinned SDK module. The existing published-release workflow now validates/applies a pinned production configuration plan before uploading the exact release archive. Deployment origin and target IDs come from GitHub variables rather than code literals. Retains one Singapore replica, Railway-managed variables/secrets, deployment-ID polling and public health verification; PRs, merges and tag pushes never apply or deploy. The first release-time apply detaches the GitHub source. [ADR 023](adr/023-release-only-railway-iac.md) records the decision; [validation evidence](findings.md#release-only-railway-go-iac-2026-10-15) distinguishes read-only production planning from the still-unperformed live apply/deployment.
+
 ## Calendar month/year picker (2026-10-13)
 
 Added a dependency-free picker opened from the Calendar month heading, with 12-month and 12-year grids, theme-aware styling and keyboard dismissal/focus return. Future months/years and next-month navigation are disabled using the page's resolved today snapshot. Browsing the picker stays local; selecting a month loads the calendar. Loading/error feedback has a separate live status, preserving the selected month heading and latest-request guards. The Makefile runs a seventh JavaScript regression suite. [Validation evidence](findings.md#calendar-monthyear-picker-2026-10-13) records the checks and limits.
