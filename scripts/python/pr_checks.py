@@ -21,7 +21,7 @@ def requires_code_checks(paths):
 def requires_build_checks(paths):
     # This group includes workflow/configuration validation and the container build.
     return any(not is_non_runtime_file(path) and (
-        path.startswith(".github/") or path in {
+        path.startswith((".github/", ".railway/")) or path in {
             "Dockerfile", ".dockerignore", "railway.json", "go.mod", "go.sum",
             "Makefile", ".env.example", "RELEASE_VERSION", "scripts/python/deploy-railway.py",
             "scripts/python/test_deploy_railway.py", "scripts/python/pr_checks.py", "scripts/python/test_pr_checks.py",

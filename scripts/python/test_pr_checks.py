@@ -32,6 +32,7 @@ class ChangeSelectionTests(unittest.TestCase):
             "Dockerfile": True,
             ".dockerignore": True,
             "railway.json": True,
+            ".railway/railway.go": True,
             "Makefile": True,
             "scripts/python/pr_checks.py": True,
             "new-language.rs": True,
@@ -53,7 +54,7 @@ class ChangeSelectionTests(unittest.TestCase):
 
 class BuildSelectionTests(unittest.TestCase):
     def test_build_inputs(self):
-        for path in ["Dockerfile", ".dockerignore", "railway.json", "go.mod", "go.sum",
+        for path in ["Dockerfile", ".dockerignore", "railway.json", ".railway/railway.go", ".railway/go.mod", ".railway/go.sum", "go.mod", "go.sum",
                      "Makefile", ".env.example", "RELEASE_VERSION", ".github/dependabot.yml",
                      ".github/workflows/release.yml", "scripts/python/deploy-railway.py",
                      "scripts/python/test_deploy_railway.py", "scripts/python/pr_checks.py", "scripts/python/test_pr_checks.py"]:

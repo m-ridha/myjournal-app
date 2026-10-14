@@ -4,7 +4,7 @@ Selected public origin: <https://myjournal-ink.up.railway.app>. The acceptance b
 
 ## Service setup
 
-Use one Railway service, one replica in one region, no extra writer service and no persistent disk/database. railway.json builds the Dockerfile and checks /healthz. The app listens on all interfaces using Railway's PORT. Entries live in Google Drive; container data is ephemeral. Keep the accepted deployment-overlap/lost-update limits in ADR 016; one replica is not a distributed lock.
+Use one Railway service, one replica in one region, no extra writer service and no persistent disk/database. [`.railway/railway.go`](../../.railway/railway.go) defines Dockerfile builds, /healthz and the existing Singapore placement. All variable values remain managed on Railway. The app listens on all interfaces using Railway's PORT. Entries live in Google Drive; container data is ephemeral. Keep the accepted deployment-overlap/lost-update limits in ADR 016; one replica is not a distributed lock.
 
 Configure Railway variables:
 
@@ -21,9 +21,9 @@ Review Railway plan, trial/credit expiry, usage limits and spend controls direct
 
 ## Published-release automation
 
-Disable GitHub branch autodeploys in Railway; use the existing service with CLI uploads. No tag-push deployment is configured. GitHub publishes a non-prerelease Release with vX.Y.Z with an optional version suffix (no leading zeros in the three core numbers), checks out that tag and verifies main ancestry, then reruns required checks. CLI @railway/cli 5.64.2 is pinned.
+Disable GitHub branch autodeploys in Railway; use the existing service with CLI uploads. No tag-push deployment is configured. GitHub publishes a non-prerelease Release with vX.Y.Z with an optional version suffix (no leading zeros in the three core numbers), checks out that tag and verifies main ancestry, then reruns required checks. CLI @railway/cli 5.68.0 is pinned. Within that same published-release job, the helper validates and applies a pinned Go IaC plan, verifies convergence, then uploads the release archive. PRs, merges and tag pushes never apply configuration. The first apply removes the GitHub source attachment; CLI archives remain the sole application source. See [ADR 023](adr/023-release-only-railway-iac.md) and [IaC operations](../../.railway/README.md).
 
-Configure secret RAILWAY_TOKEN (project/environment-scoped deployment token), repository variable RAILWAY_PROJECT_ID, and production-environment variables RAILWAY_SERVICE_ID and RAILWAY_ENVIRONMENT_ID. IDs are configuration, not credentials. A repository token secret is supported; prefer a production-environment token secret to restrict credential availability to that environment. The repository variable RAILWAY_RELEASE_READY=true enables the accepted restricted test-user release workflow; the first release v0.1.0 passed. Restrict release/tag creation and token access.
+Configure secret RAILWAY_TOKEN (project/environment-scoped deployment token), repository variable RAILWAY_PROJECT_ID, and production-environment variables APP_BASE_URL, RAILWAY_SERVICE_ID and RAILWAY_ENVIRONMENT_ID. IDs are configuration, not credentials. A repository token secret is supported; prefer a production-environment token secret to restrict credential availability to that environment. The repository variable RAILWAY_RELEASE_READY=true enables the accepted restricted test-user release workflow; the first release v0.1.0 passed. Restrict release/tag creation and token access.
 
 The workflow uploads a git archive of the checked-out release commit rather than the working tree or branch head. Docker's build allowlist further limits image inputs. Git archive contains all tracked files: keep secrets, local data and private planning files untracked. Do not commit private files merely because Docker ignores them.
 
@@ -41,7 +41,7 @@ References reviewed 2026-10-10:
 
 - [CLI deployment](https://docs.railway.com/cli/up)
 - [Deployment statuses](https://docs.railway.com/cli/deployment)
-- [Config as code](https://docs.railway.com/config-as-code/reference)
+- [Infrastructure as Code](https://docs.railway.com/infrastructure-as-code) (migration reviewed 2026-10-15)
 - [Project tokens and CI](https://docs.railway.com/cli)
 
 ## Final readiness handoff
