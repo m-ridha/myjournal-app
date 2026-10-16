@@ -3,6 +3,10 @@
     // Documentation uses semantic lines; allow long prose, tables and commands.
     "MD013": false
   },
-  "globs": ["**/*.md"],
-  "ignores": [".git/**"]
+  "globs": [
+    "**/*.md"
+  ],
+  "ignores": [
+    ".git/**"
+  ]
 }
