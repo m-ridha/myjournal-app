@@ -15,7 +15,7 @@
 
   let authenticationExpired = false;
   let authenticationGeneration = 0;
-  let protectEditorOnExpiry = () => {};
+  let protectEditorOnExpiry = () => { };
 
   async function protectedFetch(url, options, isCurrent = () => true) {
     const generation = authenticationGeneration;
@@ -297,8 +297,8 @@
           if (response.ok) {
             const current = await response.json();
             if (typeof current.text !== 'string' || typeof current.version !== 'string' ||
-                typeof current.exists !== 'boolean' || (current.exists && !current.version) ||
-                (!current.exists && (current.text !== '' || current.version !== '')))
+              typeof current.exists !== 'boolean' || (current.exists && !current.version) ||
+              (!current.exists && (current.text !== '' || current.version !== '')))
               throw new Error('invalid verification response');
             if (signedOut) return;
             if (current.text === sentText) entry = current;
@@ -321,7 +321,7 @@
           saveNeedsVerification = !conflicted;
           const key = response.status === 409 ? 'editor.conflict'
             : response.status === 401 ? 'editor.sessionExpired'
-            : response.status === 413 ? 'editor.saveTooLarge' : 'editor.saveFailed';
+              : response.status === 413 ? 'editor.saveTooLarge' : 'editor.saveFailed';
           const kept = persistDraft();
           setSaveState('');
           notice(t(key) + (kept ? t('editor.draftKept') : '') + (automatic && !conflicted ? t('editor.autosavePaused') : ''));
