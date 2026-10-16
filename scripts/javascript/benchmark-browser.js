@@ -19,7 +19,7 @@ window.mjBenchmark = async function (date, options = {}) {
     const allowedScenarios = ['open', 'changed-save', 'unchanged-save', 'entries-repeat', 'calendar-repeat', 'entries-after-save'];
     const scenarios = options.scenarios === undefined ? allowedScenarios : options.scenarios;
     if (!Array.isArray(scenarios) || scenarios.length === 0 ||
-        new Set(scenarios).size !== scenarios.length || scenarios.some(name => !allowedScenarios.includes(name)))
+      new Set(scenarios).size !== scenarios.length || scenarios.some(name => !allowedScenarios.includes(name)))
       throw new Error('Choose distinct supported benchmark scenarios');
     const settings = await fetch('/api/v1/settings');
     if (!settings.ok || (await settings.json()).provider !== 'Google')
@@ -33,15 +33,17 @@ window.mjBenchmark = async function (date, options = {}) {
       const start = performance.now();
       const response = await fetch(endpoint, init);
       const body = await response.text();
-      if (timed) samples.push({scenario, status: response.status,
-        elapsedMs: performance.now() - start});
+      if (timed) samples.push({
+        scenario, status: response.status,
+        elapsedMs: performance.now() - start
+      });
       if (!response.ok) throw new Error('HTTP ' + response.status + ' during ' + scenario);
       return body ? JSON.parse(body) : null;
     }
     async function save(content, timed = true) {
       const next = await request(content === current.text ? 'unchanged-save' : 'changed-save', path, {
-        method: 'PUT', headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({text: content, baseVersion: current.version || ''})
+        method: 'PUT', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: content, baseVersion: current.version || '' })
       }, timed);
       if (!next.exists || next.text !== content || !next.version)
         throw new Error('Invalid save acknowledgement');
@@ -76,23 +78,29 @@ window.mjBenchmark = async function (date, options = {}) {
       progress('cleanup');
       const check = await request('cleanup-check', path, undefined, false);
       if (check.text !== current.text || check.version !== current.version) throw new Error('Fixture changed before cleanup');
-      await request('cleanup', path, {method: 'DELETE'}, false);
+      await request('cleanup', path, { method: 'DELETE' }, false);
       const removed = await request('cleanup-verify', path, undefined, false);
       if (removed.exists) throw new Error('Cleanup not verified');
       const summary = {};
       for (const scenario of new Set(samples.map(s => s.scenario))) {
-        const values = samples.filter(s => s.scenario === scenario).map(s => s.elapsedMs).sort((a,b) => a-b);
-        summary[scenario] = {n: values.length, medianMs: (values[4] + values[5]) / 2,
-          minMs: values[0], maxMs: values[values.length - 1]};
+        const values = samples.filter(s => s.scenario === scenario).map(s => s.elapsedMs).sort((a, b) => a - b);
+        summary[scenario] = {
+          n: values.length, medianMs: (values[4] + values[5]) / 2,
+          minMs: values[0], maxMs: values[values.length - 1]
+        };
       }
       progress('completed');
-      return {mode: 'exploratory, token primed; browsing cache state unverified', date,
+      return {
+        mode: 'exploratory, token primed; browsing cache state unverified', date,
         fixtureBytes: new TextEncoder().encode(text).length, cleanupVerified: true,
-        samples, summary};
+        samples, summary
+      };
     } catch (error) {
       progress('stopped; inspect returned result before retrying');
-      return {failed: true, reason: error.message, fixtureDate: date,
-        cleanupVerified: false, samples};
+      return {
+        failed: true, reason: error.message, fixtureDate: date,
+        cleanupVerified: false, samples
+      };
     }
   } finally {
     window.mjBenchmarkRunning = false;
