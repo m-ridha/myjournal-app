@@ -9,20 +9,22 @@ window.mjInspectBenchmarkFixture = async function () {
   const date = '2020-01-03';
   const expected = 'myjournal synthetic benchmark\n' + 'Synthetic text 🙂\n'.repeat(110);
   async function read() {
-    const response = await fetch('/api/v1/entries/' + date, {cache: 'no-store'});
+    const response = await fetch('/api/v1/entries/' + date, { cache: 'no-store' });
     if (!response.ok) throw new Error('Inspection HTTP ' + response.status);
     const entry = await response.json();
     if (typeof entry.exists !== 'boolean' || typeof entry.text !== 'string' ||
-        typeof entry.version !== 'string' || (entry.exists && !entry.version))
+      typeof entry.version !== 'string' || (entry.exists && !entry.version))
       throw new Error('Invalid inspection response');
     return entry;
   }
   const first = await read();
   const second = await read();
-  return {fixtureDate: date, readOnly: true, exists: second.exists,
+  return {
+    fixtureDate: date, readOnly: true, exists: second.exists,
     stableAcrossReads: first.exists === second.exists && first.version === second.version && first.text === second.text,
     matchesLastAttempt: second.exists && second.text === expected + 'B',
     matchesPreviousAcknowledged: second.exists && second.text === expected + 'A',
     matchesInitialFixture: second.exists && second.text === expected,
-    cleanupPerformed: false};
+    cleanupPerformed: false
+  };
 };

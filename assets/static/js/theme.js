@@ -33,7 +33,7 @@
         applyTheme(savedTheme);
         return;
       }
-    } catch (e) {}
+    } catch (e) { }
 
     const preferred = media && media.matches ? 'dark' : 'light';
     applyTheme(preferred);
@@ -51,7 +51,7 @@
       const nextTheme = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
       explicit = true;
       applyTheme(nextTheme);
-      try { localStorage.setItem('mj-theme', nextTheme); } catch (error) {}
+      try { localStorage.setItem('mj-theme', nextTheme); } catch (error) { }
     });
   }
 })();

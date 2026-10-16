@@ -3,9 +3,9 @@ formatter: goimports
 formatter-options:
   goimports:
     local-prefix: github/m-ridha/myjournal-app
-filename: 'mock_{{.InterfaceName}}_test.go'
-pkgname: '{{.SrcPackageName}}'
-structname: 'mock{{.InterfaceName}}'
+filename: "mock_{{.InterfaceName}}_test.go"
+pkgname: "{{.SrcPackageName}}"
+structname: "mock{{.InterfaceName}}"
 packages:
   github/m-ridha/myjournal-app/internal/driver/web/handler:
     interfaces:
