@@ -1,5 +1,15 @@
 # Findings Log
 
+## Public repository preparation (2026-10-19)
+
+`TestBuildApp` uses `t.TempDir()` instead of a persistent `.devdata-test` directory and registers application cleanup before temporary-directory cleanup. Assertions in the touched test follow the Testify convention. Both workflows pin all eight external Action references to official commit SHAs resolved from their existing v7/v9 tags (the lint Action's annotated tag was peeled to its commit). Dependabot already covers GitHub Actions. `SECURITY.md` provides a private reporting link and a non-sensitive fallback when the form is unavailable.
+
+Authenticated GitHub settings inspection found dependency graph, Dependabot alerts and malware alerts enabled. Secret scanning, push protection and private vulnerability-reporting controls were not offered in the current private personal repository. Classic branch protection is absent; the existing `main-ruleset-1` is disabled, and GitHub warns that rulesets are not enforced for this private repository on the current plan. Production's previous “Protected branches only” setting explicitly allowed all branches because no applicable protection rules existed. Changed production to selected refs with a single tag rule `v*`; GitHub confirmed the rule saved, zero branches allowed and fifteen existing tags matched. This setting is already applied outside the PR. Workflow SemVer validation, main ancestry and published-release-only deployment remain in place; no deployment was triggered and no secret values were accessed.
+
+Remaining owner steps around publication: enable secret scanning and push protection when available, enable private vulnerability reporting, and activate main-branch protection with required PR checks. Recheck production access after those changes. Repository visibility remains private. Full historical secret scanning and review of GitHub logs, artifacts, discussions and release material are still separate prerequisites; these changes do not establish public-release clearance.
+
+Fresh `make fmt lint test` passed (zero lint issues, seven JavaScript suites and all Go packages), as did all 36 sequential `make test-architecture` probes with cleanup, 24 Python helper tests, actionlint v1.7.7 and `git diff --check`. The first sandboxed lint attempt could not load Go packages; the complete command passed with normal cache access. No live Google verification, release publication or deployment was performed.
+
 ## Calendar month/year picker (2026-10-13)
 
 The Calendar previously required stepping through months and allowed future-month navigation. It now uses a small local JavaScript picker, without a third-party date library. Month labels use the page's EN/ID locale, future bounds use the server-resolved `data-today` snapshot, and year one remains the domain lower bound. The API's supported calendar range is unchanged; the future-month restriction is a browser navigation rule. Loading/error feedback is separate from the selected heading. Picker browsing makes no API calls; every explicit selection, including the current month for retry, requests the chosen month once.

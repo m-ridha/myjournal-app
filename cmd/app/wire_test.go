@@ -4,6 +4,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"github/m-ridha/myjournal-app/internal/config"
 	"github/m-ridha/myjournal-app/internal/testutil"
 )
@@ -16,29 +19,20 @@ func TestBuildApp(t *testing.T) {
 		SessionKey:   "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=",
 		CookieSecure: false,
 		Providers:    "local",
-		LocalDataDir: ".devdata-test",
+		LocalDataDir: t.TempDir(),
 	}
 
 	app, cleanup, err := BuildApp(cfg)
-	if err != nil {
-		t.Fatalf("BuildApp returned error: %v", err)
-	}
-	if app == nil {
-		t.Fatal("BuildApp returned nil app")
-	}
-	if app.Server == nil {
-		t.Fatal("BuildApp returned nil server")
-	}
-	if app.Server.ReadHeaderTimeout <= 0 || app.Server.ReadTimeout < app.Server.ReadHeaderTimeout || app.Server.WriteTimeout <= 30*time.Second || app.Server.IdleTimeout <= 0 {
-		t.Fatal("HTTP deadlines must bound reads/idle connections and allow the 30-second handler deadline to respond")
-	}
-	if app.Logger == nil {
-		t.Fatal("BuildApp returned nil logger")
-	}
-	if cleanup == nil {
-		t.Fatal("BuildApp returned nil cleanup function")
-	}
-	cleanup()
+	require.NoError(t, err)
+	require.NotNil(t, cleanup)
+	t.Cleanup(cleanup)
+	require.NotNil(t, app)
+	require.NotNil(t, app.Server)
+	assert.Positive(t, app.Server.ReadHeaderTimeout)
+	assert.GreaterOrEqual(t, app.Server.ReadTimeout, app.Server.ReadHeaderTimeout)
+	assert.Greater(t, app.Server.WriteTimeout, 30*time.Second)
+	assert.Positive(t, app.Server.IdleTimeout)
+	assert.NotNil(t, app.Logger)
 }
 
 func TestNewProviderRegistryFailsClosed(t *testing.T) {

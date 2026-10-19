@@ -1,5 +1,9 @@
 # Progress
 
+## Public repository preparation (2026-10-19)
+
+Prepared temporary startup-test storage, immutable GitHub Actions commit pins at the existing versions, and a private vulnerability-reporting policy. Production environment deployment access now accepts only `v*` tags. Secret scanning, push protection, private reporting and enforced main-branch protection remain follow-ups around the separately authorized visibility change; [settings and validation evidence](findings.md#public-repository-preparation-2026-10-19) records current availability and limits.
+
 ## Release-only Railway Go IaC (2026-10-15)
 
 Replaced `railway.json` with `.railway/railway.go` in an isolated pinned SDK module. The existing published-release workflow now validates/applies a pinned production configuration plan before uploading the exact release archive. Deployment origin and target IDs come from GitHub variables rather than code literals. Retains one Singapore replica, Railway-managed variables/secrets, deployment-ID polling and public health verification; PRs, merges and tag pushes never apply or deploy. The first release-time apply detaches the GitHub source. [ADR 023](adr/023-release-only-railway-iac.md) records the decision; [validation evidence](findings.md#release-only-railway-go-iac-2026-10-15) distinguishes read-only production planning from the still-unperformed live apply/deployment.
