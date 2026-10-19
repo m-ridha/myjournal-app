@@ -9,7 +9,7 @@ import (
 	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/googleapi"
 
-	"github/m-ridha/myjournal-app/internal/core/journal"
+	"myjournal-app/internal/core/journal"
 )
 
 func (s *Store) Put(ctx context.Context, date journal.Date, text string, base journal.Version) (journal.Entry, error) {

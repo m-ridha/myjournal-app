@@ -15,7 +15,7 @@ import (
 
 	"cloud.google.com/go/civil"
 
-	"github/m-ridha/myjournal-app/internal/core/journal"
+	"myjournal-app/internal/core/journal"
 )
 
 // Local mutations share a bounded process-wide lock, including across Store instances.

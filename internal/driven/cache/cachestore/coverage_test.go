@@ -7,7 +7,7 @@ import (
 	"testing/synctest"
 	"time"
 
-	"github/m-ridha/myjournal-app/internal/core/journal"
+	"myjournal-app/internal/core/journal"
 )
 
 func TestWaitingCacheLockCancellation(t *testing.T) {

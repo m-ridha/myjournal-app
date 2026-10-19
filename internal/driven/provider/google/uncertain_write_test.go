@@ -12,7 +12,7 @@ import (
 	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/option"
 
-	"github/m-ridha/myjournal-app/internal/core/journal"
+	"myjournal-app/internal/core/journal"
 )
 
 func TestAppliedUploadWithFailedAcknowledgement(t *testing.T) {

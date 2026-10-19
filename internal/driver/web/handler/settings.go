@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github/m-ridha/myjournal-app/internal/driver/web/api"
+	"myjournal-app/internal/driver/web/api"
 )
 
 func (s *Server) GetSettings(w http.ResponseWriter, r *http.Request) {

@@ -8,7 +8,7 @@ import (
 
 	"cloud.google.com/go/civil"
 
-	"github/m-ridha/myjournal-app/internal/testutil"
+	"myjournal-app/internal/testutil"
 )
 
 func TestUserDateBoundaries(t *testing.T) {

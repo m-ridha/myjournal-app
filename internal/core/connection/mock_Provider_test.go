@@ -9,7 +9,7 @@ import (
 
 	mock "github.com/stretchr/testify/mock"
 
-	"github/m-ridha/myjournal-app/internal/core/journal"
+	"myjournal-app/internal/core/journal"
 )
 
 // newMockProvider creates a new instance of mockProvider. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.

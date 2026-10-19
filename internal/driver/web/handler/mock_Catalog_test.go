@@ -7,7 +7,7 @@ package handler
 import (
 	mock "github.com/stretchr/testify/mock"
 
-	"github/m-ridha/myjournal-app/internal/core/connection"
+	"myjournal-app/internal/core/connection"
 )
 
 // newMockCatalog creates a new instance of mockCatalog. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.

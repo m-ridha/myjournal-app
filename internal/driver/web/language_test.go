@@ -8,11 +8,11 @@ import (
 	"strings"
 	"testing"
 
-	"github/m-ridha/myjournal-app/internal/config"
-	provider "github/m-ridha/myjournal-app/internal/core/connection"
-	"github/m-ridha/myjournal-app/internal/driven/clock"
-	localProvider "github/m-ridha/myjournal-app/internal/driven/provider/local"
-	"github/m-ridha/myjournal-app/internal/testutil"
+	"myjournal-app/internal/config"
+	provider "myjournal-app/internal/core/connection"
+	"myjournal-app/internal/driven/clock"
+	localProvider "myjournal-app/internal/driven/provider/local"
+	"myjournal-app/internal/testutil"
 )
 
 func TestLanguageSelection(t *testing.T) {

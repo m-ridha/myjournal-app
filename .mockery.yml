@@ -2,23 +2,23 @@ template: testify
 formatter: goimports
 formatter-options:
   goimports:
-    local-prefix: github/m-ridha/myjournal-app
+    local-prefix: myjournal-app
 filename: "mock_{{.InterfaceName}}_test.go"
 pkgname: "{{.SrcPackageName}}"
 structname: "mock{{.InterfaceName}}"
 packages:
-  github/m-ridha/myjournal-app/internal/driver/web/handler:
+  myjournal-app/internal/driver/web/handler:
     interfaces:
       JournalService:
       ConnectionService:
-  github/m-ridha/myjournal-app/internal/driver/web/authsession:
+  myjournal-app/internal/driver/web/authsession:
     interfaces:
       Codec:
         configs:
           - dir: internal/driver/web/authsession
           - dir: internal/driver/web/handler
             pkgname: handler
-  github/m-ridha/myjournal-app/internal/core/connection:
+  myjournal-app/internal/core/connection:
     interfaces:
       Gateway:
       Catalog:

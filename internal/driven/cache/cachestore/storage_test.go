@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github/m-ridha/myjournal-app/internal/core/journal"
+	"myjournal-app/internal/core/journal"
 )
 
 // Used only behind Cache's coordinator; production storage lives in adapters.

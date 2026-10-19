@@ -12,7 +12,7 @@ import (
 
 	"golang.org/x/sync/errgroup"
 
-	"github/m-ridha/myjournal-app/internal/core/journal"
+	"myjournal-app/internal/core/journal"
 )
 
 func checksum(data []byte) string { sum := md5.Sum(data); return hex.EncodeToString(sum[:]) }

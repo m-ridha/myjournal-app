@@ -8,7 +8,7 @@ import (
 	"testing/synctest"
 	"time"
 
-	"github/m-ridha/myjournal-app/internal/core/journal"
+	"myjournal-app/internal/core/journal"
 )
 
 func TestBidirectionalEntryPreviewCache(t *testing.T) {

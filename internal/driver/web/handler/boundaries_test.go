@@ -10,10 +10,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 
-	provider "github/m-ridha/myjournal-app/internal/core/connection"
-	"github/m-ridha/myjournal-app/internal/core/journal"
-	"github/m-ridha/myjournal-app/internal/driver/web/api"
-	"github/m-ridha/myjournal-app/internal/driver/web/authsession"
+	provider "myjournal-app/internal/core/connection"
+	"myjournal-app/internal/core/journal"
+	"myjournal-app/internal/driver/web/api"
+	"myjournal-app/internal/driver/web/authsession"
 )
 
 func boundarySession(t *testing.T, now time.Time) (*mockCodec, *mockCatalog, provider.Session) {

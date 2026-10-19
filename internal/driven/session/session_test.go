@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	provider "github/m-ridha/myjournal-app/internal/core/connection"
+	provider "myjournal-app/internal/core/connection"
 )
 
 func TestRoundTrip(t *testing.T) {

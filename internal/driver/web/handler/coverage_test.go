@@ -12,10 +12,10 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	provider "github/m-ridha/myjournal-app/internal/core/connection"
-	"github/m-ridha/myjournal-app/internal/core/journal"
-	"github/m-ridha/myjournal-app/internal/driver/web/api"
-	"github/m-ridha/myjournal-app/internal/driver/web/authsession"
+	provider "myjournal-app/internal/core/connection"
+	"myjournal-app/internal/core/journal"
+	"myjournal-app/internal/driver/web/api"
+	"myjournal-app/internal/driver/web/authsession"
 )
 
 func TestCalendarAndDeleteHTTPBoundaries(t *testing.T) {

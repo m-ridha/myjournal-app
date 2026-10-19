@@ -12,7 +12,7 @@ import (
 	"google.golang.org/api/idtoken"
 	"google.golang.org/api/option"
 
-	provider "github/m-ridha/myjournal-app/internal/core/connection"
+	provider "myjournal-app/internal/core/connection"
 )
 
 const (

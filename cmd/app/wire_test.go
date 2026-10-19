@@ -7,8 +7,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github/m-ridha/myjournal-app/internal/config"
-	"github/m-ridha/myjournal-app/internal/testutil"
+	"myjournal-app/internal/config"
+	"myjournal-app/internal/testutil"
 )
 
 func TestBuildApp(t *testing.T) {

@@ -5,7 +5,7 @@ import (
 	"net/url"
 	"time"
 
-	"github/m-ridha/myjournal-app/internal/core/journal"
+	"myjournal-app/internal/core/journal"
 )
 
 const TimeZoneCookie = "mj_tz"

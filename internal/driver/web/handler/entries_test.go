@@ -15,17 +15,17 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 
-	"github/m-ridha/myjournal-app/assets"
-	"github/m-ridha/myjournal-app/internal/config"
-	provider "github/m-ridha/myjournal-app/internal/core/connection"
-	"github/m-ridha/myjournal-app/internal/core/journal"
-	"github/m-ridha/myjournal-app/internal/driven/clock"
-	"github/m-ridha/myjournal-app/internal/driven/provider/local"
-	"github/m-ridha/myjournal-app/internal/driven/session"
-	"github/m-ridha/myjournal-app/internal/driver/web/api"
-	"github/m-ridha/myjournal-app/internal/driver/web/authsession"
-	"github/m-ridha/myjournal-app/internal/driver/web/i18n"
-	"github/m-ridha/myjournal-app/internal/testutil"
+	"myjournal-app/assets"
+	"myjournal-app/internal/config"
+	provider "myjournal-app/internal/core/connection"
+	"myjournal-app/internal/core/journal"
+	"myjournal-app/internal/driven/clock"
+	"myjournal-app/internal/driven/provider/local"
+	"myjournal-app/internal/driven/session"
+	"myjournal-app/internal/driver/web/api"
+	"myjournal-app/internal/driver/web/authsession"
+	"myjournal-app/internal/driver/web/i18n"
+	"myjournal-app/internal/testutil"
 )
 
 func TestSaveAndGetEntryRoundTrip(t *testing.T) {

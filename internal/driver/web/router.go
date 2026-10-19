@@ -10,13 +10,13 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
-	"github/m-ridha/myjournal-app/assets"
-	provider "github/m-ridha/myjournal-app/internal/core/connection"
-	"github/m-ridha/myjournal-app/internal/core/journal"
-	"github/m-ridha/myjournal-app/internal/driver/web/api"
-	"github/m-ridha/myjournal-app/internal/driver/web/authsession"
-	"github/m-ridha/myjournal-app/internal/driver/web/handler"
-	webMiddleware "github/m-ridha/myjournal-app/internal/driver/web/middleware"
+	"myjournal-app/assets"
+	provider "myjournal-app/internal/core/connection"
+	"myjournal-app/internal/core/journal"
+	"myjournal-app/internal/driver/web/api"
+	"myjournal-app/internal/driver/web/authsession"
+	"myjournal-app/internal/driver/web/handler"
+	webMiddleware "myjournal-app/internal/driver/web/middleware"
 )
 
 func NewRouter(cfg Options, registry provider.Catalog, clk journal.Clock, serviceFactory handler.ServiceFactory, renderer *Renderer, connections handler.ConnectionService) http.Handler {

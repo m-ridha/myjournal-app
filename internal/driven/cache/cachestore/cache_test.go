@@ -9,7 +9,7 @@ import (
 
 	"cloud.google.com/go/civil"
 
-	"github/m-ridha/myjournal-app/internal/core/journal"
+	"myjournal-app/internal/core/journal"
 )
 
 type fakeStore struct {

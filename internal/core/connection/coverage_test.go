@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github/m-ridha/myjournal-app/internal/core/journal"
+	"myjournal-app/internal/core/journal"
 )
 
 func TestRegistryLookupAndEnumeration(t *testing.T) {

@@ -13,8 +13,8 @@ import (
 	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/googleapi"
 
-	provider "github/m-ridha/myjournal-app/internal/core/connection"
-	"github/m-ridha/myjournal-app/internal/core/journal"
+	provider "myjournal-app/internal/core/connection"
+	"myjournal-app/internal/core/journal"
 )
 
 func queryValue(value string) string {

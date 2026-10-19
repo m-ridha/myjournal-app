@@ -8,8 +8,8 @@ import (
 	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/option"
 
-	provider "github/m-ridha/myjournal-app/internal/core/connection"
-	"github/m-ridha/myjournal-app/internal/core/journal"
+	provider "myjournal-app/internal/core/connection"
+	"myjournal-app/internal/core/journal"
 )
 
 const folderMIME = "application/vnd.google-apps.folder"

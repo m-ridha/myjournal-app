@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github/m-ridha/myjournal-app/internal/core/journal"
+	"myjournal-app/internal/core/journal"
 )
 
 func TestTimeZoneResolution(t *testing.T) {

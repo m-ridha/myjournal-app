@@ -11,7 +11,7 @@ import (
 
 	"cloud.google.com/go/civil"
 
-	"github/m-ridha/myjournal-app/internal/core/journal"
+	"myjournal-app/internal/core/journal"
 )
 
 func TestConcurrentStoresRejectStaleSave(t *testing.T) {
