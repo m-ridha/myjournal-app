@@ -21,7 +21,7 @@ import (
 	"google.golang.org/api/drive/v3"
 	"google.golang.org/api/option"
 
-	"github/m-ridha/myjournal-app/spike/internal/loginstate"
+	"myjournal-app/spike/internal/loginstate"
 )
 
 const folderMIMEType = "application/vnd.google-apps.folder"

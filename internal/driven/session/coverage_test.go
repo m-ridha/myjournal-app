@@ -6,7 +6,7 @@ import (
 	"io"
 	"testing"
 
-	provider "github/m-ridha/myjournal-app/internal/core/connection"
+	provider "myjournal-app/internal/core/connection"
 )
 
 type failingEntropy struct{}

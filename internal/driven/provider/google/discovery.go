@@ -8,7 +8,7 @@ import (
 	"golang.org/x/sync/singleflight"
 	"google.golang.org/api/drive/v3"
 
-	"github/m-ridha/myjournal-app/internal/core/journal"
+	"myjournal-app/internal/core/journal"
 )
 
 const (

@@ -9,7 +9,7 @@ import (
 
 	mock "github.com/stretchr/testify/mock"
 
-	"github/m-ridha/myjournal-app/internal/core/connection"
+	"myjournal-app/internal/core/connection"
 )
 
 // newMockConnectionService creates a new instance of mockConnectionService. It also registers a testing interface on the mock and a cleanup function to assert the mocks expectations.

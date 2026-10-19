@@ -13,10 +13,10 @@ import (
 
 	"google.golang.org/api/drive/v3"
 
-	"github/m-ridha/myjournal-app/internal/core/journal"
-	"github/m-ridha/myjournal-app/internal/core/journal/storetest"
-	cachestore "github/m-ridha/myjournal-app/internal/driven/cache/cachestore"
-	"github/m-ridha/myjournal-app/internal/driven/cache/local/lru"
+	"myjournal-app/internal/core/journal"
+	"myjournal-app/internal/core/journal/storetest"
+	cachestore "myjournal-app/internal/driven/cache/cachestore"
+	"myjournal-app/internal/driven/cache/local/lru"
 )
 
 func TestOperationGetsReuseYearListing(t *testing.T) {

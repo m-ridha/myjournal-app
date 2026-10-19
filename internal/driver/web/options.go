@@ -1,6 +1,6 @@
 package web
 
-import "github/m-ridha/myjournal-app/internal/driver/web/handler"
+import "myjournal-app/internal/driver/web/handler"
 
 // Options contains validated transport policy from the composition root.
 type Options struct {

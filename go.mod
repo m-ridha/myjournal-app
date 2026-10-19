@@ -1,4 +1,4 @@
-module github/m-ridha/myjournal-app
+module myjournal-app
 
 go 1.27.2
 

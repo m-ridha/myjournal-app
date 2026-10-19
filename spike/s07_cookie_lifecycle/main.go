@@ -24,8 +24,8 @@ import (
 	"google.golang.org/api/idtoken"
 	"google.golang.org/api/option"
 
-	provider "github/m-ridha/myjournal-app/internal/core/connection"
-	"github/m-ridha/myjournal-app/internal/driven/session"
+	provider "myjournal-app/internal/core/connection"
+	"myjournal-app/internal/driven/session"
 )
 
 const cookieName = "mj_s7_session"

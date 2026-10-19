@@ -13,7 +13,7 @@ Read the user's current instructions first, then consult:
 
 ## Stack, setup, and checks
 
-Use Go, chi, `html/template`, embedded assets, Google Wire, and oapi-codegen. Preserve module `github/m-ridha/myjournal-app` and the declared Go version (currently 1.27.2). Prefer the standard library and existing dependencies.
+Use Go, chi, `html/template`, embedded assets, Google Wire, and oapi-codegen. Preserve module `myjournal-app` and the declared Go version (currently 1.27.2). Prefer the standard library and existing dependencies.
 
 Follow [README prerequisites and quick start](README.md#prerequisites) for a fresh clone. Required tools are Go 1.27.2, Git, Make and OpenSSL; checks additionally need Node.js 24 or macOS JavaScriptCore, Wire v0.7.0, oapi-codegen v2.8.0, Mockery v3.8.1 and golangci-lint v2.14.0. The README contains pinned `go install` commands and PATH setup (`GOBIN`, or `$(go env GOPATH)/bin`). Mockery v2 is incompatible with the current v3 configuration; use `go install github.com/vektra/mockery/v3@v3.8.1`, not `/v2@latest`. Do not silently upgrade generators. Go module dependencies, including Testify, need no separate installation. Python 3, Docker and browser QA dependencies are optional task-specific tools.
 
@@ -35,7 +35,7 @@ make generate-mocks    # after mocked-interface/config edits; requires installed
 - Edit `cmd/app/wire.go`, regenerate `cmd/app/wire_gen.go`, and version both. Edit `docs/api/openapi.yml`, regenerate `internal/driver/web/api/openapi.gen.go`. Never hand-edit generated code or restore top-level generated directories.
 - The schema declares OpenAPI 3.2.1 and the generated header identifies oapi-codegen v2.8.0. Verify installed compatibility; do not silently downgrade. `make generate` runs OpenAPI, Wire and Mockery generators; `go generate ./cmd/app` also runs Wire. Inspect generated diffs.
 - `make test` runs JavaScript regressions and `go test ./...`. JavaScript requires Node.js or macOS JavaScriptCore, without npm packages. Preserve the JavaScriptCore success-marker check so asynchronous assertions cannot appear to pass.
-- `make fmt` runs the installed `golangci-lint fmt ./...` with gofmt and gci. Group imports as standard library, third-party packages, then `github/m-ridha/myjournal-app` packages, separated by blank lines and sorted alphabetically by import path within each group (including aliased imports). Apply this to all handwritten Go files, including tests, Wire inputs and spikes. `make lint` rejects drift. Generated code stays generator-owned and is excluded from formatter rewrites; regenerate it with the owning tool instead.
+- `make fmt` runs the installed `golangci-lint fmt ./...` with gofmt and gci. Group imports as standard library, third-party packages, then `myjournal-app` packages, separated by blank lines and sorted alphabetically by import path within each group (including aliased imports). Apply this to all handwritten Go files, including tests, Wire inputs and spikes. `make lint` rejects drift. Generated code stays generator-owned and is excluded from formatter rewrites; regenerate it with the owning tool instead.
 - Lint uses golangci-lint v2.14.0 (v2.13.2 cannot read Go 1.27.2 export data). For documentation-only changes, check links/paths, consistency, and `git diff --check`; runtime tests are unnecessary. Report unavailable tools and exact commands/results; never present historical checks as a fresh run.
 - Spikes also use port 3030. Do not kill an existing listener without establishing ownership.
 
@@ -52,19 +52,19 @@ make generate-mocks    # after mocked-interface/config edits; requires installed
 
 ## Architecture
 
-| Path | Responsibility |
-| --- | --- |
-| `cmd/app/` | Configuration, provider registration, Wire composition root |
-| `internal/core/journal/`, `internal/core/journal/storetest/` | Domain/use cases, Store/Clock ports, shared contracts |
-| `internal/core/connection/` | Connection/session models, lifecycle policy, ports, registry and application services |
-| `internal/driven/provider/{local,google}/` | Development filesystem and Google OAuth/Drive adapters |
-| `internal/driven/cache/cachestore/` | Journal cache decorator and consumer-owned byte-cache port |
-| `internal/driven/cache/local/{bigcache,lru}/`, `internal/driven/clock/` | Interchangeable BigCache (currently wired) and LRU storage, and system clock adapters |
-| `internal/driven/session/`, `internal/config/` | AES-GCM cookie codec and environment validation |
-| `internal/driver/web/`, `internal/driver/web/handler/`, `internal/driver/web/middleware/` | Router/pages, thin API handlers, focused middleware |
-| `internal/driver/web/api/openapi.gen.go` | Committed generated API code |
-| `internal/driver/web/i18n/`, `assets/` | Locale catalog, embedded templates/static files |
-| `tests/`, `spike/` | Browser regressions and standalone Google experiments |
+| Path                                                                                      | Responsibility                                                                        |
+| ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| `cmd/app/`                                                                                | Configuration, provider registration, Wire composition root                           |
+| `internal/core/journal/`, `internal/core/journal/storetest/`                              | Domain/use cases, Store/Clock ports, shared contracts                                 |
+| `internal/core/connection/`                                                               | Connection/session models, lifecycle policy, ports, registry and application services |
+| `internal/driven/provider/{local,google}/`                                                | Development filesystem and Google OAuth/Drive adapters                                |
+| `internal/driven/cache/cachestore/`                                                       | Journal cache decorator and consumer-owned byte-cache port                            |
+| `internal/driven/cache/local/{bigcache,lru}/`, `internal/driven/clock/`                   | Interchangeable BigCache (currently wired) and LRU storage, and system clock adapters |
+| `internal/driven/session/`, `internal/config/`                                            | AES-GCM cookie codec and environment validation                                       |
+| `internal/driver/web/`, `internal/driver/web/handler/`, `internal/driver/web/middleware/` | Router/pages, thin API handlers, focused middleware                                   |
+| `internal/driver/web/api/openapi.gen.go`                                                  | Committed generated API code                                                          |
+| `internal/driver/web/i18n/`, `assets/`                                                    | Locale catalog, embedded templates/static files                                       |
+| `tests/`, `spike/`                                                                        | Browser regressions and standalone Google experiments                                 |
 
 - Dependencies point inward. `.golangci.yml` enforces recursive core, driver, driven, cache-policy, codec and startup-configuration boundaries; only driving/driven test files may compose concrete adapters. Production web consumes an injected authsession.Codec and handler.ConnectionService plus core Catalog; only cmd/app constructs the codec and passes the validated session secret. Domain code must not import HTTP/chi, rendering, OAuth, Google APIs, filesystem, or database packages. Providers must not import web.
 - `journal.Service` owns open/save/delete/list/calendar. Handlers parse requests and call the injected session-scoped service factory through their consumer-owned JournalService interface; core constructors return concrete services. Only `cmd/app` wires concrete providers, cache adapters, and system clocks into production web/session code. `connection.Service` owns login, completion, disconnect and settings; HTTP owns cookie adaptation and response mapping; Gateway.RequiresLoginFlow declares pending-login policy independently of provider IDs. Session models/lifetimes belong to core, encryption to driven/session. Cache policy consumes `cachestore.ByteCache`; concrete cache storage belongs in `internal/driven/cache/local/` (ADR 017).

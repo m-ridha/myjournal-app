@@ -1,7 +1,7 @@
 package session
 
 import (
-	provider "github/m-ridha/myjournal-app/internal/core/connection"
+	provider "myjournal-app/internal/core/connection"
 )
 
 func EncodeLoginFlow(secret string, flow provider.LoginFlow) (string, error) {

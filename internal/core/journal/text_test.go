@@ -7,7 +7,7 @@ import (
 	"testing"
 	"unicode/utf8"
 
-	"github/m-ridha/myjournal-app/internal/testutil"
+	"myjournal-app/internal/testutil"
 )
 
 func TestUnicodePreview(t *testing.T) {

@@ -14,9 +14,9 @@ import (
 	"golang.org/x/oauth2"
 	"google.golang.org/api/drive/v3"
 
-	provider "github/m-ridha/myjournal-app/internal/core/connection"
-	"github/m-ridha/myjournal-app/internal/core/journal"
-	cachestore "github/m-ridha/myjournal-app/internal/driven/cache/cachestore"
+	provider "myjournal-app/internal/core/connection"
+	"myjournal-app/internal/core/journal"
+	cachestore "myjournal-app/internal/driven/cache/cachestore"
 )
 
 func collapseProvider(t *testing.T, block func(http.ResponseWriter, *http.Request) bool) (*Provider, *fakeDrive, *benchmarkRequests) {

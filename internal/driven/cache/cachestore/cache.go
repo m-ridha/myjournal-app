@@ -15,7 +15,7 @@ import (
 	"cloud.google.com/go/civil"
 	"golang.org/x/sync/errgroup"
 
-	"github/m-ridha/myjournal-app/internal/core/journal"
+	"myjournal-app/internal/core/journal"
 )
 
 // concurrent preview reads reduce cold-page waves while keeping I/O bounded.

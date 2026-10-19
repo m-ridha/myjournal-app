@@ -1,4 +1,4 @@
-module github/m-ridha/myjournal-app/railway-config
+module myjournal-app/railway-config
 
 go 1.27.2
 

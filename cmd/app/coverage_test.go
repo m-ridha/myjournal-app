@@ -9,11 +9,11 @@ import (
 	"sync"
 	"testing"
 
-	"github/m-ridha/myjournal-app/internal/config"
-	provider "github/m-ridha/myjournal-app/internal/core/connection"
-	"github/m-ridha/myjournal-app/internal/core/journal"
-	"github/m-ridha/myjournal-app/internal/driven/clock"
-	"github/m-ridha/myjournal-app/internal/driven/provider/local"
+	"myjournal-app/internal/config"
+	provider "myjournal-app/internal/core/connection"
+	"myjournal-app/internal/core/journal"
+	"myjournal-app/internal/driven/clock"
+	"myjournal-app/internal/driven/provider/local"
 )
 
 type failingStoreProvider struct{ provider.Provider }

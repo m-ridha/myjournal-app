@@ -4,11 +4,11 @@ import (
 	"crypto/rand"
 	"time"
 
-	"github/m-ridha/myjournal-app/internal/config"
-	provider "github/m-ridha/myjournal-app/internal/core/connection"
-	"github/m-ridha/myjournal-app/internal/core/journal"
-	"github/m-ridha/myjournal-app/internal/driven/session"
-	"github/m-ridha/myjournal-app/internal/driver/web/i18n"
+	"myjournal-app/internal/config"
+	provider "myjournal-app/internal/core/connection"
+	"myjournal-app/internal/core/journal"
+	"myjournal-app/internal/driven/session"
+	"myjournal-app/internal/driver/web/i18n"
 )
 
 type testClock func() time.Time

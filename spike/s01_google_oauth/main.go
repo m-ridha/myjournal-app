@@ -18,7 +18,7 @@ import (
 	"google.golang.org/api/idtoken"
 	"google.golang.org/api/option"
 
-	"github/m-ridha/myjournal-app/spike/internal/loginstate"
+	"myjournal-app/spike/internal/loginstate"
 )
 
 var pendingLogins loginstate.Store

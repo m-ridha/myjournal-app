@@ -4,8 +4,8 @@ import (
 	"context"
 	"strings"
 
-	provider "github/m-ridha/myjournal-app/internal/core/connection"
-	"github/m-ridha/myjournal-app/internal/core/journal"
+	provider "myjournal-app/internal/core/connection"
+	"myjournal-app/internal/core/journal"
 )
 
 // CallbackPath is the local development sign-in callback route.

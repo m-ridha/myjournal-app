@@ -8,8 +8,8 @@ import (
 	"net/http"
 	"time"
 
-	provider "github/m-ridha/myjournal-app/internal/core/connection"
-	"github/m-ridha/myjournal-app/internal/core/journal"
+	provider "myjournal-app/internal/core/connection"
+	"myjournal-app/internal/core/journal"
 )
 
 // Codec is the cookie serialization capability consumed by web delivery.

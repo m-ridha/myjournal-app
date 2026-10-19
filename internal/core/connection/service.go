@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"io"
 
-	"github/m-ridha/myjournal-app/internal/core/journal"
+	"myjournal-app/internal/core/journal"
 )
 
 // ErrProviderUnavailable identifies an unconfigured connection provider.

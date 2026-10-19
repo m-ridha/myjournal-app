@@ -9,7 +9,7 @@ import (
 
 	"google.golang.org/api/googleapi"
 
-	"github/m-ridha/myjournal-app/internal/core/journal"
+	"myjournal-app/internal/core/journal"
 )
 
 func retryRead[T any](ctx context.Context, call func() (T, error)) (T, error) {

@@ -8,7 +8,7 @@ import (
 	"testing/synctest"
 	"time"
 
-	"github/m-ridha/myjournal-app/internal/core/journal"
+	"myjournal-app/internal/core/journal"
 )
 
 func TestMutationWarmsValidatedContentAndAbsence(t *testing.T) {
