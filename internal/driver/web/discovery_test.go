@@ -16,7 +16,7 @@ import (
 
 func TestPublicDiscoveryRoutes(t *testing.T) {
 	t.Parallel()
-	for _, baseURL := range []string{"https://myjournal-ink.up.railway.app", "http://localhost:3030/"} {
+	for _, baseURL := range []string{"https://myjournal.ink", "http://localhost:3030/"} {
 		t.Run(baseURL, func(t *testing.T) {
 			cfg := config.Config{BaseURL: baseURL, SessionKey: "0123456789abcdef0123456789abcdef"}
 			router := newTestRouter(cfg, provider.NewRegistry(), clock.System{}, nil)

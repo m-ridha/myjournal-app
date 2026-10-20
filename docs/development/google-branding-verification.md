@@ -9,9 +9,9 @@ unrestricted release or change the existing restricted test-user policy.
 
 ## Public pages
 
-- Home: <https://myjournal-ink.up.railway.app/>
-- Privacy: <https://myjournal-ink.up.railway.app/privacy>
-- Terms: <https://myjournal-ink.up.railway.app/terms> (new local public route; deploy before configuring GCP)
+- Home: <https://myjournal.ink/>
+- Privacy: <https://myjournal.ink/privacy>
+- Terms: <https://myjournal.ink/terms> (new local public route; deploy before configuring GCP)
 - Consent-screen app name: myjournal (user reports corrected).
 
 Local updates explain journal functionality and limited Drive access, and disclose
