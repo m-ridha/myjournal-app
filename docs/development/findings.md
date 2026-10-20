@@ -1,5 +1,24 @@
 # Findings Log
 
+## Railway deployment labels (2026-10-20)
+
+The deployment helper explicitly supplied `--message "Release <commit SHA>"`,
+which explains the Railway labels shown in the user's screenshots. It now passes
+`Release <RELEASE_TAG>` so a published tag such as `v0.2.0-beta.1` produces
+`Release v0.2.0-beta.1`. The existing workflow already supplies and validates the
+tag. The helper requires a non-empty tag before configuration or upload; the
+success log retains the release tag, full source SHA and deployment ID. The exact
+source archive, deployment-ID polling and health verification remain unchanged.
+Historical labels are not renamed, and configuration-only deployments may still
+use Railway-generated labels.
+
+Fresh validation passed all 24 Python helper tests, including exact upload-label
+assertions, tag/SHA/deployment-ID logging and missing-tag rejection before any
+configuration or upload. `make fmt lint test` passed with zero lint issues, seven
+JavaScript suites and all Go packages; `git diff --check` passed. No live Railway
+change, release publication or deployment was performed. The new label will be
+visible on future CLI uploads after this code is included in the deployed release.
+
 ## Permanent domain migration (2026-10-20)
 
 Read-only Railway inspection found `myjournal.ink` verified with a valid TLS

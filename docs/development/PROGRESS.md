@@ -1,5 +1,9 @@
 # Progress
 
+## Railway deployment labels (2026-10-20)
+
+CLI-upload deployments now use `Release <release tag>` rather than the commit SHA as their Railway label. Workflow success logs retain the tag, full commit SHA and deployment ID. See [label validation](findings.md#railway-deployment-labels-2026-10-20).
+
 ## Permanent domain migration (2026-10-20)
 
 Adopted `https://myjournal.ink` and prepared its landing-page verification tag. Production Google login now starts on the configured HTTPS origin before creating host-only OAuth state; other routes preserve old-tab recovery access. Updated ownership guidance and documented separate Railway/GitHub origin settings and browser-storage migration limits. See [migration evidence](findings.md#permanent-domain-migration-2026-10-20) for verified configuration, human reports and outstanding release steps.
