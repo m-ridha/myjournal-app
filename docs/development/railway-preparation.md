@@ -1,19 +1,39 @@
 # Railway preparation
 
-Selected public origin: <https://myjournal-ink.up.railway.app>. The acceptance build is deployed. Public sign-in, synthetic save/reload/trash, post-restart read, list/calendar and sign-out have recorded evidence; Disconnect/reconnect is human-reported. See google-production-gates.md for remaining release conditions.
+Selected public origin: <https://myjournal.ink>. The acceptance build is deployed. Public sign-in, synthetic save/reload/trash, post-restart read, list/calendar and sign-out have recorded evidence; Disconnect/reconnect is human-reported. See google-production-gates.md for remaining release conditions.
+
+## Domain migration (2026-10-20)
+
+Railway runtime `APP_BASE_URL` is already `https://myjournal.ink`, confirmed by the
+user and public sitemap/OAuth redirect checks. GitHub Actions uses a separate
+production-environment `APP_BASE_URL` for release health verification; set that
+GitHub variable to the same origin too. It still named the temporary Railway
+hostname during the review. The release helper does not synchronize these values.
+
+The previous hostname remains reachable. Production Google login requests on
+another host redirect to the configured HTTPS login URL before any pending OAuth
+cookie is created. Callback requests stay on their original host; authorization
+codes and other query parameters are not forwarded by the login redirect.
+Existing editor/API requests are not redirected, preserving old-tab recovery.
+
+Sessions, sessionStorage drafts and browser preferences belong to each origin and
+do not migrate automatically. Save or copy unacknowledged text from the old tab
+before moving to the new domain, then sign in again. A new-domain sign-in does not
+renew the old tab's session. Keep recovery access until outstanding drafts are safe;
+retiring the old hostname is a separate operational step.
 
 ## Service setup
 
 Use one Railway service, one replica in one region, no extra writer service and no persistent disk/database. [`.railway/railway.go`](../../.railway/railway.go) defines Dockerfile builds, /healthz and the existing Singapore placement. All variable values remain managed on Railway. The app listens on all interfaces using Railway's PORT. Entries live in Google Drive; container data is ephemeral. Keep the accepted deployment-overlap/lost-update limits in ADR 016; one replica is not a distributed lock.
 
-Configure Railway variables:
+Configure Railway runtime variables:
 
-- `APP_BASE_URL=https://myjournal-ink.up.railway.app`
+- `APP_BASE_URL=https://myjournal.ink`
 - PROVIDERS=google, COOKIE_SECURE=true, GOOGLE_TEST_MODE=false, LOG_LEVEL=info
 - SESSION_KEY: stable base64-encoded 32 random bytes
 - GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET: existing Google Web OAuth client
 
-Supply secrets through Railway variables, never Git, Docker build arguments or chat. Keep SESSION_KEY stable across restart/rollback. Google Console callback is exactly <https://myjournal-ink.up.railway.app/api/v1/auth/google/callback>; preserve the four approved scopes. Keep the Console app/test-user restriction during controlled acceptance.
+Supply secrets through Railway variables, never Git, Docker build arguments or chat. Keep SESSION_KEY stable across restart/rollback. Google Console callback is exactly <https://myjournal.ink/api/v1/auth/google/callback>; preserve the four approved scopes. Keep the Console app/test-user restriction during controlled acceptance.
 
 The acceptance build permits non-test Google registration only for an HTTPS origin with COOKIE_SECURE=true. Test mode remains loopback-only. Deploy the reviewed acceptance commit through a controlled bootstrap and complete google-production-gates.md before setting release readiness. Startup eligibility is not proof of public acceptance.
 
@@ -27,7 +47,7 @@ Configure secret RAILWAY_TOKEN (project/environment-scoped deployment token), re
 
 The workflow uploads a git archive of the checked-out release commit rather than the working tree or branch head. Docker's build allowlist further limits image inputs. Git archive contains all tracked files: keep secrets, local data and private planning files untracked. Do not commit private files merely because Docker ignores them.
 
-The helper captures the upload's deploymentId, polls that exact ID until SUCCESS, and checks public /healthz. Raw CLI output is withheld to avoid leaking diagnostics. Failed/crashed/unknown status, timeout or CLI error fails CI. An accepted upload alone is not success. The CLI-upload deployment is traced to the archive and SHA in its message; this is not an independently measured runtime commit endpoint. Confirm the deployment in Railway when investigating ambiguous outcomes or concurrent manual changes.
+The helper captures the upload's deploymentId, polls that exact ID until SUCCESS, and checks public /healthz. Raw CLI output is withheld to avoid leaking diagnostics. Failed/crashed/unknown status, timeout or CLI error fails CI. An accepted upload alone is not success. The CLI-upload deployment is labeled `Release <release tag>` in Railway. The workflow success log records that tag, the full uploaded commit SHA and deployment ID for traceability; this is not an independently measured runtime commit endpoint. Confirm the deployment in Railway when investigating ambiguous outcomes or concurrent manual changes.
 
 Do not retry an ambiguous upload blindly: it may already be deploying. Workflow concurrency prevents overlapping jobs, but an interrupted job does not cancel Railway and pending GitHub runs are not a durable release queue. Inspect the dashboard before another deploy; avoid simultaneous manual deploys.
 

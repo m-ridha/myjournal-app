@@ -63,6 +63,7 @@ func newLocaleRouter(cfg Options, registry provider.Catalog, clk journal.Clock, 
 		api.WriteError(w, http.StatusForbidden, renderer.catalog.Text("errors.crossOrigin"))
 	}))
 	r.Use(protection.Handler)
+	r.Use(canonicalGoogleLogin(cfg.BaseURL))
 
 	if staticFS, err := fs.Sub(assets.FS, "static"); err == nil {
 		r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.FS(staticFS))))

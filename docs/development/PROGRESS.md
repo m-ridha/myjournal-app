@@ -1,5 +1,13 @@
 # Progress
 
+## Railway deployment labels (2026-10-20)
+
+CLI-upload deployments now use `Release <release tag>` rather than the commit SHA as their Railway label. Workflow success logs retain the tag, full commit SHA and deployment ID. See [label validation](findings.md#railway-deployment-labels-2026-10-20).
+
+## Permanent domain migration (2026-10-20)
+
+Adopted `https://myjournal.ink` and prepared its landing-page verification tag. Production Google login now starts on the configured HTTPS origin before creating host-only OAuth state; other routes preserve old-tab recovery access. Updated ownership guidance and documented separate Railway/GitHub origin settings and browser-storage migration limits. See [migration evidence](findings.md#permanent-domain-migration-2026-10-20) for verified configuration, human reports and outstanding release steps.
+
 ## Public repository preparation (2026-10-19)
 
 Prepared temporary startup-test storage, immutable GitHub Actions commit pins at the existing versions, and a private vulnerability-reporting policy. Production environment deployment access now accepts only `v*` tags. Secret scanning, push protection, private reporting and enforced main-branch protection remain follow-ups around the separately authorized visibility change; [settings and validation evidence](findings.md#public-repository-preparation-2026-10-19) records current availability and limits.
@@ -353,9 +361,9 @@ This section records scoped live observations; later Railway acceptance establis
 <https://console.cloud.google.com/auth/branding?project=myjournal-app-509305>
 reference: <https://support.google.com/cloud/answer/13464321?sjid=12620915019931986057-NC>
 
-- [ ] The website of your home page URL "<https://myjournal-ink.up.railway.app>" is not registered to you.
+- [ ] The website of your home page URL "<https://myjournal.ink>" is not registered to you.
 Verify ownership of your home page, then wait 24 hours before retrying to allow our systems to update.
-- [x] Your privacy policy page at "<https://myjournal-ink.up.railway.app/privacy>" does not have sufficient content.
+- [x] Your privacy policy page at "<https://myjournal.ink/privacy>" does not have sufficient content.
 We were unable to confirm your app's compliance. Please update your privacy policy to clearly and sufficiently detail your app's data collection and usage, then retry.
 - [x] Your home page is behind a login page.
 We were unable to confirm your app's compliance. Please update your home page to allow users to view information about your app without needing to login, then retry.
@@ -367,7 +375,7 @@ We were unable to confirm your app's compliance. Please configure your app with 
 
 ## Railway release preparation (2026-10-10)
 
-- [x] User selected Railway at <https://myjournal-ink.up.railway.app>; retain ADR 016 residual overlap/lost-update policy.
+- [x] User selected Railway at <https://myjournal.ink>; retain ADR 016 residual overlap/lost-update policy.
 - [x] Retain published GitHub Release trigger for stable vX.Y.Z tags; tag pushes alone do not deploy.
 - [x] Prepare Docker config, pinned CLI source upload, deployment-ID polling and public health verification; see [Railway preparation](railway-preparation.md).
 - [x] Railway container build/deployment and restricted-release logging review completed through public acceptance and v0.1.0. Local Docker smoke was unavailable; internal provider retention is not claimed.

@@ -101,7 +101,7 @@ def apply_configuration(environment):
 
 
 def deployment_configuration():
-    for key in ("APP_BASE_URL", "RAILWAY_TOKEN", "RAILWAY_SERVICE_ID", "RAILWAY_ENVIRONMENT_ID", "RAILWAY_PROJECT_ID"):
+    for key in ("APP_BASE_URL", "RAILWAY_TOKEN", "RAILWAY_SERVICE_ID", "RAILWAY_ENVIRONMENT_ID", "RAILWAY_PROJECT_ID", "RELEASE_TAG"):
         if not os.environ.get(key, "").strip():
             raise DeploymentError(f"Missing {key}")
     origin = os.environ["APP_BASE_URL"]
@@ -129,7 +129,7 @@ def main():
     os.chdir(Path(source).resolve())
     apply_configuration(environment)
     deploy = cli("up", "--project", project, "--service", service, "--environment", environment,
-                 "--detach", "--json", "--message", f"Release {commit}")
+                 "--detach", "--json", "--message", f"Release {os.environ['RELEASE_TAG']}")
     if not isinstance(deploy, dict) or not deploy.get("deploymentId"):
         raise DeploymentError("Missing deployment ID; inspect Railway before retrying")
     deployment_id = deploy["deploymentId"]
@@ -139,7 +139,7 @@ def main():
         try:
             with urllib.request.urlopen(origin + "/healthz", timeout=15) as response:
                 if response.status == 200 and response.url == origin + "/healthz":
-                    print(f"Railway deployment {deployment_id} succeeded for uploaded release {commit}; health passed")
+                    print(f"Railway deployment {deployment_id} succeeded for uploaded release {os.environ['RELEASE_TAG']} ({commit}); health passed")
                     return
         except urllib.error.URLError:
             pass

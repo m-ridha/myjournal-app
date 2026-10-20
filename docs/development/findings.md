@@ -1,5 +1,58 @@
 # Findings Log
 
+## Railway deployment labels (2026-10-20)
+
+The deployment helper explicitly supplied `--message "Release <commit SHA>"`,
+which explains the Railway labels shown in the user's screenshots. It now passes
+`Release <RELEASE_TAG>` so a published tag such as `v0.2.0-beta.1` produces
+`Release v0.2.0-beta.1`. The existing workflow already supplies and validates the
+tag. The helper requires a non-empty tag before configuration or upload; the
+success log retains the release tag, full source SHA and deployment ID. The exact
+source archive, deployment-ID polling and health verification remain unchanged.
+Historical labels are not renamed, and configuration-only deployments may still
+use Railway-generated labels.
+
+Fresh validation passed all 24 Python helper tests, including exact upload-label
+assertions, tag/SHA/deployment-ID logging and missing-tag rejection before any
+configuration or upload. `make fmt lint test` passed with zero lint issues, seven
+JavaScript suites and all Go packages; `git diff --check` passed. No live Railway
+change, release publication or deployment was performed. The new label will be
+visible on future CLI uploads after this code is included in the deployed release.
+
+## Permanent domain migration (2026-10-20)
+
+Read-only Railway inspection found `myjournal.ink` verified with a valid TLS
+certificate, target port 8080, one Singapore replica, no volumes or staged changes
+and a successful latest deployment. Public health and sitemap requests returned
+200 with one-year host-only HSTS; sitemap URLs and the Google authorization
+redirect use the permanent origin. The user supplied Railway runtime-variable
+evidence confirming `APP_BASE_URL=https://myjournal.ink`. The separate GitHub
+production `APP_BASE_URL` still named the Railway hostname during review and needs
+alignment for release health checks; no GitHub or Railway setting was changed by
+this PR update.
+
+The old hostname still served the app and started OAuth with a host-only pending
+cookie, but used the new-domain callback. The browser cannot send that old-host
+cookie to the new callback. The fix redirects only production GET Google-login
+starts on a different host to the configured login URL before provider access or
+cookie creation. It discards query parameters, ignores forwarded host headers and
+leaves callbacks, editor/API routes, unsafe methods and HTTP development origins
+unchanged. Browser sessions/drafts cannot transfer between these origins; the
+migration guide preserves recovery access and requires saving/copying text first.
+
+The user confirmed in PR #51 that sign-in, cookie, save/reload, restart and cleanup
+checks were rerun successfully on the new domain. These remain human-reported
+acceptance, not newly automated Google evidence. The new HTML verification tag was
+absent from the deployed landing page during review, so deploy it before Search
+Console verification. Google branding approval remains separate from both Search
+Console ownership and the restricted test-user release policy.
+
+Fresh `make fmt lint test` passed with zero lint issues, seven JavaScript suites
+and all Go packages. All 36 separate architecture probes passed and cleaned up.
+Focused race-enabled login, discovery and verification-tag tests passed.
+`git diff --check` passed. No live Google consent, settings changes, release or
+deployment was performed for this update.
+
 ## Public repository preparation (2026-10-19)
 
 `TestBuildApp` uses `t.TempDir()` instead of a persistent `.devdata-test` directory and registers application cleanup before temporary-directory cleanup. Assertions in the touched test follow the Testify convention. Both workflows pin all eight external Action references to official commit SHAs resolved from their existing v7/v9 tags (the lint Action's annotated tag was peeled to its commit). Dependabot already covers GitHub Actions. `SECURITY.md` provides a private reporting link and a non-sensitive fallback when the form is unavailable.
@@ -923,7 +976,7 @@ Replaced chi default Recoverer with focused web middleware logging only a generi
 
 Static follow-up found http.Server.ErrorLog unset, allowing net/http to print raw diagnostic/panic values and peer addresses outside router recovery. Added a generic server log writer which discards supplied diagnostic bytes and emits only HTTP server error through the configured slog default. Wired ErrorLog in wire.go and regenerated wire_gen.go; inspected generated changes. A regression injects synthetic sensitive diagnostic data and verifies only the generic event is emitted. The tradeoff is intentionally reduced low-level diagnostic detail. Startup review found configuration validation returns fixed messages without credential values; startup logs use validated base URL, port and provider IDs, while listener/shutdown errors remain operational errors. Embedded template/locale initialization can panic on build-owned assets, not runtime journal content. Request logs intentionally retain query-free paths (including entry dates), status/duration and request IDs; Google logs retain bounded categories. No production log sink/proxy retention audit was performed. Fresh make fmt lint test passes; git diff --check passes.
 
-Railway preparation (2026-10-10): user selected <https://myjournal-ink.up.railway.app>. Published GitHub Releases remain the trigger. Prepared pinned CLI upload from an exact git archive, deployment-ID status polling and public health verification. No actual deployment is claimed. Initial public GET /healthz returned 404; Google composition-root registration remains localhost-only and public acceptance is pending.
+Railway preparation (2026-10-10): user selected <https://myjournal.ink>. Published GitHub Releases remain the trigger. Prepared pinned CLI upload from an exact git archive, deployment-ID status polling and public health verification. No actual deployment is claimed. Initial public GET /healthz returned 404; Google composition-root registration remains localhost-only and public acceptance is pending.
 
 Railway preparation validation: fresh make fmt lint test passed (0 lint issues), all seven architecture probes passed, actionlint passed both workflows, three offline deployment-status regressions passed and git diff --check passed. Official Railway JSON schema was downloaded, but local jsonschema tooling was unavailable; schema validation and authenticated deployment remain pending.
 

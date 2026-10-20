@@ -21,7 +21,7 @@ SERVICE_ID = "test-service"
 ORIGIN = "https://journal.example"
 CONFIGURATION = {"APP_BASE_URL": ORIGIN, "RAILWAY_TOKEN": "synthetic-token",
                  "RAILWAY_PROJECT_ID": PROJECT_ID, "RAILWAY_SERVICE_ID": SERVICE_ID,
-                 "RAILWAY_ENVIRONMENT_ID": ENVIRONMENT_ID}
+                 "RAILWAY_ENVIRONMENT_ID": ENVIRONMENT_ID, "RELEASE_TAG": "v0.2.0-beta.1"}
 
 
 class DeploymentTests(unittest.TestCase):
@@ -166,10 +166,12 @@ class DeploymentTests(unittest.TestCase):
         chdir.assert_called_once_with(Path("/synthetic-archive"))
         self.assertEqual(calls[0], ("apply",))
         self.assertEqual(calls[1], ("up", "--project", PROJECT_ID, "--service", SERVICE_ID,
-                                  "--environment", ENVIRONMENT_ID, "--detach", "--json", "--message", "Release " + "a" * 40))
+                                  "--environment", ENVIRONMENT_ID, "--detach", "--json", "--message", "Release v0.2.0-beta.1"))
         self.assertEqual(calls[2][0:2], ("deployment", "list"))
         health.assert_called_once_with(ORIGIN + "/healthz", timeout=15)
         self.assertIn("release-deployment", output.call_args.args[0])
+        self.assertIn("v0.2.0-beta.1", output.call_args.args[0])
+        self.assertIn("a" * 40, output.call_args.args[0])
 
     def test_go_configuration_graph(self):
         # Evaluate offline using the same entry point and context as the CLI.
