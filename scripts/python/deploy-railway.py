@@ -84,7 +84,7 @@ def validate_plan(plan, environment):
                 raise DeploymentError("Railway plan must retain one replica and health checks")
 
 
-def apply_configuration(project, service, environment):
+def apply_configuration(environment):
     with tempfile.TemporaryDirectory(prefix="myjournal-railway-plan-") as folder:
         plan_path = Path(folder) / "plan.json"
         cli("config", "plan", "--environment", environment, "--json", "--out", str(plan_path))
@@ -127,7 +127,7 @@ def main():
     origin, project, service, environment = deployment_configuration()
     # Only archive contents are uploaded: no working-tree .env, credentials or private notes.
     os.chdir(Path(source).resolve())
-    apply_configuration(project, service, environment)
+    apply_configuration(environment)
     deploy = cli("up", "--project", project, "--service", service, "--environment", environment,
                  "--detach", "--json", "--message", f"Release {commit}")
     if not isinstance(deploy, dict) or not deploy.get("deploymentId"):

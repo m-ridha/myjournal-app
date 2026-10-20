@@ -84,7 +84,7 @@ class DeploymentTests(unittest.TestCase):
                 Path(args[args.index("--out") + 1]).write_text(json.dumps(self.plan()))
             return {"ok": True, "changeSet": {"changes": []}}
         with patch.object(module, "cli", side_effect=cli):
-            module.apply_configuration(PROJECT_ID, SERVICE_ID, ENVIRONMENT_ID)
+            module.apply_configuration(ENVIRONMENT_ID)
         self.assertEqual([call[:2] for call in calls], [("config", "plan"),
                                                       ("config", "apply"), ("config", "plan")])
         self.assertEqual(calls[0][calls[0].index("--out") + 1], calls[1][calls[1].index("--plan") + 1])
@@ -99,7 +99,7 @@ class DeploymentTests(unittest.TestCase):
             return {}
         with patch.object(module, "cli", side_effect=cli) as mocked:
             with self.assertRaises(module.DeploymentError):
-                module.apply_configuration(PROJECT_ID, SERVICE_ID, ENVIRONMENT_ID)
+                module.apply_configuration(ENVIRONMENT_ID)
         self.assertEqual(mocked.call_count, 1)
 
     def test_configuration_must_converge(self):
@@ -109,7 +109,7 @@ class DeploymentTests(unittest.TestCase):
             return {"ok": False, "changeSet": {"changes": []}}
         with patch.object(module, "cli", side_effect=cli):
             with self.assertRaisesRegex(module.DeploymentError, "did not converge"):
-                module.apply_configuration(PROJECT_ID, SERVICE_ID, ENVIRONMENT_ID)
+                module.apply_configuration(ENVIRONMENT_ID)
 
     def test_configuration_failure_prevents_source_upload(self):
         env = CONFIGURATION
