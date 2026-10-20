@@ -1,5 +1,9 @@
 # Progress
 
+## Permanent domain migration (2026-10-20)
+
+Adopted `https://myjournal.ink` and prepared its landing-page verification tag. Production Google login now starts on the configured HTTPS origin before creating host-only OAuth state; other routes preserve old-tab recovery access. Updated ownership guidance and documented separate Railway/GitHub origin settings and browser-storage migration limits. See [migration evidence](findings.md#permanent-domain-migration-2026-10-20) for verified configuration, human reports and outstanding release steps.
+
 ## Public repository preparation (2026-10-19)
 
 Prepared temporary startup-test storage, immutable GitHub Actions commit pins at the existing versions, and a private vulnerability-reporting policy. Production environment deployment access now accepts only `v*` tags. Secret scanning, push protection, private reporting and enforced main-branch protection remain follow-ups around the separately authorized visibility change; [settings and validation evidence](findings.md#public-repository-preparation-2026-10-19) records current availability and limits.

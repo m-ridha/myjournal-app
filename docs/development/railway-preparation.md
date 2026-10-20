@@ -2,11 +2,31 @@
 
 Selected public origin: <https://myjournal.ink>. The acceptance build is deployed. Public sign-in, synthetic save/reload/trash, post-restart read, list/calendar and sign-out have recorded evidence; Disconnect/reconnect is human-reported. See google-production-gates.md for remaining release conditions.
 
+## Domain migration (2026-10-20)
+
+Railway runtime `APP_BASE_URL` is already `https://myjournal.ink`, confirmed by the
+user and public sitemap/OAuth redirect checks. GitHub Actions uses a separate
+production-environment `APP_BASE_URL` for release health verification; set that
+GitHub variable to the same origin too. It still named the temporary Railway
+hostname during the review. The release helper does not synchronize these values.
+
+The previous hostname remains reachable. Production Google login requests on
+another host redirect to the configured HTTPS login URL before any pending OAuth
+cookie is created. Callback requests stay on their original host; authorization
+codes and other query parameters are not forwarded by the login redirect.
+Existing editor/API requests are not redirected, preserving old-tab recovery.
+
+Sessions, sessionStorage drafts and browser preferences belong to each origin and
+do not migrate automatically. Save or copy unacknowledged text from the old tab
+before moving to the new domain, then sign in again. A new-domain sign-in does not
+renew the old tab's session. Keep recovery access until outstanding drafts are safe;
+retiring the old hostname is a separate operational step.
+
 ## Service setup
 
 Use one Railway service, one replica in one region, no extra writer service and no persistent disk/database. [`.railway/railway.go`](../../.railway/railway.go) defines Dockerfile builds, /healthz and the existing Singapore placement. All variable values remain managed on Railway. The app listens on all interfaces using Railway's PORT. Entries live in Google Drive; container data is ephemeral. Keep the accepted deployment-overlap/lost-update limits in ADR 016; one replica is not a distributed lock.
 
-Configure Railway variables:
+Configure Railway runtime variables:
 
 - `APP_BASE_URL=https://myjournal.ink`
 - PROVIDERS=google, COOKIE_SECURE=true, GOOGLE_TEST_MODE=false, LOG_LEVEL=info

@@ -1,5 +1,39 @@
 # Findings Log
 
+## Permanent domain migration (2026-10-20)
+
+Read-only Railway inspection found `myjournal.ink` verified with a valid TLS
+certificate, target port 8080, one Singapore replica, no volumes or staged changes
+and a successful latest deployment. Public health and sitemap requests returned
+200 with one-year host-only HSTS; sitemap URLs and the Google authorization
+redirect use the permanent origin. The user supplied Railway runtime-variable
+evidence confirming `APP_BASE_URL=https://myjournal.ink`. The separate GitHub
+production `APP_BASE_URL` still named the Railway hostname during review and needs
+alignment for release health checks; no GitHub or Railway setting was changed by
+this PR update.
+
+The old hostname still served the app and started OAuth with a host-only pending
+cookie, but used the new-domain callback. The browser cannot send that old-host
+cookie to the new callback. The fix redirects only production GET Google-login
+starts on a different host to the configured login URL before provider access or
+cookie creation. It discards query parameters, ignores forwarded host headers and
+leaves callbacks, editor/API routes, unsafe methods and HTTP development origins
+unchanged. Browser sessions/drafts cannot transfer between these origins; the
+migration guide preserves recovery access and requires saving/copying text first.
+
+The user confirmed in PR #51 that sign-in, cookie, save/reload, restart and cleanup
+checks were rerun successfully on the new domain. These remain human-reported
+acceptance, not newly automated Google evidence. The new HTML verification tag was
+absent from the deployed landing page during review, so deploy it before Search
+Console verification. Google branding approval remains separate from both Search
+Console ownership and the restricted test-user release policy.
+
+Fresh `make fmt lint test` passed with zero lint issues, seven JavaScript suites
+and all Go packages. All 36 separate architecture probes passed and cleaned up.
+Focused race-enabled login, discovery and verification-tag tests passed.
+`git diff --check` passed. No live Google consent, settings changes, release or
+deployment was performed for this update.
+
 ## Public repository preparation (2026-10-19)
 
 `TestBuildApp` uses `t.TempDir()` instead of a persistent `.devdata-test` directory and registers application cleanup before temporary-directory cleanup. Assertions in the touched test follow the Testify convention. Both workflows pin all eight external Action references to official commit SHAs resolved from their existing v7/v9 tags (the lint Action's annotated tag was peeled to its commit). Dependabot already covers GitHub Actions. `SECURITY.md` provides a private reporting link and a non-sensitive fallback when the form is unavailable.

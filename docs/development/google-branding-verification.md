@@ -1,9 +1,10 @@
 # Google branding verification
 
-Status: local pages and Search Console HTML tag prepared on 2026-10-11; deployment, ownership verification and Google acceptance pending.
+Status: the permanent public origin is `https://myjournal.ink` (2026-10-20). The custom-domain Search Console tag is prepared in PR #51; its deployment, Search Console verification and Google branding acceptance remain separate steps.
 
-The user selected the current Railway URL for the first ownership attempt and
-<support@myjournal.ink> for public support. Confirm the mailbox receives messages
+The first ownership attempt used the temporary Railway hostname. The current
+URL-prefix property uses `https://myjournal.ink/`; public support remains
+<support@myjournal.ink>. Confirm the mailbox receives messages
 before publishing the policy. Branding verification does not itself authorize
 unrestricted release or change the existing restricted test-user policy.
 
@@ -11,7 +12,7 @@ unrestricted release or change the existing restricted test-user policy.
 
 - Home: <https://myjournal.ink/>
 - Privacy: <https://myjournal.ink/privacy>
-- Terms: <https://myjournal.ink/terms> (new local public route; deploy before configuring GCP)
+- Terms: <https://myjournal.ink/terms>
 - Consent-screen app name: myjournal (user reports corrected).
 
 Local updates explain journal functionality and limited Drive access, and disclose
@@ -30,10 +31,12 @@ Railway and links Google's Limited Use policy. No expanded scopes are needed.
 3. Deploy the approved page changes and verification tag through the authorized
    release process. Confirm home/privacy respond without signing in, without a
    crawler-blocking challenge or rate limit, with readable desktop/mobile layouts.
-4. Click Verify in Search Console. If OAuth branding still rejects the shared
-   Railway hostname, inspect Google's required top private domain. URL-prefix
-   verification alone is not proof the OAuth domain requirement is satisfied;
-   a user-owned custom domain may be needed. Do not claim ownership of railway.app.
+4. Click Verify for the `https://myjournal.ink/` URL-prefix property in Search
+   Console. Configure `myjournal.ink` as the authorized domain in Google OAuth
+   branding and retain the exact callback
+   `https://myjournal.ink/api/v1/auth/google/callback` on the existing Web OAuth
+   client. URL-prefix verification alone does not establish Google branding
+   approval. Do not claim ownership of railway.app.
 5. After ownership is accepted, wait at least the 24 hours requested by Google's
    rejection notice. Ensure branding home/privacy/terms links exactly match these pages
    and the name is myjournal, then retry branding verification.
