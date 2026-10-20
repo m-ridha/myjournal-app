@@ -55,7 +55,7 @@ class DeploymentTests(unittest.TestCase):
 
     def test_release_event_gate(self):
         event = {"action": "published", "release": {"tag_name": "v0.2.0", "draft": False, "prerelease": False}}
-        cases = [("release", event, True), ("push", event, False), ("workflow_dispatch", event, True)]
+        cases = [("release", event, True), ("push", event, False), ("workflow_dispatch", event, False)]
         for field, value in [("draft", True), ("prerelease", True), ("tag_name", "main")]:
             changed = copy.deepcopy(event)
             changed["release"][field] = value
