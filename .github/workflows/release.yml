@@ -1,6 +1,19 @@
 name: Release to Railway
 
 on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Repository ref to run from"
+        required: true
+        default: main
+        type: string
+      release_tag:
+        description: "Package version used for release"
+        required: true
+        default: v0.0.0
+        type: string
+
   release:
     types: [published]
 
@@ -21,7 +34,7 @@ jobs:
     permissions:
       contents: read
     env:
-      RELEASE_TAG: ${{ github.event.release.tag_name }}
+      RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
     steps:
       - name: Validate release tag
         shell: bash
@@ -31,7 +44,7 @@ jobs:
           }
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: ${{ github.event.release.tag_name }}
+          ref: ${{ github.event.release.tag_name || inputs.ref }}
           fetch-depth: 0
           persist-credentials: false
       - name: Verify release is from main
@@ -57,9 +70,7 @@ jobs:
           make test-architecture
           go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 ./...
       - name: Install pinned Railway CLI
-        run: |
-          npm install --global --allow-scripts=@railway/cli @railway/cli@5.68.0
-          railway --version
+        run: npm install --global @railway/cli@5.70.0
       - name: Deploy release source and verify health
         env:
           APP_BASE_URL: ${{ vars.APP_BASE_URL }}

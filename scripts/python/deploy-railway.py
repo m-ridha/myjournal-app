@@ -42,7 +42,12 @@ def wait_for_success(fetch, deployment_id, deadline, sleep=time.sleep, now=time.
 
 
 def validate_release_event():
-    if os.environ.get("GITHUB_EVENT_NAME") != "release":
+    event_name = os.environ.get("GITHUB_EVENT_NAME")
+
+    if event_name == "workflow_dispatch":
+        return
+
+    if event_name != "release":
         raise DeploymentError("Production deployment requires a published GitHub Release")
     try:
         event = json.loads(Path(os.environ["GITHUB_EVENT_PATH"]).read_text())

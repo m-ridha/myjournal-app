@@ -43,6 +43,9 @@ test-js:
 	  done; \
 	else echo "Browser interaction tests require Node.js or macOS JavaScriptCore (jsc)."; exit 1; fi
 
+test-release-script:
+	python3 -B -m unittest discover -s scripts/python -p test_deploy_railway.py
+
 # Run separately: this temporarily adds forbidden imports and invokes lint.
 test-architecture:
 	sh scripts/shell/check-architecture.sh
