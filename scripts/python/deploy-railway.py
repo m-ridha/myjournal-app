@@ -85,7 +85,6 @@ def validate_plan(plan, environment):
 
 
 def apply_configuration(project, service, environment):
-    cli("link", "--project", project, "--service", service, "--environment", environment, "--json")
     with tempfile.TemporaryDirectory(prefix="myjournal-railway-plan-") as folder:
         plan_path = Path(folder) / "plan.json"
         cli("config", "plan", "--environment", environment, "--json", "--out", str(plan_path))

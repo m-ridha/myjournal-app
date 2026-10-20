@@ -85,11 +85,11 @@ class DeploymentTests(unittest.TestCase):
             return {"ok": True, "changeSet": {"changes": []}}
         with patch.object(module, "cli", side_effect=cli):
             module.apply_configuration(PROJECT_ID, SERVICE_ID, ENVIRONMENT_ID)
-        self.assertEqual([call[:2] for call in calls], [("link", "--project"), ("config", "plan"),
+        self.assertEqual([call[:2] for call in calls], [("config", "plan"),
                                                       ("config", "apply"), ("config", "plan")])
-        self.assertEqual(calls[1][calls[1].index("--out") + 1], calls[2][calls[2].index("--plan") + 1])
-        self.assertIn("--yes", calls[2])
-        self.assertNotIn("--confirm-destructive", calls[2])
+        self.assertEqual(calls[0][calls[0].index("--out") + 1], calls[1][calls[1].index("--plan") + 1])
+        self.assertIn("--yes", calls[1])
+        self.assertNotIn("--confirm-destructive", calls[1])
 
     def test_invalid_configuration_stops_before_apply(self):
         def cli(*args):
@@ -100,7 +100,7 @@ class DeploymentTests(unittest.TestCase):
         with patch.object(module, "cli", side_effect=cli) as mocked:
             with self.assertRaises(module.DeploymentError):
                 module.apply_configuration(PROJECT_ID, SERVICE_ID, ENVIRONMENT_ID)
-        self.assertEqual(mocked.call_count, 2)
+        self.assertEqual(mocked.call_count, 1)
 
     def test_configuration_must_converge(self):
         def cli(*args):
