@@ -82,7 +82,7 @@ func TestHomepageIncludesOwnershipVerification(t *testing.T) {
 	body := res.Body.String()
 	end := strings.Index(body, "</head>")
 	require.GreaterOrEqual(t, end, 0)
-	require.True(t, strings.Contains(body[:end], `<meta name="google-site-verification" content="Y1nEpISYFro2F4U1Cn7uCKAddTlEXzDb6wYu4IiH-cA" />`))
+	require.Contains(t, body[:end], `<meta name="google-site-verification" content="Y1nEpISYFro2F4U1Cn7uCKAddTlEXzDb6wYu4IiH-cA" />`)
 }
 
 func TestPrivatePagesRedirectWithoutSession(t *testing.T) {
