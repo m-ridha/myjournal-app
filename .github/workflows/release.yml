@@ -1,19 +1,6 @@
 name: Release to Railway
 
 on:
-  workflow_dispatch:
-    inputs:
-      ref:
-        description: "Repository ref to run from"
-        required: true
-        default: main
-        type: string
-      release_tag:
-        description: "Package version used for release"
-        required: true
-        default: v0.0.0
-        type: string
-
   release:
     types: [published]
 
@@ -34,7 +21,7 @@ jobs:
     permissions:
       contents: read
     env:
-      RELEASE_TAG: ${{ github.event.release.tag_name || inputs.release_tag }}
+      RELEASE_TAG: ${{ github.event.release.tag_name }}
     steps:
       - name: Validate release tag
         shell: bash
@@ -44,7 +31,7 @@ jobs:
           }
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          ref: ${{ github.event.release.tag_name || inputs.ref }}
+          ref: ${{ github.event.release.tag_name }}
           fetch-depth: 0
           persist-credentials: false
       - name: Verify release is from main

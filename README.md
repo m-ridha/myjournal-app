@@ -107,5 +107,3 @@ See [Google integration checks](docs/development/testing.md#google-integration) 
 Production infrastructure is defined in [`.railway/railway.go`](.railway/railway.go), with its own pinned Go SDK module. The same published-release job validates and applies a pinned infrastructure plan before uploading release source; PRs, merges and tag pushes do not apply infrastructure or deploy. Railway variables and secrets remain managed on Railway. See [IaC operations](.railway/README.md).
 
 The workflow retains the repository-variable gate `RAILWAY_RELEASE_READY=true`. Configure `RAILWAY_PROJECT_ID` as a repository variable, `APP_BASE_URL`, `RAILWAY_SERVICE_ID` and `RAILWAY_ENVIRONMENT_ID` as production-environment variables, and `RAILWAY_TOKEN` as a secret. Keep one replica and branch autodeploys disabled. Maintain the same `SESSION_KEY` across restart/rollback; rollback does not revert Drive writes. Never commit credentials, cookies or journal content.
-
-The workflow currently also exposes manual dispatch; [status](docs/development/status.md#outstanding-work) records its discrepancy with the published-release-only policy.

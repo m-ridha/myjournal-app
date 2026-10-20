@@ -57,7 +57,7 @@ Read the relevant guide before changing these behaviors:
 
 Restricted Google Testing release acceptance is complete; do not reopen accepted experiments routinely or describe it as unrestricted Console publication. Consult status for evidence/limits. Console publishing and live release actions require task authorization.
 
-The intended release policy is published non-prerelease GitHub Releases only, with main ancestry/code checks, serialized deployments, clean source archives, exact deployment-ID polling and public health verification. The current manual-dispatch discrepancy is documented in status. PR/merge/tag-push paths must remain offline. Do not deploy to validate a documentation change.
+The release policy is published non-prerelease GitHub Releases only, with main ancestry/code checks, serialized deployments, clean source archives, exact deployment-ID polling and public health verification. PR/merge/tag-push paths must remain offline. Do not deploy to validate a documentation change.
 
 Railway IaC lives in `.railway/railway.go` in its own module; see [.railway/README.md](.railway/README.md). Keep variables unmanaged, the pinned-plan restrictions, existing production target, one Singapore replica and post-apply convergence checks. Do not restore railway.json or attach a GitHub branch source. Preserve SESSION_KEY across rollback; rollback does not revert Drive writes. RAILWAY_TOKEN stays a secret, never a plain variable.
 

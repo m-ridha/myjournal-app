@@ -32,7 +32,7 @@ GitHub configuration:
 | APP_BASE_URL, RAILWAY_SERVICE_ID, RAILWAY_ENVIRONMENT_ID | production environment variables |
 | RAILWAY_TOKEN | Secret, preferably production-environment scoped; repository secret supported |
 
-The intended release path publishes a non-prerelease GitHub Release with a validated vX.Y.Z tag (optional hyphen suffix, no leading zeros in core numbers or + metadata). Tag pushes, PRs and merges alone do not deploy. The current workflow also exposes manual dispatch with separate ref and release_tag inputs; this is a policy discrepancy tracked in [status](status.md), not an instruction to use it.
+The release path publishes a non-prerelease GitHub Release with a validated vX.Y.Z tag (optional hyphen suffix, no leading zeros in core numbers or + metadata). Tag pushes, PRs and merges alone do not deploy. Manual dispatch is not supported.
 
 The release job checks main ancestry and code, serializes production deployment, applies a restricted pinned infrastructure plan, verifies convergence, then uploads a clean git archive with RELEASE_VERSION. The helper rejects unexpected targets, resource creation/deletion and variable changes. It polls the exact deployment ID for SUCCESS and verifies public `/healthz`. Inspect ambiguous deployments before retrying. Release publishing or live infrastructure changes require task authorization.
 
