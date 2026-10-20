@@ -70,7 +70,9 @@ jobs:
           make test-architecture
           go run golang.org/x/vuln/cmd/govulncheck@v1.8.0 ./...
       - name: Install pinned Railway CLI
-        run: npm install --global @railway/cli@5.70.0
+        run: |
+          npm install --global --allow-scripts=@railway/cli @railway/cli@5.70.0
+          railway --version
       - name: Deploy release source and verify health
         env:
           APP_BASE_URL: ${{ vars.APP_BASE_URL }}
