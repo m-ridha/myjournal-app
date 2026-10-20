@@ -49,3 +49,6 @@ test-release-script:
 # Run separately: this temporarily adds forbidden imports and invokes lint.
 test-architecture:
 	sh scripts/shell/check-architecture.sh
+
+show-go-coverage:
+	$(GOCMD) tool cover -html=coverage.out
