@@ -12,14 +12,15 @@ GitHub Release is published, tag/main-ancestry validation and code checks pass,
 and `RAILWAY_RELEASE_READY=true`. Tag pushes, PRs and merges do not deploy.
 PR checks evaluate the Go graph offline without Railway credentials.
 
-The release helper links the exact existing project/service/environment, writes
-a temporary pinned plan outside the upload archive, rejects resource creation,
-deletion, variable changes and unexpected targets, applies that plan without
-destructive authorization, and verifies convergence before uploading release
-source. Deployment-ID SUCCESS polling and public `/healthz` verification follow.
-The first apply removes the GitHub source attachment; CLI archives are the sole
-application source. Configuration applies can themselves trigger deployment work
-within that release job; one replica still permits temporary revision overlap.
+The release helper targets the configured environment via `RAILWAY_TOKEN`
+and `--environment`, writes a temporary pinned plan outside the upload archive,
+rejects resource creation, deletion, variable changes and unexpected targets,
+applies that plan without destructive authorization, and verifies convergence
+before uploading release source. Deployment-ID SUCCESS polling and public
+`/healthz` verification follow. The first apply removes the GitHub source
+attachment; CLI archives are the sole application source. Configuration
+applies can themselves trigger deployment work within that release job; one
+replica still permits temporary revision overlap.
 
 Do not run `config apply` or `config migrate --apply` manually. For a read-only
 review, export `RAILWAY_PROJECT_ID` and `RAILWAY_ENVIRONMENT_ID` matching the
