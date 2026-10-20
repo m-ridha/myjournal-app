@@ -26,15 +26,19 @@ go.work.sum
 
 # env file
 .env
-.devdata/
+.env.*
+!.env.example
 build/
 *.log
+*.pem
+*.key
 .DS_Store
 
 # generated
 /generated
 /.omm
-# wire_gen.go
+.devdata/
+.devdata*/
 
 # Editor/IDE
 .idea/

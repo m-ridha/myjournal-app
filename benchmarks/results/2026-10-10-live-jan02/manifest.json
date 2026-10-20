@@ -1,7 +1,0 @@
-{
-  "source": "user attachment; result.date identifies January 2",
-  "build_browser_network": "not independently recorded",
-  "cache_state": "unverified",
-  "cleanup": "reported verified; not checked independently",
-  "console_history": "Pending earlier invocation and results arriving after newer commands; possible overlap. Do not pool runs or claim controlled sequential execution."
-}
