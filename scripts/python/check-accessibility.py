@@ -1,4 +1,4 @@
-"""Optional local browser QA; see docs/development/ui-acceptance-checks.md."""
+"""Optional local browser QA; see docs/development/testing.md."""
 
 import argparse
 import asyncio

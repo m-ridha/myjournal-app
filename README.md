@@ -1,8 +1,12 @@
 # myjournal-app
 
+<p align="center">
+  <img src="assets/static/logo/myjournal-app-logo-120x120.png" alt="myjournal-app Logo" width="120" height="120">
+</p>
+
 A Go app for one plain-text journal entry per day, stored in the user's Google Drive. The app uses a JSON API and vanilla JavaScript with server-rendered templates; production has no user database or persistent journal storage.
 
-Contributor instructions are in [AGENTS.md](AGENTS.md). See [progress](docs/development/PROGRESS.md), [findings](docs/development/findings.md), and the [phase acceptance requirements](docs/development/phase-acceptance.md) for evidence and remaining work.
+Contributor instructions are in [AGENTS.md](AGENTS.md). See [requirements](docs/development/requirements.md), [architecture](docs/development/architecture.md), [testing](docs/development/testing.md), [operations](docs/development/operations.md) and [current status](docs/development/status.md).
 
 ## Features
 
@@ -12,7 +16,7 @@ Contributor instructions are in [AGENTS.md](AGENTS.md). See [progress](docs/deve
 - Google sign-in and Drive storage, with a local provider for development.
 - English and Bahasa Indonesia interfaces, selectable from the header or Settings, including before sign-in. Your choice stays in this browser after sign-out; English is the default.
 
-The app is online-only. Browser drafts provide recovery rather than offline synchronization. Checksum comparisons are non-atomic; simultaneous external Drive edits are unsupported. See [ADR 016](docs/development/adr/016-restricted-google-release.md) for deployment and writer constraints.
+The app is online-only. Browser drafts provide recovery rather than offline synchronization. Checksum comparisons are non-atomic; simultaneous external Drive edits are unsupported. See [deployment limitations](docs/development/status.md#accepted-technical-limits) for deployment and writer constraints.
 
 ## Prerequisites
 
@@ -52,7 +56,7 @@ After cloning the repository and entering its root directory:
 
 ```sh
 go mod download
-cp .env.example .env
+test -e .env || cp .env.example .env
 openssl rand -base64 32
 ```
 
@@ -84,9 +88,9 @@ make test-architecture
 
 Run architecture probes separately from other lint/build processes because they temporarily add forbidden imports. Lint requires golangci-lint v2.14.0. `make test` runs seven JavaScript regression suites and `go test ./...`; JavaScript uses Node.js or macOS JavaScriptCore without npm packages. Run only browser interaction regressions with `make test-js`. Go unit tests use Testify assertions and Mockery-generated interface mocks. Prefer named table-driven subtests for cases sharing the same setup and assertions; keep stateful storage/HTTP fixtures and concurrency scenarios explicit. Generated mocks are test-only and checked for drift in PR CI.
 
-Optional tooling is separate from the local quick start: Python 3 runs the helper-script tests (`python3 -B -m unittest discover -s scripts/python -p 'test_*.py'`); Docker with a running daemon is needed for `docker build -t myjournal-local .`. The [UI acceptance guide](docs/development/ui-acceptance-checks.md) documents the additional browser/accessibility setup. None of these tools is needed by `make run`.
+Optional tooling is separate from the local quick start: Python 3 runs the helper-script tests (`python3 -B -m unittest discover -s scripts/python -p 'test_*.py'`); Docker with a running daemon is needed for `docker build -t myjournal-local .`. The [testing guide](docs/development/testing.md) documents the additional browser/accessibility setup. None of these tools is needed by `make run`.
 
-The [editor recovery checklist](docs/development/editor-recovery-checks.md) and [UI acceptance checks](docs/development/ui-acceptance-checks.md) document manual coverage. Optional accessibility tooling is separate from ordinary CI. PR creation and updates run formatting, lint, tests and architecture checks.
+The testing guide also covers editor recovery and manual UI checks. PR creation and updates run formatting, lint, tests and architecture checks.
 
 ## Architecture
 
@@ -94,12 +98,14 @@ The [editor recovery checklist](docs/development/editor-recovery-checks.md) and 
 
 ## Google integration testing
 
-See [Google live checks](docs/development/google-live-checks.md) for the localhost opt-in, Console callback and synthetic-data checks. Keep `GOOGLE_TEST_MODE=false` for ordinary local development. `GOOGLE_TEST_MODE=true` permits integrated Google testing only on localhost/loopback; non-test Google requires an HTTPS origin and Secure cookies. Preserve the approved `openid`, `email`, `profile` and `drive.file` scopes.
+See [Google integration checks](docs/development/testing.md#google-integration) for the localhost opt-in, Console callback and synthetic-data checks. Keep `GOOGLE_TEST_MODE=false` for ordinary local development. `GOOGLE_TEST_MODE=true` permits integrated Google testing only on localhost/loopback; non-test Google requires an HTTPS origin and Secure cookies. Preserve the approved `openid`, `email`, `profile` and `drive.file` scopes.
 
 ## Railway releases
 
-[Railway preparation](docs/development/railway-preparation.md) documents configuration, privacy and rollback. Publishing a non-prerelease GitHub Release with a `vX.Y.Z` tag and optional version suffix deploys that tag's source after main-ancestry and code checks. A tag push alone does not deploy. The workflow polls the exact Railway deployment ID and verifies public health.
+[Operations](docs/development/operations.md) documents configuration, privacy and rollback. Publishing a non-prerelease GitHub Release with a `vX.Y.Z` tag and optional version suffix deploys that tag's source after main-ancestry and code checks. A tag push alone does not deploy. The workflow polls the exact Railway deployment ID and verifies public health.
 
 Production infrastructure is defined in [`.railway/railway.go`](.railway/railway.go), with its own pinned Go SDK module. The same published-release job validates and applies a pinned infrastructure plan before uploading release source; PRs, merges and tag pushes do not apply infrastructure or deploy. Railway variables and secrets remain managed on Railway. See [IaC operations](.railway/README.md).
 
 The workflow retains the repository-variable gate `RAILWAY_RELEASE_READY=true`. Configure `RAILWAY_PROJECT_ID` as a repository variable, `APP_BASE_URL`, `RAILWAY_SERVICE_ID` and `RAILWAY_ENVIRONMENT_ID` as production-environment variables, and `RAILWAY_TOKEN` as a secret. Keep one replica and branch autodeploys disabled. Maintain the same `SESSION_KEY` across restart/rollback; rollback does not revert Drive writes. Never commit credentials, cookies or journal content.
+
+The workflow currently also exposes manual dispatch; [status](docs/development/status.md#outstanding-work) records its discrepancy with the published-release-only policy.

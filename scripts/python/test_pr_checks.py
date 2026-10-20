@@ -14,7 +14,7 @@ class ChangeSelectionTests(unittest.TestCase):
     def test_paths(self):
         cases = {
             "README.md": False,
-            "benchmarks/results/run/raw.json": False,
+            "new-data.json": True,
             ".gitignore": False,
             "internal/core/journal/service.go": True,
             "go.sum": True,
@@ -64,7 +64,7 @@ class BuildSelectionTests(unittest.TestCase):
     def test_feature_and_documentation_changes(self):
         for path in ["internal/core/journal/service.go", "assets/static/js/app.js",
                      "assets/templates/pages/editor.html", "README.md", ".github/README.md",
-                     "benchmarks/results/run/raw.json", ".gitignore"]:
+                     ".gitignore"]:
             with self.subTest(path=path):
                 self.assertFalse(requires_build_checks([path]))
 
