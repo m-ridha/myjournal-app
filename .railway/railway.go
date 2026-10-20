@@ -27,7 +27,6 @@ func Railway(ctx railway.Context) map[string]any {
 		"deploy": map[string]any{
 			"healthcheckPath":         "/healthz",
 			"healthcheckTimeout":      300,
-			"restartPolicyType":       "ON_FAILURE",
 			"restartPolicyMaxRetries": 3,
 			"runtime":                 "V2",
 			"useLegacyStacker":        false,
