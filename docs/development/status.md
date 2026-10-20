@@ -15,7 +15,6 @@ This is a compact record of accepted evidence and remaining work, not a chronolo
 ## Outstanding work
 
 - Confirm deployment of the custom-domain Search Console tag, ownership verification and Google's branding decision. Previous notes recorded these as pending; page changes or successful HTTPS alone do not close them. Confirm support mailbox delivery and public policy URLs before submission.
-- Align the release workflow with the published-release-only policy: it currently also permits workflow_dispatch with separately supplied ref/version. This consolidation documents the discrepancy without changing deployment behavior.
 - Complete remaining broad UI/accessibility acceptance when required; preserve the explicitly accepted physical-device waiver and existing coverage limits. Automated accessibility tooling complements manual review.
 - Unrestricted Google publication is a separate human decision with Console requirements; it is not implied by making source public.
 - Before changing repository visibility, verify availability/enforcement of secret scanning, push protection, private vulnerability reporting and main-branch protection. Inspect remaining GitHub-hosted material, including the unavailable Actions log if recoverable, and newly published material since the completed secret review. Visibility changes require separate authorization; do not repeat completed history scanning merely because its old report was removed.
