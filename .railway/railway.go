@@ -34,7 +34,7 @@ func Railway(ctx railway.Context) map[string]any {
 		},
 	})
 	graph := railway.ProjectNamed("myjournal", []any{app}).Graph()
-	// SDK v0.3.0 has no project variable-policy helper. CLI 5.68.0 accepts
+	// SDK v0.3.0 has no project variable-policy helper. The pinned CLI accepts
 	// this graph field and leaves every Railway variable outside IaC ownership.
 	graph["variables"] = map[string]any{"managed": false}
 	return graph

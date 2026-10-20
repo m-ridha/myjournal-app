@@ -7,7 +7,6 @@ import subprocess
 def is_non_runtime_file(path):
     return (
         path.endswith(".md")
-        or path.startswith("benchmarks/results/")
         or path in {".gitignore", "LICENSE", ".markdownlint-cli2.jsonc"}
         or path.endswith("/.gitkeep")
     )
@@ -42,7 +41,7 @@ def main():
         output.write(f"run_build_checks={str(build_checks).lower()}\n")
     with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
         summary.write("Running application PR checks.\n" if code_checks
-                      else "Skipping checks: only documentation/results or other non-runtime files changed.\n")
+                      else "Skipping checks: only documentation or other non-runtime files changed.\n")
 
         summary.write(f"Build/configuration validation: {'enabled' if build_checks else 'skipped'}.\n")
 

@@ -4,10 +4,10 @@
 Go authoring SDK v0.3.0 in this isolated module. The application module has no
 Railway SDK dependency. The release job supplies `APP_BASE_URL`,
 `RAILWAY_PROJECT_ID`, `RAILWAY_ENVIRONMENT_ID` and `RAILWAY_SERVICE_ID` from
-GitHub variables. CLI 5.68.0 evaluates the graph, including its explicit
+GitHub variables. CLI 5.70.0 evaluates the graph, including its explicit
 unmanaged-variable policy; secrets and all other variable values stay on Railway.
 
-Only `.github/workflows/release.yml` applies configuration, after a regular
+The intended path in `.github/workflows/release.yml` applies configuration after a regular
 GitHub Release is published, tag/main-ancestry validation and code checks pass,
 and `RAILWAY_RELEASE_READY=true`. Tag pushes, PRs and merges do not deploy.
 PR checks evaluate the Go graph offline without Railway credentials.
@@ -33,3 +33,8 @@ The configuration deliberately targets the existing Singapore region. Changing
 service identity, regions, variables or resource topology requires reviewing the
 release helper's restrictions too. Keep one replica and existing secrets,
 especially `SESSION_KEY`; rollback does not revert Google Drive content.
+
+The workflow also currently exposes manual dispatch with separate ref/version inputs.
+This conflicts with the intended published-release-only policy; see
+[status](../docs/development/status.md#outstanding-work). Do not use that path as a
+substitute for publishing an authorized release.
