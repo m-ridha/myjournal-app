@@ -81,7 +81,7 @@ func TestHomepageIncludesOwnershipVerification(t *testing.T) {
 	h.ServeHTTP(res, httptest.NewRequest(http.MethodGet, "/", nil))
 	body := res.Body.String()
 	end := strings.Index(body, "</head>")
-	require.NotEmpty(t, end)
+	require.GreaterOrEqual(t, end, 0)
 	require.True(t, strings.Contains(body[:end], `<meta name="google-site-verification" content="Y1nEpISYFro2F4U1Cn7uCKAddTlEXzDb6wYu4IiH-cA" />`))
 }
 
