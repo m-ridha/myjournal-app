@@ -10,12 +10,17 @@ This is a compact record of accepted evidence and remaining work, not a chronolo
 - Focused Chrome UI acceptance includes native 200% zoom, keyboard/error focus, sampled non-text contrast and human-reported screen-reader announcements. Device-toolbar coverage was accepted instead of physical-phone testing. These checks do not establish full WCAG conformance or complete UI acceptance.
 - The user reports the custom-domain HTTPS connection now works and Railway APP_BASE_URL is https://myjournal.ink. This is a human report, not a new infrastructure audit.
 
+- The dedicated pre-publication secret review covered publishable Git history and available GitHub-hosted material with no detected secrets; one Actions log was unavailable. This is secret-scan evidence, not a complete vulnerability audit. The user explicitly permits their GitHub username and author/committer email in history.
+
 ## Outstanding work
 
 - Confirm deployment of the custom-domain Search Console tag, ownership verification and Google's branding decision. Previous notes recorded these as pending; page changes or successful HTTPS alone do not close them. Confirm support mailbox delivery and public policy URLs before submission.
 - Align the release workflow with the published-release-only policy: it currently also permits workflow_dispatch with separately supplied ref/version. This consolidation documents the discrepancy without changing deployment behavior.
 - Complete remaining broad UI/accessibility acceptance when required; preserve the explicitly accepted physical-device waiver and existing coverage limits. Automated accessibility tooling complements manual review.
 - Unrestricted Google publication is a separate human decision with Console requirements; it is not implied by making source public.
+- Before changing repository visibility, verify availability/enforcement of secret scanning, push protection, private vulnerability reporting and main-branch protection. Inspect remaining GitHub-hosted material, including the unavailable Actions log if recoverable, and newly published material since the completed secret review. Visibility changes require separate authorization; do not repeat completed history scanning merely because its old report was removed.
+- The 85%-per-maintained-function coverage goal remains incomplete. The last recorded audit met it for 236 of 241 functions; that historical count is not a measurement of the current tree. Retain the numeric p75 latency targets in requirements without claiming they passed.
+- Final footer visual checks, Docker image validation and deployed-version checks were still outstanding in the prior acceptance record. Confirm responsive alignment, release label rendering and the deployed build version before marking those gates complete.
 
 ## Accepted technical limits
 
