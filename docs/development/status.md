@@ -4,7 +4,7 @@ This is a compact record of accepted evidence and remaining work, not a chronolo
 
 ## Accepted baseline
 
-- Restricted Google test-user release acceptance is complete. The first published-release workflow, v0.1.0, passed on 2026-10-10. This does not mean unrestricted Google Console publication.
+- Google Console OAuth application publication is In Production (public) with verified branding ("myjournal"). Restricted Google test-user acceptance previously passed with release workflow v0.1.0 on 2026-10-10.
 - Recorded automated coverage includes domain/storage contracts, synthetic OAuth/session cases, recovery/autosave/browser regressions, architecture boundaries and release helper restrictions. Synthetic checks do not establish actual Google token omission, external-writer atomicity or live latency.
 - Recorded integrated/public evidence covers sign-in, synthetic save/read/trash, restart refresh, navigation/sign-out, health/HSTS, cookie attributes and rollback/restoration. Public Google Disconnect/reconnect was human-reported. A restart/read exercises refresh acquisition; actual refresh-token omission was not observed in the integrated flow.
 - Focused Chrome UI acceptance includes native 200% zoom, keyboard/error focus, sampled non-text contrast and human-reported screen-reader announcements. Device-toolbar coverage was accepted instead of physical-phone testing. These checks do not establish full WCAG conformance or complete UI acceptance.
@@ -14,16 +14,17 @@ This is a compact record of accepted evidence and remaining work, not a chronolo
 
 ## Outstanding work
 
-- Confirm deployment of the custom-domain Search Console tag, ownership verification and Google's branding decision. Previous notes recorded these as pending; page changes or successful HTTPS alone do not close them. Confirm support mailbox delivery and public policy URLs before submission.
+- ~~Confirm deployment of the custom-domain Search Console tag, ownership verification and Google's branding decision.~~ Google branding verification is complete: the OAuth consent screen displays "myjournal" and the verification status reads "Your branding has been verified and is being shown to users."
+- ~~Remove loopback redirect URIs from the production Web OAuth client in Google Console.~~ The production client's loopback redirect has been removed. A separate Desktop app client is used for local testing; Desktop app clients permit loopback redirects by design and do not trigger the App Security warning. Its credentials remain local and it is never used in production.
 - Complete remaining broad UI/accessibility acceptance when required; preserve the explicitly accepted physical-device waiver and existing coverage limits. Automated accessibility tooling complements manual review.
-- Unrestricted Google publication is a separate human decision with Console requirements; it is not implied by making source public.
+- ~~Unrestricted Google publication is a separate human decision with Console requirements; it is not implied by making source public.~~ Google Console OAuth application publication is complete and live In Production with verified branding.
 - Before changing repository visibility, verify availability/enforcement of secret scanning, push protection, private vulnerability reporting and main-branch protection. Inspect remaining GitHub-hosted material, including the unavailable Actions log if recoverable, and newly published material since the completed secret review. Visibility changes require separate authorization; do not repeat completed history scanning merely because its old report was removed.
 - The 85%-per-maintained-function coverage goal remains incomplete. The last recorded audit met it for 236 of 241 functions; that historical count is not a measurement of the current tree. Retain the numeric p75 latency targets in requirements without claiming they passed.
 - Final footer visual checks, Docker image validation and deployed-version checks were still outstanding in the prior acceptance record. Confirm responsive alignment, release label rendering and the deployed build version before marking those gates complete.
 
 ## Accepted technical limits
 
-- Google Console Testing can expire Drive refresh tokens after seven days while the app cookie lasts 30 days. Reconnection must preserve text and account consistency.
+- Google refresh tokens can be revoked or expire under Google OAuth policies (e.g., account password reset, 6-month inactivity or limit overruns) while the app cookie lasts 30 days. Reconnection must preserve text and account consistency.
 - Checksum comparison/upload is non-atomic. Same-process locks, generation guards and one replica do not eliminate external-writer or deployment-overlap lost updates/duplicate files. Avoid simultaneous external editing; do not claim multi-instance safety or deliberately scale out.
 - Ordinary reads may reuse two-minute entry/absence snapshots. Cross-process/direct Drive edits can remain temporarily invisible. Content is bounded in process memory; lazy expiry does not guarantee immediate byte erasure. No production persistent journal/session store is introduced.
 - Performance optimizations reduce synthetic request counts but do not establish passed live latency targets. Removed benchmark result files are not evidence available in this tree. The retained browser benchmark harness is optional tooling, not production telemetry.

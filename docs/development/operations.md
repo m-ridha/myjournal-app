@@ -8,7 +8,7 @@ Use synthetic data for operational checks. Never record credentials, account cla
 
 SESSION_KEY must encode 32 random bytes in base64. Keep it private and stable across restarts/rollback; rotating it invalidates existing encrypted sessions. Startup validates configuration before composing adapters. Never print `.env` or request decrypted Railway variables.
 
-For localhost Google testing, privately configure GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET, PROVIDERS=google, GOOGLE_TEST_MODE=true, COOKIE_SECURE=false and the localhost base URL. Register exactly `http://localhost:3030/api/v1/auth/google/callback`. Restore PROVIDERS=local and GOOGLE_TEST_MODE=false afterward. Ordinary production Google configuration uses HTTPS, COOKIE_SECURE=true and GOOGLE_TEST_MODE=false.
+For localhost Google testing, use a **separate Desktop app OAuth client** in Google Console; Desktop app clients permit loopback redirects by design and do not trigger App Security warnings. Do not add loopback redirect URIs to the production Web application client; Google flags loopback redirects on production Web clients as an insecure flow vulnerable to authorization-code interception. Privately configure the dev client's GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET, PROVIDERS=google, GOOGLE_TEST_MODE=true, COOKIE_SECURE=false and the localhost base URL. Restore PROVIDERS=local and GOOGLE_TEST_MODE=false afterward. Ordinary production Google configuration uses the production client ID/secret, HTTPS, COOKIE_SECURE=true and GOOGLE_TEST_MODE=false.
 
 ## Domain and Google branding
 
@@ -16,9 +16,9 @@ The production origin is `https://myjournal.ink`. Home, `/privacy` and `/terms` 
 
 Railway serves certificates for configured custom domains. A www hostname needs its own hosting/HTTPS redirect configuration and DNS; apex configuration does not establish www support. Do not assume a registrar redirect supports HTTPS without verifying it. Canonical Google login redirects use the configured origin before creating login cookies; keep old editor tabs available for recovery rather than redirecting every API/editor request.
 
-For branding ownership, use Search Console's exact `https://myjournal.ink/` URL-prefix property with an authorized project owner/editor. Keep the landing-page google-site-verification meta tag deployed after verification. Confirm public home/privacy/terms availability and support@myjournal.ink delivery. Verify ownership, align Google branding name/home/privacy/terms, and follow Google's rejection-specific wait instructions before resubmission. Search Console ownership does not establish branding approval or authorize unrestricted publication. See [current outstanding work](status.md).
+Google branding verification and application publication are complete: the OAuth consent screen shows "myjournal" with verified branding, and the publishing status is In Production (public). Keep the landing-page google-site-verification meta tag deployed, and keep public home/privacy/terms available and support@myjournal.ink deliverable. See [status](status.md).
 
-Request only openid, email, profile and drive.file. Do not broaden scope to discover manually created folders. Google Console remains Testing: Drive grants normally face a seven-day refresh-token limit despite the application's fixed 30-day session cookie. Publishing/verification is a separate human-managed decision.
+Request only openid, email, profile and drive.file. Do not broaden scope to discover manually created folders. With the application In Production, refresh tokens are not restricted by Testing mode's seven-day expiry, while the application maintains its fixed 30-day session cookie. Reconnection preserves text and account consistency across token refresh or expiry.
 
 ## Railway releases
 

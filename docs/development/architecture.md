@@ -37,7 +37,7 @@ Production has no user database or server-side session store. AES-GCM encrypts/a
 
 A separate ten-minute pending-login cookie holds state, PKCE and nonce. Validate callback shape, provider binding, age and state before exchanging a code; validate ID-token signature, claims and nonce. There is one pending login per browser. Stateless cookie deletion is not a replay ledger; code single use and PKCE remain necessary. Preserve an omitted refresh token only for a validated same-account reconnect; reject unexpected account switches.
 
-Only request `openid`, `email`, `profile` and `https://www.googleapis.com/auth/drive.file`. Local providers and GOOGLE_TEST_MODE require exact localhost/loopback origins. Ordinary Google startup requires HTTPS and Secure cookies. Configuration rejects invalid session keys and unknown/duplicate providers.
+Only request `openid`, `email`, `profile` and `https://www.googleapis.com/auth/drive.file`. Local providers and GOOGLE_TEST_MODE require exact localhost/loopback origins; use a separate Desktop app OAuth client for this—Desktop app clients permit loopback redirects by design without triggering App Security warnings, and do not share credentials with the production Web application client (see [operations](../development/operations.md)). Ordinary Google startup requires HTTPS and Secure cookies. Configuration rejects invalid session keys and unknown/duplicate providers.
 
 ## Bounded caching
 
