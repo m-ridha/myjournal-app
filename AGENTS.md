@@ -48,14 +48,14 @@ Read the relevant guide before changing these behaviors:
 - Preserve plain-text UTF-8/LF files, appProperties discovery, read-without-create, non-destructive duplicate handling, confirmed trash and future-date rejection. Drive compare/upload is non-atomic; do not claim external/multi-instance safety.
 - Preserve text and drafts on failures, conflicts, expiry and ambiguous acknowledgements. Keep account/date/tab scope, fresh reconciliation, one in-flight save, acknowledged-version chaining and explicit review of recovered drafts. Authentication recovery never silently navigates away, switches accounts or treats expiry as successful logout.
 - Logout/revocation acknowledgement precedes draft cleanup. Cleanup-only retries never repeat revocation. Browser storage failures must remain truthful. Closed-tab backup expiry is accepted.
-- Keep fixed 30-day session age, ten-minute pending-login state/PKCE/nonce, same-account omitted-refresh preservation and startup HTTPS/Secure-cookie checks. Testing Google refresh tokens may expire sooner.
+- Keep fixed 30-day session age, ten-minute pending-login state/PKCE/nonce, same-account omitted-refresh preservation and startup HTTPS/Secure-cookie checks. Reconnection preserves text and drafts across token refresh or expiry.
 - Preserve same-origin protections/CSP, safe text rendering, external local scripts, host-only configured-origin HSTS and query-free logs. Never log/commit credentials, tokens, codes, callback queries, cookies, account claims or journal content. Never request decrypted Railway variables.
 - Cache freshness, singleflight bounds and warming remain optional performance policy, not atomicity guarantees. Never seed snapshots from potentially out-of-order save acknowledgements. Drain HTTP and join warming before cache cleanup.
 - Preserve EN/ID flat locale keys, accessible theme-aware assets, keyboard/live-region behavior and latest-request-only calendar rendering. Keep theme controls in the header, Monday week start and current product non-goals.
 
 ## Google and releases
 
-Restricted Google Testing release acceptance is complete; do not reopen accepted experiments routinely or describe it as unrestricted Console publication. Consult status for evidence/limits. Console publishing and live release actions require task authorization.
+Google Console OAuth application publication is In Production with verified branding. Consult status for evidence/limits. Live release actions require task authorization.
 
 The release policy is published non-prerelease GitHub Releases only, with main ancestry/code checks, serialized deployments, clean source archives, exact deployment-ID polling and public health verification. PR/merge/tag-push paths must remain offline. Do not deploy to validate a documentation change.
 
