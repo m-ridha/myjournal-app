@@ -39,6 +39,7 @@ Documentation-only changes need path/link checks, consistency review and `git di
 - Propagate context through I/O and cancelable lock waits. Bound memory, coordination, concurrency and external work. Prefer operation-scoped reuse before persistent caching. Preserve invalidation/generation guards and state where guarantees stop at process boundaries.
 - Use focused functions, guard clauses and useful exported documentation. Place compile-time interface assertions immediately below the implementing struct, grouped for that struct.
 - `make fmt` owns handwritten Go formatting. Imports group standard library, third-party, then myjournal-app, alphabetically within each group including aliases. Generated code stays excluded from formatter rewrites.
+- Write all handwritten code for human readability rather than compactness, including Go, HTML/templates, JavaScript, Python, CSS and shell scripts. Use descriptive names, clear control flow, consistent indentation and whitespace that separates logical steps. Expand blocks and nested markup across lines; avoid packing multiple statements, branches or declarations onto one line. Break long expressions and attribute lists at natural boundaries when the language permits, and keep simple expressions concise when that is clearer. For example, CSS rules use one declaration per line between the opening and closing brace lines. Follow idiomatic language conventions and configured formatters (including Go formatting); leave generated output to its generator and avoid unrelated formatting churn.
 
 ## UI design consistency
 
