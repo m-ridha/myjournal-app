@@ -8,7 +8,7 @@ This is a compact record of accepted evidence and remaining work, not a chronolo
 - Recorded automated coverage includes domain/storage contracts, synthetic OAuth/session cases, recovery/autosave/browser regressions, architecture boundaries and release helper restrictions. Synthetic checks do not establish actual Google token omission, external-writer atomicity or live latency.
 - Recorded integrated/public evidence covers sign-in, synthetic save/read/trash, restart refresh, navigation/sign-out, health/HSTS, cookie attributes and rollback/restoration. Public Google Disconnect/reconnect was human-reported. A restart/read exercises refresh acquisition; actual refresh-token omission was not observed in the integrated flow.
 - Focused Chrome UI acceptance includes native 200% zoom, keyboard/error focus, sampled non-text contrast and human-reported screen-reader announcements. Device-toolbar coverage was accepted instead of physical-phone testing. These checks do not establish full WCAG conformance or complete UI acceptance.
-- The user reports the custom-domain HTTPS connection now works and Railway APP_BASE_URL is https://myjournal.ink. This is a human report, not a new infrastructure audit.
+- The user reports the custom-domain HTTPS connection now works and Railway APP_BASE_URL is <https://myjournal.ink>. This is a human report, not a new infrastructure audit.
 
 - The dedicated pre-publication secret review covered publishable Git history and available GitHub-hosted material with no detected secrets; one Actions log was unavailable. This is secret-scan evidence, not a complete vulnerability audit. The user explicitly permits their GitHub username and author/committer email in history.
 
