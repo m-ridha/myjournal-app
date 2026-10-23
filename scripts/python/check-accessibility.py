@@ -77,6 +77,30 @@ async def check_keyboard(page):
     return sorted(visited)
 
 
+async def check_public_fragment_offsets(browser, base):
+    # Test native fragment navigation, including without JavaScript.
+    for javascript in [True, False]:
+        context = await browser.new_context(java_script_enabled=javascript)
+        page = await context.new_page()
+        try:
+            for theme in ['light', 'dark']:
+                await page.emulate_media(color_scheme=theme)
+                for width in [1280, 640, 375, 320]:
+                    await page.set_viewport_size({'width': width, 'height': 900})
+                    for path in ['/help', '/en/help', '/id/help']:
+                        await page.goto(base + path + '#drive-access')
+                        heading = await page.locator('#drive-access h2').bounding_box()
+                        header = await page.locator('.mj-header').bounding_box()
+                        assert heading and header
+                        assert heading['y'] >= header['y'] + header['height'] + 8, {
+                            'path': path, 'width': width, 'theme': theme,
+                            'javascript': javascript, 'heading': heading, 'header': header,
+                        }
+                        assert heading['y'] + heading['height'] <= 900
+        finally:
+            await context.close()
+
+
 async def run_browser(base, axe_script):
     scans, keyboard, errors = [], {}, []
     public_payloads = {}
@@ -97,6 +121,7 @@ async def run_browser(base, axe_script):
         else:
             raise RuntimeError('Owned test server did not become healthy')
 
+        await check_public_fragment_offsets(browser, base)
         await page.goto(base + '/api/v1/auth/local/login')
         await page.wait_for_function("!document.querySelector('[data-entry-text]').readOnly")
         for theme in ['light', 'dark']:

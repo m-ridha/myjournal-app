@@ -912,6 +912,17 @@ html[data-theme="dark"] .icon-moon {
   max-width: 48rem;
 }
 
+/* Leave the section heading visible below the sticky header on fragment navigation. */
+.mj-public-copy [id] {
+  scroll-margin-top: 6rem;
+}
+
+@media (max-width: 640px) {
+  .mj-public-copy [id] {
+    scroll-margin-top: 12rem;
+  }
+}
+
 .mj-public-copy > header,
 .mj-public-copy > section {
   margin-bottom: 2rem;
