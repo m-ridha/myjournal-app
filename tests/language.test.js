@@ -11,7 +11,7 @@ const menu = element({ hidden: true });
 const options = [element({ dataset: { languageOption: 'en' }, textContent: 'English', lang: 'en' }), element({ dataset: { languageOption: 'id' }, textContent: 'Bahasa Indonesia', lang: 'id' })];
 const nodes = { 'select': select, '[data-language-custom]': custom, '[data-language-trigger]': trigger, '[data-language-value]': label, '[role="listbox"]': menu };
 const picker = element({ hasAttribute() { return false; }, closest() { return {}; }, querySelector(key) { return nodes[key]; }, querySelectorAll() { return options; }, contains(node) { return Object.values(nodes).includes(node) || options.includes(node); } });
-globalThis.document = element({ activeElement: trigger, querySelectorAll() { return [picker]; } });
+globalThis.document = element({ activeElement: trigger, querySelectorAll(selector) { return selector === "[data-language-picker]" ? [picker] : []; } });
 if (typeof require === 'function') (0, eval)(require('node:fs').readFileSync('assets/static/js/language.js', 'utf8'));
 else load('assets/static/js/language.js');
 const key = value => picker.events.keydown({ key: value, preventDefault() { } });

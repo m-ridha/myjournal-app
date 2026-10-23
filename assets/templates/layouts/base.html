@@ -59,6 +59,17 @@
               <span class="icon icon-moon" aria-hidden="true"></span>
             </span>
           </button>
+          {{with .Public}}
+          <details class="mj-header-language" data-header-language data-public-language>
+            <summary class="mj-header-icon" aria-label="{{t "nav.changeLanguage"}}">
+              <span class="mj-language-globe" aria-hidden="true"></span><span>{{upper $.Locale}}</span>
+            </summary>
+            <nav class="mj-language-options" aria-label="{{t "nav.changeLanguage"}}">
+              <a href="{{.EnglishPath}}" lang="en" hreflang="en"{{if eq $.Locale "en"}} aria-current="page"{{end}}>English</a>
+              <a href="{{.IndonesianPath}}" lang="id" hreflang="id"{{if eq $.Locale "id"}} aria-current="page"{{end}}>Bahasa Indonesia</a>
+            </nav>
+          </details>
+          {{else}}
           <form class="mj-header-language" data-header-language method="post" action="/settings/language">
             <div data-language-picker data-language-autosubmit>
               <a class="mj-header-icon" data-language-fallback href="/settings" aria-label="{{t "nav.changeLanguage"}}"><span class="mj-language-globe" aria-hidden="true"></span><span>{{upper .Locale}}</span></a>
@@ -79,6 +90,7 @@
               </div>
             </div>
           </form>
+          {{end}}
           <a class="mj-header-icon" href="/settings" aria-label="{{t "nav.settings"}}" title="{{t "nav.settings"}}">
             <span class="icon icon-gear" aria-hidden="true"></span>
           </a>
@@ -131,12 +143,7 @@
           <span class="mj-footer-copyright"><span>{{t "footer.copyright"}}</span> <a class="mj-footer-github" href="https://github.com/m-ridha" aria-label="{{t "footer.github"}}" title="{{t "footer.github"}}"><span class="icon icon-github" aria-hidden="true"></span></a></span>
         </span>
       </div>
-      {{with .Public}}
-        <nav class="mj-public-languages" aria-label="{{t "nav.changeLanguage"}}">
-          <a href="{{.EnglishPath}}" lang="en" hreflang="en"{{if eq $.Locale "en"}} aria-current="page"{{end}}>English</a>
-          <a href="{{.IndonesianPath}}" lang="id" hreflang="id"{{if eq $.Locale "id"}} aria-current="page"{{end}}>Bahasa Indonesia</a>
-        </nav>
-      {{end}}
+
     </footer>
 
     <script src="/static/js/theme.js"></script>
