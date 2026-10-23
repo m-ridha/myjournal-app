@@ -98,12 +98,22 @@ textarea {
 }
 
 .mj-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4em;
   font-size: 1.1rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: lowercase;
   justify-self: start;
   padding-left: 0.35rem;
+}
+
+.mj-brand-logo {
+  width: 1.2em;
+  height: 1.2em;
+  flex-shrink: 0;
+  transform: translateY(1.5px);
 }
 
 .mj-nav {

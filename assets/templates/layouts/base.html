@@ -17,7 +17,10 @@
   <body class="mj-shell" data-messages="{{.Messages}}" data-draft-scope="{{.DraftScope}}" data-today="{{.Today}}">
     <header class="mj-header">
       <div class="mj-container mj-header-inner">
-        <a class="mj-brand" href="/">{{t "app.name"}}</a>
+        <a class="mj-brand" href="/">
+          <img class="mj-brand-logo" src="/static/logo/myjournal-app-logo-120x120.png">
+          {{t "app.name"}}
+        </a>
         <nav class="mj-nav" aria-label="{{t "nav.main"}}">
           <a href="/">{{t "nav.write"}}</a>
           <a href="/entries">{{t "nav.entries"}}</a>
