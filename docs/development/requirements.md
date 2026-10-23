@@ -38,6 +38,8 @@ Settings Disconnect revokes the provider connection before clearing the session 
 - Calendar month-heading controls open localized 12-month/12-year grids without entry indicators or data requests while browsing. Disable future choices/next-month at request-resolved today, preserve year-one bounds, keyboard/focus dismissal, and latest-request-only rendering including failures.
 - No third-party page requests, remote fonts, trackers or CDN assets. Journal text is never trusted as HTML.
 
+Public informational pages must be discoverable in English and Bahasa Indonesia through explicit language URLs and ordinary links, without requiring JavaScript or cookies. Preserve saved language preferences and the signed-in homepage editor. Search metadata must describe actual product behavior without fabricated reviews, privacy guarantees, or offline capabilities. See [public discovery architecture](architecture.md#public-search-discovery) for URL and indexing policy.
+
 ## Quality targets
 
 Target at least 85% coverage for each maintained production function; generated bodies and test support are excluded. Package-level coverage does not establish this per-function goal. Performance targets at p75 are today’s load under 1.5 seconds, manual save under 1 second and cached calendar navigation under 500 ms. These remain goals, not passed acceptance; see [status](status.md#outstanding-work).

@@ -14,7 +14,7 @@
     {{else}}
       {{if .GoogleLogin}}<a class="mj-btn mj-btn-primary" href="/api/v1/auth/google/login">{{t "landing.connectGoogle"}}</a>{{end}}
       {{if .LocalLogin}}<a class="mj-btn {{if .GoogleLogin}}mj-btn-secondary{{else}}mj-btn-primary{{end}}" href="/api/v1/auth/local/login">{{t "landing.connectLocal"}}</a>{{end}}
-      <a class="mj-btn mj-btn-secondary" href="/help">{{t "landing.driveHelp"}}</a>
+      <a class="mj-btn mj-btn-secondary" href="{{if .Public}}{{.Public.Prefix}}{{end}}/help#drive-access">{{t "landing.driveHelp"}}</a>
     {{end}}
   </div>
 </section>
@@ -37,6 +37,26 @@
 <section class="mj-page-card mj-public-copy mj-access-note">
   <h2>{{t "landing.access.title"}}</h2>
   <p>{{t "landing.access.body"}}</p>
-  <p><a href="/privacy">{{t "landing.privacyLink"}}</a> · <a href="/terms">{{t "landing.termsLink"}}</a></p>
+  <p><a href="{{if .Public}}{{.Public.Prefix}}{{end}}/privacy">{{t "landing.privacyLink"}}</a> · <a href="{{if .Public}}{{.Public.Prefix}}{{end}}/terms">{{t "landing.termsLink"}}</a></p>
 </section>
+{{if eq .Page "landing"}}
+<section class="mj-page-card mj-public-copy mj-reading-page mj-landing-guide">
+  <h2>{{t "landing.start.title"}}</h2>
+  <ol>
+    <li>{{t "landing.start.connect"}}</li>
+    <li>{{t "landing.start.write"}}</li>
+    <li>{{t "landing.start.revisit"}}</li>
+  </ol>
+  <h2>{{t "landing.questions.title"}}</h2>
+  <h3>{{t "landing.questions.storage.title"}}</h3>
+  <p>{{t "landing.questions.storage.body"}}</p>
+  <h3>{{t "landing.questions.access.title"}}</h3>
+  <p>{{t "landing.questions.access.body"}}</p>
+  <h3>{{t "landing.questions.offline.title"}}</h3>
+  <p>{{t "landing.questions.offline.body"}}</p>
+  <h3>{{t "landing.questions.portable.title"}}</h3>
+  <p>{{t "landing.questions.portable.body"}}</p>
+  <p><a href="{{if .Public}}{{.Public.Prefix}}{{end}}/help">{{t "landing.guideLink"}}</a></p>
+</section>
+{{end}}
 {{end}}

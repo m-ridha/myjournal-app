@@ -1,16 +1,42 @@
 {{define "base"}}
 <!doctype html>
 <html lang="{{.Locale}}" data-theme="light">
-  <head>
+  <head{{if and .Public (eq .Page "landing")}} itemscope itemtype="https://schema.org/WebSite"{{end}}>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     {{if eq .Page "landing"}}
       <meta name="google-site-verification" content="Y1nEpISYFro2F4U1Cn7uCKAddTlEXzDb6wYu4IiH-cA" />
     {{end}}
-    <meta name="description" content="{{if .DescriptionKey}}{{t .DescriptionKey}}{{else if .Description}}{{.Description}}{{else}}{{t "app.description"}}{{end}}">
-    <title>{{if .Title}}{{.Title}} · {{t "app.name"}}{{else if .TitleKey}}{{t .TitleKey}} · {{t "app.name"}}{{else}}{{t "app.name"}}{{end}}</title>
+    <meta name="description" content="{{.Description}}">
+    <title>{{if .Title}}{{.Title}} · {{end}}{{t "app.name"}}</title>
+    {{with .Public}}
+      <link rel="canonical" href="{{.CanonicalURL}}">
+      <link rel="alternate" hreflang="en" href="{{.EnglishURL}}">
+      <link rel="alternate" hreflang="id" href="{{.IndonesianURL}}">
+      <link rel="alternate" hreflang="x-default" href="{{.DefaultURL}}">
+      <meta property="og:type" content="website">
+      <meta property="og:url" content="{{.CanonicalURL}}">
+      <meta property="og:site_name" content="{{t "app.name"}}">
+      <meta property="og:title" content="{{$.Title}} · {{t "app.name"}}">
+      <meta property="og:description" content="{{$.Description}}">
+      <meta property="og:image" content="{{.ImageURL}}">
+      <meta property="og:image:width" content="120">
+      <meta property="og:image:height" content="120">
+      <meta property="og:image:alt" content="{{t "seo.logoAlt"}}">
+      <meta name="twitter:card" content="summary">
+      <meta name="twitter:title" content="{{$.Title}} · {{t "app.name"}}">
+      <meta name="twitter:description" content="{{$.Description}}">
+      <meta name="twitter:image" content="{{.ImageURL}}">
+      <meta name="twitter:image:alt" content="{{t "seo.logoAlt"}}">
+      {{if eq $.Page "landing"}}
+        <meta itemprop="name" content="{{t "app.name"}}">
+        <link itemprop="url" href="{{.DefaultURL}}">
+      {{end}}
+    {{else}}
+      <meta name="robots" content="noindex">
+    {{end}}
     <link rel="icon" type="image/png" sizes="64x64" href="/static/favicons/myjournal-tab-icon.png">
-    <script src="/static/js/timezone.js"></script>
+    {{if or (eq .Page "editor") (eq .Page "calendar")}}<script src="/static/js/timezone.js"></script>{{end}}
     <script src="/static/js/theme-init.js"></script>
     <link rel="stylesheet" href="/static/css/app.css">
   </head>
@@ -18,7 +44,7 @@
     <header class="mj-header">
       <div class="mj-container mj-header-inner">
         <a class="mj-brand" href="/">
-          <img class="mj-brand-logo" src="/static/logo/myjournal-app-logo-120x120.png">
+          <img class="mj-brand-logo" src="/static/logo/myjournal-app-logo-120x120.png" width="120" height="120" alt="">
           {{t "app.name"}}
         </a>
         <nav class="mj-nav" aria-label="{{t "nav.main"}}">
@@ -57,7 +83,7 @@
             <span class="icon icon-gear" aria-hidden="true"></span>
           </a>
 
-          <a class="mj-btn mj-btn-secondary mj-btn-small" href="/help">{{t "nav.help"}}</a>
+          <a class="mj-btn mj-btn-secondary mj-btn-small" href="{{if .Public}}{{.Public.Prefix}}{{end}}/help">{{t "nav.help"}}</a>
         </div>
       </div>
     </header>
@@ -105,12 +131,19 @@
           <span class="mj-footer-copyright"><span>{{t "footer.copyright"}}</span> <a class="mj-footer-github" href="https://github.com/m-ridha" aria-label="{{t "footer.github"}}" title="{{t "footer.github"}}"><span class="icon icon-github" aria-hidden="true"></span></a></span>
         </span>
       </div>
+      {{with .Public}}
+        <nav class="mj-public-languages" aria-label="{{t "nav.changeLanguage"}}">
+          <a href="{{.EnglishPath}}" lang="en" hreflang="en"{{if eq $.Locale "en"}} aria-current="page"{{end}}>English</a>
+          <a href="{{.IndonesianPath}}" lang="id" hreflang="id"{{if eq $.Locale "id"}} aria-current="page"{{end}}>Bahasa Indonesia</a>
+        </nav>
+      {{end}}
     </footer>
 
     <script src="/static/js/theme.js"></script>
     <script src="/static/js/language.js" defer></script>
-    <script src="/static/js/calendar-picker.js" defer></script>
-    <script src="/static/js/app.js" defer></script>
+    {{if eq .Page "calendar"}}<script src="/static/js/calendar-picker.js" defer></script>{{end}}
+    <script src="/static/js/draft-cleanup.js" defer></script>
+    {{if .AppScripts}}<script src="/static/js/app.js" defer></script>{{end}}
   </body>
 </html>
 {{end}}

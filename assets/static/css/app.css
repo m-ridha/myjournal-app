@@ -1300,3 +1300,35 @@ html[data-theme="dark"] .icon-moon {
   outline: 2px solid var(--mj-text);
   outline-offset: 2px;
 }
+
+.mj-public-languages {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+}
+
+.mj-public-languages a {
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+.mj-public-languages a[aria-current="page"] {
+  font-weight: 700;
+}
+
+.mj-landing-guide {
+  margin-top: 1.5rem;
+}
+.mj-landing-guide h3 {
+  margin: 1.5rem 0 0.75rem;
+  font-size: 1.05em;
+}
+.mj-landing-guide ol {
+  padding-left: 1.25rem;
+  color: var(--mj-text-muted);
+}
+.mj-landing-guide li + li {
+  margin-top: 0.75rem;
+}

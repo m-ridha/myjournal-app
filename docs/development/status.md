@@ -12,6 +12,14 @@ This is a compact record of accepted evidence and remaining work, not a chronolo
 
 - The dedicated pre-publication secret review covered publishable Git history and available GitHub-hosted material with no detected secrets; one Actions log was unavailable. This is secret-scan evidence, not a complete vulnerability audit. The user explicitly permits their GitHub username and author/committer email in history.
 
+## Public SEO validation
+
+The bilingual public-discovery implementation passed `make fmt lint test`, `go test -race ./internal/driver/web/...`, the editor suite under JavaScriptCore, and 24 Python helper tests. Local Chrome/axe verification covered 78 scans and 60 keyboard checks with no reported violations or page errors, including EN/ID, both themes, 320px layouts, language switching and JavaScript-disabled reading. Axe still reports incomplete checks; this does not establish complete accessibility or physical-device coverage.
+
+The signed-out local English homepage HTML measured 10,772 bytes; the inspected deployed homepage measured 33,870 bytes. These are different builds/provider configurations, not a controlled latency benchmark. Public pages now omit editor/calendar/timezone scripts and carry only two theme messages. No field Core Web Vitals or search-ranking improvement is claimed. The read-only live check confirmed HTTP/www redirects and the existing sitemap; the old Railway hostname returned 404.
+
+The changes remain local pending an authorized release. After deployment, follow the [Search Console checks](operations.md#search-visibility-after-an-authorized-release); no sitemap submission, indexing request, DNS change or deployment was performed here. URL and indexing contracts live in [architecture](architecture.md#public-search-discovery).
+
 ## Outstanding work
 
 - ~~Confirm deployment of the custom-domain Search Console tag, ownership verification and Google's branding decision.~~ Google branding verification is complete: the OAuth consent screen displays "myjournal" and the verification status reads "Your branding has been verified and is being shown to users."
