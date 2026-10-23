@@ -69,8 +69,8 @@ func TestLandingPageRendersTemplate(t *testing.T) {
 	if got := res.Body.String(); !strings.Contains(got, "A quiet place to write") {
 		t.Fatalf("landing page body = %q, want quiet writing copy", got)
 	}
-	if got := res.Body.String(); !strings.Contains(got, `data-messages="`) || !strings.Contains(got, "calendar.dayLabel") {
-		t.Fatalf("landing page does not expose the locale catalog to scripts")
+	if got := res.Body.String(); !strings.Contains(got, `data-messages="`) || !strings.Contains(got, "theme.switchToLight") || strings.Contains(got, "calendar.dayLabel") {
+		t.Fatalf("landing page must expose only the required theme translations")
 	}
 }
 
@@ -411,8 +411,8 @@ func TestPublicBrandingDisclosuresWithoutSession(t *testing.T) {
 	cfg := config.Config{BaseURL: testutil.LocalBaseURL, SessionKey: "0123456789abcdef0123456789abcdef"}
 	h := newTestRouter(cfg, provider.NewRegistry(), clock.System{}, nil)
 	for path, required := range map[string][]string{
-		"/":        {"myjournal", "one plain-text entry per day", `href="/privacy"`, "drive.file"},
-		"/terms":   {"Terms of Service", "Your writing", "Availability", "support@myjournal.ink", `href="/privacy"`},
+		"/":        {"myjournal", "one plain-text entry per day", `href="/en/privacy"`, "drive.file"},
+		"/terms":   {"Terms of Service", "Your writing", "Availability", "support@myjournal.ink", `href="/en/privacy"`},
 		"/help":    {"Saving and recovery", "Conflicting changes", "Disconnect", "support@myjournal.ink"},
 		"/privacy": {"Privacy policy", "Data we access", "How we use", "30 days", "Railway", "Limited Use", "Disconnect", "support@myjournal.ink"},
 	} {

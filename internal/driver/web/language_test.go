@@ -117,7 +117,7 @@ func TestLanguageRequestsRemainIsolated(t *testing.T) {
 	cfg := config.Config{BaseURL: testutil.LocalBaseURL, SessionKey: "0123456789abcdef0123456789abcdef"}
 	h := newTestRouter(cfg, provider.NewRegistry(localProvider.New(testutil.LocalBaseURL, "")), clock.System{}, nil)
 	for i := 0; i < 20; i++ {
-		for _, locale := range []string{"en", "id"} {
+		for _, locale := range supportedLocales {
 			t.Run(fmt.Sprintf("%s-%d", locale, i), func(t *testing.T) {
 				t.Parallel()
 				req := httptest.NewRequest(http.MethodGet, "/help", nil)
@@ -146,13 +146,13 @@ func TestSignedOutSettingsAndHeader(t *testing.T) {
 		start := strings.Index(body, "<header class=\"mj-header\">")
 		end := strings.Index(body, "</header>")
 		header := body[start:end]
-		if strings.Contains(header, `href="/privacy"`) || !strings.Contains(header, `href="/settings"`) || !strings.Contains(header, "data-header-language") {
+		if strings.Contains(header, `href="/en/privacy"`) || !strings.Contains(header, `href="/settings"`) || !strings.Contains(header, "data-header-language") {
 			t.Fatalf("GET %s missing stable header language/settings or retains Privacy", path)
 		}
 		if path == "/settings" && (strings.Contains(body, "data-sign-out") || strings.Contains(body, "data-disconnect") || !strings.Contains(body, "Sign in to manage your account connection.")) {
 			t.Fatal("signed-out Settings must offer preferences without account controls")
 		}
-		if path == "/help" && !strings.Contains(body, `href="/privacy"`) {
+		if path == "/help" && !strings.Contains(body, `href="/en/privacy"`) {
 			t.Fatal("Help must retain Privacy entry point")
 		}
 	}

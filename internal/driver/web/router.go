@@ -35,6 +35,13 @@ func NewRouter(cfg Options, registry provider.Catalog, clk journal.Clock, servic
 				selected = localized
 			}
 		}
+		if locale, _, ok := publicRoute(r.URL.Path); ok {
+			selected = handlers[locale]
+			// Following an explicit language link also preserves that choice in the app.
+			if cookie, err := r.Cookie(languageCookieName); r.Method == http.MethodGet && (err != nil || cookie.Value != locale) {
+				setLanguageCookie(w, locale, cfg.HTTPS)
+			}
+		}
 		selected.ServeHTTP(w, r)
 	})
 }
@@ -43,6 +50,7 @@ func newLocaleRouter(cfg Options, registry provider.Catalog, clk journal.Clock, 
 
 	r := chi.NewRouter()
 	r.Use(webMiddleware.SecurityHeaders)
+	r.Use(searchIndexing)
 	// Trust startup configuration rather than client-supplied proxy headers.
 	if cfg.HTTPS {
 		r.Use(webMiddleware.StrictTransportSecurity)
@@ -89,7 +97,7 @@ func newLocaleRouter(cfg Options, registry provider.Catalog, clk journal.Clock, 
 		}
 		_, googleLogin := registry.Lookup(provider.GoogleID)
 		_, localLogin := registry.Lookup(provider.LocalID)
-		renderer.renderPage(w, pageData{TitleKey: "landing.title", DescriptionKey: "landing.description", SignedIn: false, Page: "landing", GoogleLogin: googleLogin, LocalLogin: localLogin})
+		renderer.renderPublicPage(w, cfg.BaseURL, pageData{TitleKey: "landing.title", DescriptionKey: "landing.description", SignedIn: false, Page: "landing", GoogleLogin: googleLogin, LocalLogin: localLogin})
 	})
 	r.Get("/sign-in", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Cache-Control", "no-store")
@@ -154,16 +162,24 @@ func newLocaleRouter(cfg Options, registry provider.Catalog, clk journal.Clock, 
 	})
 	r.Get("/privacy", func(w http.ResponseWriter, r *http.Request) {
 		_, err := currentSession(r, cfg.Session.Codec, registry, clk.Now())
-		renderer.renderPage(w, pageData{TitleKey: "privacy.title", DescriptionKey: "privacy.description", SignedIn: err == nil, Page: "privacy"})
+		renderer.renderPublicPage(w, cfg.BaseURL, pageData{TitleKey: "privacy.title", DescriptionKey: "privacy.description", SignedIn: err == nil, Page: "privacy"})
 	})
 	r.Get("/terms", func(w http.ResponseWriter, r *http.Request) {
 		_, err := currentSession(r, cfg.Session.Codec, registry, clk.Now())
-		renderer.renderPage(w, pageData{TitleKey: "terms.title", DescriptionKey: "terms.description", SignedIn: err == nil, Page: "terms"})
+		renderer.renderPublicPage(w, cfg.BaseURL, pageData{TitleKey: "terms.title", DescriptionKey: "terms.description", SignedIn: err == nil, Page: "terms"})
 	})
 	r.Get("/help", func(w http.ResponseWriter, r *http.Request) {
 		_, err := currentSession(r, cfg.Session.Codec, registry, clk.Now())
-		renderer.renderPage(w, pageData{TitleKey: "help.title", DescriptionKey: "help.description", SignedIn: err == nil, Page: "help"})
+		renderer.renderPublicPage(w, cfg.BaseURL, pageData{TitleKey: "help.title", DescriptionKey: "help.description", SignedIn: err == nil, Page: "help"})
 	})
+	for _, page := range publicPages {
+		r.Get(localizedPublicPath(renderer.catalog.Locale(), page.path), func(w http.ResponseWriter, r *http.Request) {
+			_, err := currentSession(r, cfg.Session.Codec, registry, clk.Now())
+			_, googleLogin := registry.Lookup(provider.GoogleID)
+			_, localLogin := registry.Lookup(provider.LocalID)
+			renderer.renderPublicPage(w, cfg.BaseURL, pageData{Page: page.page, SignedIn: err == nil, GoogleLogin: googleLogin, LocalLogin: localLogin})
+		})
+	}
 	r.MethodNotAllowed(func(w http.ResponseWriter, req *http.Request) {
 		// Match against the registered routes, using separate contexts so probing
 		// methods cannot modify the rejected request's routing parameters.

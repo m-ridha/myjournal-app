@@ -23,7 +23,11 @@ func registerLanguageRoute(r chi.Router, cfg Options, renderer *Renderer) {
 			http.Error(w, renderer.catalog.Text("errors.invalidRequest"), http.StatusBadRequest)
 			return
 		}
-		http.SetCookie(w, &http.Cookie{Name: languageCookieName, Value: values[0], Path: "/", MaxAge: languagePreferenceSeconds, HttpOnly: true, Secure: cfg.HTTPS, SameSite: http.SameSiteLaxMode})
+		setLanguageCookie(w, values[0], cfg.HTTPS)
+		if _, original, ok := publicRoute(r.PostFormValue("returnTo")); ok {
+			http.Redirect(w, r, localizedPublicPath(values[0], original), http.StatusSeeOther)
+			return
+		}
 		http.Redirect(w, r, languageReturnPath(r.PostFormValue("returnTo")), http.StatusSeeOther)
 	})
 }
@@ -40,4 +44,8 @@ func languageReturnPath(path string) string {
 		}
 	}
 	return "/settings"
+}
+
+func setLanguageCookie(w http.ResponseWriter, locale string, secure bool) {
+	http.SetCookie(w, &http.Cookie{Name: languageCookieName, Value: locale, Path: "/", MaxAge: languagePreferenceSeconds, HttpOnly: true, Secure: secure, SameSite: http.SameSiteLaxMode})
 }

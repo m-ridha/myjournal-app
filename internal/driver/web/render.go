@@ -2,6 +2,7 @@ package web
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"io/fs"
@@ -70,6 +71,8 @@ func loadLocaleRenderer(source fs.FS, locale string) (*Renderer, error) {
 }
 
 type pageData struct {
+	Public             *publicMetadata
+	AppScripts         bool
 	EntriesLimit       int
 	EntriesDescription string
 	Version            string
@@ -99,16 +102,39 @@ func (renderer *Renderer) renderPage(w http.ResponseWriter, data pageData) {
 }
 
 func (renderer *Renderer) renderPageStatus(w http.ResponseWriter, status int, data pageData) {
-	localeJSON, err := renderer.catalog.JSON()
-	if err != nil {
-		http.Error(w, renderer.catalog.Text("errors.internal"), http.StatusInternalServerError)
-		return
-	}
 	data.EntriesLimit = recentEntriesLimit
 	data.EntriesDescription = strings.ReplaceAll(renderer.catalog.Text("entries.recentDescription"), "{listLimit}", fmt.Sprint(data.EntriesLimit))
 	data.Version = renderer.version
 	data.Locale = renderer.catalog.Locale()
-	data.Messages = localeJSON
+	data.AppScripts = data.SignedIn || data.Page == "settings" || data.Page == "editor" || data.Page == "entries" || data.Page == "calendar"
+	if data.AppScripts {
+		localeJSON, err := renderer.catalog.JSON()
+		if err != nil {
+			http.Error(w, renderer.catalog.Text("errors.internal"), http.StatusInternalServerError)
+			return
+		}
+		data.Messages = localeJSON
+	} else {
+		// A map containing only string keys and values cannot fail JSON encoding.
+		messages, _ := json.Marshal(map[string]string{
+			"theme.switchToLight": renderer.catalog.Text("theme.switchToLight"),
+			"theme.switchToDark":  renderer.catalog.Text("theme.switchToDark"),
+		})
+		data.Messages = string(messages)
+	}
+	if data.Title == "" && data.TitleKey != "" {
+		data.Title = renderer.catalog.Text(data.TitleKey)
+	}
+	if data.DescriptionKey != "" {
+		data.Description = renderer.catalog.Text(data.DescriptionKey)
+	}
+	if data.Description == "" {
+		data.Description = renderer.catalog.Text("app.description")
+	}
+	if data.Public == nil {
+		w.Header().Set("X-Robots-Tag", "noindex")
+	}
+	w.Header().Set("Content-Language", data.Locale)
 	var body bytes.Buffer
 	if err := renderer.templates.ExecuteTemplate(&body, "base", data); err != nil {
 		http.Error(w, renderer.catalog.Text("errors.internal"), http.StatusInternalServerError)

@@ -49,9 +49,9 @@ func TestPublicDiscoveryRoutes(t *testing.T) {
 				}
 				err := xml.Unmarshal(res.Body.Bytes(), &sitemap)
 				require.NoError(t, err, "decode sitemap: %v", err)
-				want := []string{origin + "/", origin + "/help", origin + "/privacy", origin + "/terms"}
-				if len(sitemap.URLs) != 4 {
-					t.Fatalf("sitemap URL records = %d, want 4", len(sitemap.URLs))
+				want := []string{origin + "/en/", origin + "/en/help", origin + "/en/privacy", origin + "/en/terms", origin + "/id/", origin + "/id/help", origin + "/id/privacy", origin + "/id/terms"}
+				if len(sitemap.URLs) != 8 {
+					t.Fatalf("sitemap URL records = %d, want 8", len(sitemap.URLs))
 				}
 				var locations []string
 				for i, record := range sitemap.URLs {

@@ -40,6 +40,12 @@ Documentation-only changes need path/link checks, consistency review and `git di
 - Use focused functions, guard clauses and useful exported documentation. Place compile-time interface assertions immediately below the implementing struct, grouped for that struct.
 - `make fmt` owns handwritten Go formatting. Imports group standard library, third-party, then myjournal-app, alphabetically within each group including aliases. Generated code stays excluded from formatter rewrites.
 
+## UI design consistency
+
+Follow the [interface requirements](docs/development/requirements.md#interface-and-accessibility). Before changing UI, inspect the affected page, neighboring components, and shared styles in `assets/static/css/app.css`; use the closest existing component as the design reference. Reuse its layout classes and theme tokens before adding overrides. External examples provide interaction ideas, not a replacement visual style.
+
+Review the change in the context of the whole page, not just the new component. Check aligned card edges, typography, spacing, controls and interaction states. For visual changes, compare desktop and narrow-screen rendering in both themes and EN/ID, including expanded content and keyboard focus. Report any browser verification that could not be performed. SEO or content additions must follow the same design rules; they are not a reason to introduce a different card width or typography. Change the established visual direction only when requested by the user.
+
 ## Safety constraints
 
 Read the relevant guide before changing these behaviors:

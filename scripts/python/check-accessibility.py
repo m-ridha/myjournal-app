@@ -79,6 +79,7 @@ async def check_keyboard(page):
 
 async def run_browser(base, axe_script):
     scans, keyboard, errors = [], {}, []
+    public_payloads = {}
     async with async_playwright() as p:
         browser = await p.chromium.launch(channel='chrome', headless=True)
         context = await browser.new_context(timezone_id='Asia/Jakarta')
@@ -237,10 +238,54 @@ async def run_browser(base, axe_script):
                     await public_page.locator('[data-header-language] [data-language-trigger]').click()
                     scans.append(await audit(public_page, axe_script, label + '/language-open'))
                     await public_page.keyboard.press('Escape')
+        # Explicit locale URLs stay discoverable without cookies or JavaScript,
+        # while the header selector preserves the same public page on a switch.
+        for theme in ['light', 'dark']:
+            await public_page.evaluate('(theme) => localStorage.setItem("mj-theme", theme)', theme)
+            for locale in ['en', 'id']:
+                for suffix in ['/', '/help', '/privacy', '/terms']:
+                    path = '/' + locale + suffix
+                    response = await public_page.goto(base + path)
+                    assert response.status == 200, path
+                    await expect(public_page.locator('html')).to_have_attribute('lang', locale)
+                    await expect(public_page.locator('link[rel="canonical"]')).to_have_attribute('href', base + path)
+                    scripts = await public_page.locator('script[src]').evaluate_all('(nodes) => nodes.map(n => n.getAttribute("src"))')
+                    assert '/static/js/app.js' not in scripts and '/static/js/calendar-picker.js' not in scripts, scripts
+                    await expect(public_page.locator('.mj-brand-logo')).to_have_attribute('alt', '')
+                    public_payloads[path] = len(await response.body())
+                    label = 'public-seo/' + theme + path
+                    scans.append(await audit(public_page, axe_script, label))
+                    keyboard[label] = await check_keyboard(public_page)
+                await public_page.goto(base + '/' + locale + '/')
+                await public_page.set_viewport_size({'width': 320, 'height': 720})
+                assert await public_page.evaluate('document.documentElement.scrollWidth <= innerWidth'), locale
+                scans.append(await audit(public_page, axe_script, 'public-seo/narrow/' + theme + '/' + locale))
+                await public_page.screenshot(path='/tmp/myjournal-seo-' + theme + '-' + locale + '.png', full_page=True)
+                await public_page.set_viewport_size({'width': 1280, 'height': 720})
+        await public_page.goto(base + '/en/help')
+        await public_page.locator('[data-header-language] [data-language-trigger]').click()
+        await public_page.locator('[data-header-language] [data-language-option="id"]').click()
+        await public_page.wait_for_url(base + '/id/help')
+        await expect(public_page.locator('html')).to_have_attribute('lang', 'id')
+        await public_page.locator('.mj-public-languages a[lang="en"]').click()
+        await public_page.wait_for_url(base + '/en/help')
+        await expect(public_page.locator('html')).to_have_attribute('lang', 'en')
+        await public_page.goto(base + '/en/')
+        before = await public_page.locator('html').get_attribute('data-theme')
+        await public_page.locator('[data-theme-toggle]').click()
+        assert await public_page.locator('html').get_attribute('data-theme') != before
+        no_js = await browser.new_context(java_script_enabled=False)
+        readable = await no_js.new_page()
+        for locale in ['en', 'id']:
+            response = await readable.goto(base + '/' + locale + '/')
+            assert response.status == 200
+            await expect(readable.locator('h1')).to_be_visible()
+            await expect(readable.locator('.mj-public-languages a')).to_have_count(2)
+        await no_js.close()
         await public_context.close()
 
         report = {'browser': browser.version, 'axe': await page.evaluate('axe.version'),
-                  'scans': scans, 'keyboard': keyboard, 'page_errors': errors}
+                  'scans': scans, 'keyboard': keyboard, 'page_errors': errors, 'public_html_bytes': public_payloads}
         await browser.close()
         return report
 

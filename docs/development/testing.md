@@ -53,3 +53,9 @@ Use the private localhost configuration in [operations](operations.md), an autho
 Inspect CSP/security headers and browser console/network under real navigation, save/conflict/recovery, language/theme, settings and calendar interactions. Confirm local external scripts load without CSP violations and no third-party page requests occur. Check HTTPS host-only HSTS, no caching of protected responses, unsafe cross-origin rejection, and callback errors without exposed query data. Distinguish console inspection from complete browser/security coverage.
 
 Use [operations](operations.md) for authorized release/rollback checks. Automated release script fixtures test target/plan restrictions and deployment polling; they do not deploy. Record actual deployment identity and health separately from mocked success.
+
+## Public SEO regressions
+
+`go test ./internal/driver/web/...` checks deterministic public EN/ID rendering despite conflicting cookies, configured-origin canonical/share URLs, reciprocal language links, the eight-page sitemap, private-page exclusion, safe language return paths and lightweight script payloads. The editor JavaScript suite also checks that public-page cross-tab cleanup preserves other accounts and preferences.
+
+The optional browser accessibility helper covers both public languages/themes, 320px layout, language navigation through links and the header selector, theme switching without editor scripts, and readable public content with JavaScript disabled. After an authorized deployment, follow the separate [Search Console runbook](operations.md#search-visibility-after-an-authorized-release). Automated markup tests and axe results do not prove indexing, search ranking, full accessibility or real-user performance.

@@ -21,7 +21,7 @@
     <h2>{{t "help.conflicts.title"}}</h2>
     <p>{{t "help.conflicts.body"}}</p>
   </section>
-  <section>
+  <section id="drive-access">
     <h2>{{t "help.access.title"}}</h2>
     <p>{{t "help.access.body"}}</p>
   </section>
@@ -37,7 +37,7 @@
     <h2>{{t "help.contact.title"}}</h2>
     <p>{{t "help.contact.body"}}</p>
     <p><a href="mailto:support@myjournal.ink">{{t "privacy.contact.email"}}</a></p>
-    <p><a href="/privacy">{{t "help.privacyLink"}}</a> · <a href="/terms">{{t "help.termsLink"}}</a></p>
+    <p><a href="{{if .Public}}{{.Public.Prefix}}{{end}}/privacy">{{t "help.privacyLink"}}</a> · <a href="{{if .Public}}{{.Public.Prefix}}{{end}}/terms">{{t "help.termsLink"}}</a></p>
   </section>
 </article>
 {{end}}

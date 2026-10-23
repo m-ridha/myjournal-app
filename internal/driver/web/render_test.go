@@ -70,7 +70,7 @@ func TestFooterBuildVersion(t *testing.T) {
 		t.Run(version, func(t *testing.T) {
 			renderer, err := NewRendererWithVersion(version)
 			require.NoError(t, err)
-			for _, locale := range []string{"en", "id"} {
+			for _, locale := range supportedLocales {
 				w := httptest.NewRecorder()
 				renderer.languages[locale].renderPage(w, pageData{Page: "help"})
 				body := w.Body.String()
@@ -101,7 +101,7 @@ func TestFooterBuildVersion(t *testing.T) {
 
 func TestEntriesLimitIsSharedWithLocalizedDescription(t *testing.T) {
 	renderer := testRenderer(t)
-	for _, locale := range []string{"en", "id"} {
+	for _, locale := range supportedLocales {
 		t.Run(locale, func(t *testing.T) {
 			response := httptest.NewRecorder()
 			renderer.languages[locale].renderPage(response, pageData{Page: "entries", SignedIn: true})

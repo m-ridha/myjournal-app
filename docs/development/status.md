@@ -8,9 +8,17 @@ This is a compact record of accepted evidence and remaining work, not a chronolo
 - Recorded automated coverage includes domain/storage contracts, synthetic OAuth/session cases, recovery/autosave/browser regressions, architecture boundaries and release helper restrictions. Synthetic checks do not establish actual Google token omission, external-writer atomicity or live latency.
 - Recorded integrated/public evidence covers sign-in, synthetic save/read/trash, restart refresh, navigation/sign-out, health/HSTS, cookie attributes and rollback/restoration. Public Google Disconnect/reconnect was human-reported. A restart/read exercises refresh acquisition; actual refresh-token omission was not observed in the integrated flow.
 - Focused Chrome UI acceptance includes native 200% zoom, keyboard/error focus, sampled non-text contrast and human-reported screen-reader announcements. Device-toolbar coverage was accepted instead of physical-phone testing. These checks do not establish full WCAG conformance or complete UI acceptance.
-- The user reports the custom-domain HTTPS connection now works and Railway APP_BASE_URL is https://myjournal.ink. This is a human report, not a new infrastructure audit.
+- The user reports the custom-domain HTTPS connection now works and Railway APP_BASE_URL is <https://myjournal.ink>. This is a human report, not a new infrastructure audit.
 
 - The dedicated pre-publication secret review covered publishable Git history and available GitHub-hosted material with no detected secrets; one Actions log was unavailable. This is secret-scan evidence, not a complete vulnerability audit. The user explicitly permits their GitHub username and author/committer email in history.
+
+## Public SEO validation
+
+The bilingual public-discovery implementation passed `make fmt lint test`, `go test -race ./internal/driver/web/...`, the editor suite under JavaScriptCore, and 24 Python helper tests. Local Chrome/axe verification covered 78 scans and 60 keyboard checks with no reported violations or page errors, including EN/ID, both themes, 320px layouts, language switching and JavaScript-disabled reading. Axe still reports incomplete checks; this does not establish complete accessibility or physical-device coverage.
+
+The signed-out local English homepage HTML measured 10,772 bytes; the inspected deployed homepage measured 33,870 bytes. These are different builds/provider configurations, not a controlled latency benchmark. Public pages now omit editor/calendar/timezone scripts and carry only two theme messages. No field Core Web Vitals or search-ranking improvement is claimed. The read-only live check confirmed HTTP/www redirects and the existing sitemap; the old Railway hostname returned 404.
+
+The changes remain local pending an authorized release. After deployment, follow the [Search Console checks](operations.md#search-visibility-after-an-authorized-release); no sitemap submission, indexing request, DNS change or deployment was performed here. URL and indexing contracts live in [architecture](architecture.md#public-search-discovery).
 
 ## Outstanding work
 

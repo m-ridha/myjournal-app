@@ -51,8 +51,10 @@ function setup({ draft = null, initial = response('server'), storageThrows = fal
   globalThis.window = { location: { href: '' }, confirm: () => true, addEventListener: (name, fn) => { winEvents[name] = fn; } };
   const calls = []; const queue = [initial];
   globalThis.fetch = async (url, options) => { calls.push({ url, options }); if (!queue.length) throw new Error('unplanned request'); return queue.shift(); };
-  if (typeof require === 'function') (0, eval)(require('node:fs').readFileSync('assets/static/js/app.js', 'utf8'));
-  else load('assets/static/js/app.js');
+  for (const script of ['draft-cleanup', 'app']) {
+    if (typeof require === 'function') (0, eval)(require('node:fs').readFileSync(`assets/static/js/${script}.js`, 'utf8'));
+    else load(`assets/static/js/${script}.js`);
+  }
   docEvents.DOMContentLoaded();
   return {
     auth, docEvents, async advance(ms) {
@@ -439,3 +441,24 @@ async function run() {
 }
 
 run().catch((error) => { output(error.stack || String(error)); if (typeof quit === 'function') quit(1); else process.exitCode = 1; });
+
+// Public pages omit app.js but must still clear only the signed-out account's drafts.
+{
+  const drafts = new Map([['mj-draft:v3:a:2026-10-01', 'a'], ['mj-draft:v3:b:2026-10-01', 'b'], ['mj-theme', 'dark']]);
+  let cleanup;
+  const originalWindow = globalThis.window;
+  const originalStorage = globalThis.sessionStorage;
+  globalThis.window = { addEventListener: (_, fn) => { cleanup = fn; } };
+  globalThis.sessionStorage = { get length() { return drafts.size; }, key: i => [...drafts.keys()][i], removeItem: key => drafts.delete(key) };
+  if (typeof require === 'function') (0, eval)(require('node:fs').readFileSync('assets/static/js/draft-cleanup.js', 'utf8'));
+  else load('assets/static/js/draft-cleanup.js');
+  cleanup({ key: null });
+  cleanup({ key: 'unrelated' });
+  assert(drafts.size === 3, 'unrelated storage events must preserve drafts');
+  cleanup({ key: 'mj-signout:a' });
+  assert(!drafts.has('mj-draft:v3:a:2026-10-01') && drafts.has('mj-draft:v3:b:2026-10-01') && drafts.has('mj-theme'), 'public-page cleanup preserves other accounts and preferences');
+  globalThis.sessionStorage = { get length() { throw new Error('blocked'); } };
+  cleanup({ key: 'mj-signout:a' });
+  globalThis.window = originalWindow;
+  globalThis.sessionStorage = originalStorage;
+}
