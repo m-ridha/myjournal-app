@@ -6,9 +6,12 @@ import (
 )
 
 // Only these informational pages participate in public search discovery.
-var publicPages = []struct{ path, page string }{
-	{"/", "landing"}, {"/help", "help"}, {"/privacy", "privacy"}, {"/terms", "terms"},
-}
+var (
+	supportedLocales = []string{"en", "id"}
+	publicPages      = []struct{ path, page string }{
+		{"/", "landing"}, {"/help", "help"}, {"/privacy", "privacy"}, {"/terms", "terms"},
+	}
+)
 
 type publicMetadata struct {
 	CanonicalURL   string
@@ -27,7 +30,7 @@ func localizedPublicPath(locale, path string) string {
 
 // publicRoute recognizes only explicit language variants of public pages.
 func publicRoute(path string) (locale, original string, ok bool) {
-	for _, locale := range []string{"en", "id"} {
+	for _, locale := range supportedLocales {
 		for _, page := range publicPages {
 			if path == localizedPublicPath(locale, page.path) {
 				return locale, page.path, true

@@ -117,7 +117,7 @@ func TestLanguageRequestsRemainIsolated(t *testing.T) {
 	cfg := config.Config{BaseURL: testutil.LocalBaseURL, SessionKey: "0123456789abcdef0123456789abcdef"}
 	h := newTestRouter(cfg, provider.NewRegistry(localProvider.New(testutil.LocalBaseURL, "")), clock.System{}, nil)
 	for i := 0; i < 20; i++ {
-		for _, locale := range []string{"en", "id"} {
+		for _, locale := range supportedLocales {
 			t.Run(fmt.Sprintf("%s-%d", locale, i), func(t *testing.T) {
 				t.Parallel()
 				req := httptest.NewRequest(http.MethodGet, "/help", nil)

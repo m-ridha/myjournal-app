@@ -53,32 +53,49 @@ func TestPublicSEO(t *testing.T) {
 			assert.Equal(t, tc.locale, res.Header().Get("Content-Language"))
 			assert.Equal(t, "no-store", res.Header().Get("Cache-Control"))
 			body := res.Body.String()
+
+			// Verify the rendered HTML structure.
+			assert.Equal(t, 1, countHTMLTags(t, body, "html"))
+			assert.Equal(t, 1, countHTMLTags(t, body, "head"))
+			assert.Equal(t, 1, countHTMLTags(t, body, "title"))
+			assert.Equal(t, 1, countHTMLTags(t, body, "body"))
+			assert.Equal(t, 1, countMetaByName(t, body, "description"))
+
+			// Verify SEO metadata.
 			assert.Contains(t, body, `<html lang="`+tc.locale+`"`)
 			assert.Contains(t, body, `<title>`+tc.title+` · myjournal</title>`)
 			assert.Contains(t, body, `<link rel="canonical" href="https://myjournal.ink`+tc.canonical+`">`)
 			assert.Contains(t, body, `<meta property="og:url" content="https://myjournal.ink`+tc.canonical+`">`)
 			assert.Contains(t, body, `property="og:image" content="https://myjournal.ink/static/logo/myjournal-app-logo-120x120.png"`)
 			assert.Contains(t, body, `name="twitter:card" content="summary"`)
+
 			original := strings.TrimPrefix(tc.canonical, "/"+tc.locale)
-			for _, language := range []string{"en", "id"} {
+			for _, language := range supportedLocales {
 				assert.Contains(t, body, `hreflang="`+language+`" href="https://myjournal.ink/`+language+original+`"`)
 				assert.Contains(t, body, `href="/`+language+original+`" lang="`+language+`"`)
 			}
+
+			// Verify untrusted request values do not leak into the response.
 			assert.NotContains(t, body, "host-injection")
 			assert.NotContains(t, body, "proxy-injection")
 			assert.NotContains(t, body, "untrusted-query")
+
+			// Verify only the intended public-page scripts are included.
 			assert.NotContains(t, body, "/static/js/app.js")
 			assert.NotContains(t, body, "/static/js/calendar-picker.js")
 			assert.NotContains(t, body, "/static/js/timezone.js")
 			assert.Contains(t, body, "/static/js/draft-cleanup.js")
 			assert.NotContains(t, body, "calendar.dayLabel")
+
+			// The WebSite structured data is only included on the landing page.
 			if original == "/" {
 				assert.Contains(t, body, `itemtype="https://schema.org/WebSite"`)
 				assert.Contains(t, body, `itemprop="url" href="https://myjournal.ink/"`)
 			} else {
 				assert.NotContains(t, body, `itemtype="https://schema.org/WebSite"`)
 			}
-			// A language page stores the same secure preference used by the application.
+
+			// A localized page stores the selected language preference securely.
 			if tc.path != "/" {
 				require.Len(t, res.Result().Cookies(), 1)
 				cookie := res.Result().Cookies()[0]
@@ -86,6 +103,8 @@ func TestPublicSEO(t *testing.T) {
 				assert.True(t, cookie.Secure)
 				assert.True(t, cookie.HttpOnly)
 			}
+
+			// Verify localized messages and links in the rendered document.
 			doc, err := html.Parse(strings.NewReader(body))
 			require.NoError(t, err)
 			var visit func(*html.Node)
@@ -119,6 +138,54 @@ func TestPublicSEO(t *testing.T) {
 			visit(doc)
 		})
 	}
+}
+
+func countHTMLTags(t *testing.T, body, tagName string) int {
+	t.Helper()
+
+	doc, err := html.Parse(strings.NewReader(body))
+	require.NoError(t, err)
+
+	count := 0
+	var visit func(*html.Node)
+	visit = func(n *html.Node) {
+		if n.Type == html.ElementNode && n.Data == tagName {
+			count++
+		}
+		for child := n.FirstChild; child != nil; child = child.NextSibling {
+			visit(child)
+		}
+	}
+	visit(doc)
+
+	return count
+}
+
+func countMetaByName(t *testing.T, body, name string) int {
+	t.Helper()
+
+	doc, err := html.Parse(strings.NewReader(body))
+	require.NoError(t, err)
+
+	count := 0
+	var visit func(*html.Node)
+	visit = func(n *html.Node) {
+		if n.Type == html.ElementNode && n.Data == "meta" {
+			for _, attr := range n.Attr {
+				if attr.Key == "name" &&
+					attr.Val == name {
+					count++
+					break
+				}
+			}
+		}
+		for child := n.FirstChild; child != nil; child = child.NextSibling {
+			visit(child)
+		}
+	}
+	visit(doc)
+
+	return count
 }
 
 func TestPrivatePagesStayOutOfSearch(t *testing.T) {

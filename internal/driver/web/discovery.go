@@ -21,7 +21,7 @@ func registerDiscoveryRoutes(r chi.Router, baseURL string) {
 		}{
 			XMLNS: "http://www.sitemaps.org/schemas/sitemap/0.9",
 		}
-		for _, locale := range []string{"en", "id"} {
+		for _, locale := range supportedLocales {
 			for _, page := range publicPages {
 				sitemap.URLs = append(sitemap.URLs, sitemapURL{Loc: baseURL + localizedPublicPath(locale, page.path)})
 			}
