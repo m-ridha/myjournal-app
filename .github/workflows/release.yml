@@ -13,8 +13,7 @@ concurrency:
 
 jobs:
   deploy:
-    # Explicit readiness gate until production OAuth and infrastructure privacy pass.
-    if: ${{ !github.event.release.prerelease && vars.RAILWAY_RELEASE_READY == 'true' }}
+    if: ${{ !github.event.release.prerelease }}
     runs-on: ubuntu-latest
     timeout-minutes: 40
     environment: production

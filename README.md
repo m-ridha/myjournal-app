@@ -20,7 +20,7 @@ The app is online-only. Browser drafts provide recovery rather than offline sync
 
 ## Prerequisites
 
-Install Go **1.27.2** (the version declared in `go.mod`), Git, Make, and OpenSSL. Development checks also need **Node.js 24**; macOS JavaScriptCore is a supported alternative for the JavaScript tests. No npm install, database, or Google credentials are required for local-provider development.
+Install Go **1.27.3** (the version declared in `go.mod`), Git, Make, and OpenSSL. Development checks also need **Node.js 24**; macOS JavaScriptCore is a supported alternative for the JavaScript tests. No npm install, database, or Google credentials are required for local-provider development.
 
 Install the Go development tools at the repository's pinned versions:
 
@@ -106,4 +106,4 @@ See [Google integration checks](docs/development/testing.md#google-integration) 
 
 Production infrastructure is defined in [`.railway/railway.go`](.railway/railway.go), with its own pinned Go SDK module. The same published-release job validates and applies a pinned infrastructure plan before uploading release source; PRs, merges and tag pushes do not apply infrastructure or deploy. Railway variables and secrets remain managed on Railway. See [IaC operations](.railway/README.md).
 
-The workflow retains the repository-variable gate `RAILWAY_RELEASE_READY=true`. Configure `RAILWAY_PROJECT_ID` as a repository variable, `APP_BASE_URL`, `RAILWAY_SERVICE_ID` and `RAILWAY_ENVIRONMENT_ID` as production-environment variables, and `RAILWAY_TOKEN` as a secret. Keep one replica and branch autodeploys disabled. Maintain the same `SESSION_KEY` across restart/rollback; rollback does not revert Drive writes. Never commit credentials, cookies or journal content.
+Configure `RAILWAY_PROJECT_ID` as a repository variable, `APP_BASE_URL`, `RAILWAY_SERVICE_ID` and `RAILWAY_ENVIRONMENT_ID` as production-environment variables, and `RAILWAY_TOKEN` as a secret. Keep one replica and branch autodeploys disabled. Maintain the same `SESSION_KEY` across restart/rollback; rollback does not revert Drive writes. Never commit credentials, cookies or journal content.

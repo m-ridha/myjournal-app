@@ -8,8 +8,8 @@ GitHub variables. CLI 5.70.0 evaluates the graph, including its explicit
 unmanaged-variable policy; secrets and all other variable values stay on Railway.
 
 The release path in `.github/workflows/release.yml` applies configuration after a regular
-GitHub Release is published, tag/main-ancestry validation and code checks pass,
-and `RAILWAY_RELEASE_READY=true`. Tag pushes, PRs and merges do not deploy.
+GitHub Release is published and tag/main-ancestry validation and code checks pass.
+Tag pushes, PRs and merges do not deploy.
 PR checks evaluate the Go graph offline without Railway credentials.
 
 The release helper targets the configured environment via `RAILWAY_TOKEN`
