@@ -20,7 +20,7 @@ The app is online-only. Browser drafts provide recovery rather than offline sync
 
 ## Prerequisites
 
-Install Go **1.27.2** (the version declared in `go.mod`), Git, Make, and OpenSSL. Development checks also need **Node.js 24**; macOS JavaScriptCore is a supported alternative for the JavaScript tests. No npm install, database, or Google credentials are required for local-provider development.
+Install Go **1.27.3** (the version declared in `go.mod`), Git, Make, and OpenSSL. Development checks also need **Node.js 24**; macOS JavaScriptCore is a supported alternative for the JavaScript tests. No npm install, database, or Google credentials are required for local-provider development.
 
 Install the Go development tools at the repository's pinned versions:
 

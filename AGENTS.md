@@ -13,7 +13,7 @@ Read the user's current instructions and inspect affected code before relying on
 
 ## Setup and checks
 
-Preserve module `myjournal-app`, Go 1.27.2 and existing dependencies. Prefer the standard library. Follow [README prerequisites](README.md#prerequisites): Go, Git, Make and OpenSSL; checks need Node.js 24 or macOS JavaScriptCore, Wire v0.7.0, oapi-codegen v2.8.0, Mockery v3.8.1 and golangci-lint v2.14.0. Do not silently upgrade generators or substitute Mockery v2. Python, Docker and browser QA tools are task-specific.
+Preserve module `myjournal-app`, Go 1.27.3 and existing dependencies. Prefer the standard library. Follow [README prerequisites](README.md#prerequisites): Go, Git, Make and OpenSSL; checks need Node.js 24 or macOS JavaScriptCore, Wire v0.7.0, oapi-codegen v2.8.0, Mockery v3.8.1 and golangci-lint v2.14.0. Do not silently upgrade generators or substitute Mockery v2. Python, Docker and browser QA tools are task-specific.
 
 Fresh clone: `go mod download`, create `.env` from `.env.example` without overwriting an existing file, set SESSION_KEY using `openssl rand -base64 32`, then `make generate`, `make fmt lint test`, separately `make test-architecture`, and `make run`. Never print `.env`. Local defaults require no Google credentials. `make run` loads `.env`; direct go run does not. Keep listener port and base URL aligned; never kill a listener without establishing ownership.
 
