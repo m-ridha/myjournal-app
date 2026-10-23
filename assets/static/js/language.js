@@ -1,5 +1,20 @@
 (function () {
   document.querySelectorAll('[data-language-picker]').forEach(initPicker);
+  document.querySelectorAll('[data-public-language]').forEach(picker => {
+    picker.addEventListener('keydown', event => {
+      if (event.key === 'Escape' && picker.open) {
+        event.preventDefault();
+        picker.open = false;
+        picker.querySelector('summary').focus();
+      }
+    });
+    document.addEventListener('click', event => {
+      if (!picker.contains(event.target)) picker.open = false;
+    });
+    picker.addEventListener('focusout', event => {
+      if (!picker.contains(event.relatedTarget)) picker.open = false;
+    });
+  });
 
   function initPicker(picker) {
     const select = picker.querySelector('select');

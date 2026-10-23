@@ -912,6 +912,17 @@ html[data-theme="dark"] .icon-moon {
   max-width: 48rem;
 }
 
+/* Leave the section heading visible below the sticky header on fragment navigation. */
+.mj-public-copy [id] {
+  scroll-margin-top: 6rem;
+}
+
+@media (max-width: 640px) {
+  .mj-public-copy [id] {
+    scroll-margin-top: 12rem;
+  }
+}
+
 .mj-public-copy > header,
 .mj-public-copy > section {
   margin-bottom: 2rem;
@@ -1059,6 +1070,7 @@ html[data-theme="dark"] .icon-moon {
   box-shadow: 0 0.5rem 1.5rem var(--mj-shadow);
 }
 
+.mj-language-options a,
 .mj-language-options button {
   display: block;
   width: 100%;
@@ -1073,17 +1085,21 @@ html[data-theme="dark"] .icon-moon {
   cursor: pointer;
 }
 
+.mj-language-options a[aria-current="page"],
 .mj-language-options button[aria-selected="true"] {
   font-weight: 700;
   text-decoration: underline;
   text-underline-offset: 0.2em;
 }
 
+.mj-language-options a:hover,
+.mj-language-options a:focus-visible,
 .mj-language-options button:hover,
 .mj-language-options button:focus-visible {
   background: var(--mj-surface-strong);
 }
 
+.mj-language-options a:focus-visible,
 .mj-language-trigger:focus-visible,
 .mj-language-options button:focus-visible {
   outline: 2px solid var(--mj-text);
@@ -1301,21 +1317,12 @@ html[data-theme="dark"] .icon-moon {
   outline-offset: 2px;
 }
 
-.mj-public-languages {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 1rem;
-  padding: 0.75rem 1rem;
-  font-size: 0.875rem;
+[data-public-language] summary {
+  list-style: none;
+  cursor: pointer;
 }
-
-.mj-public-languages a {
-  text-decoration: underline;
-  text-underline-offset: 0.2em;
-}
-.mj-public-languages a[aria-current="page"] {
-  font-weight: 700;
+[data-public-language] summary::-webkit-details-marker {
+  display: none;
 }
 
 /* Landing guide card */

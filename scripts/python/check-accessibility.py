@@ -52,10 +52,10 @@ async def audit(page, axe_script, label):
 
 
 async def check_keyboard(page):
-    controls = page.locator('a[href], button:enabled, textarea:not([readonly])')
+    controls = page.locator('a[href], summary, button:enabled, textarea:not([readonly])')
     count = await controls.count()
     expected = set(await controls.evaluate_all("""elements => elements
-        .filter(e => e.getClientRects().length > 0 && getComputedStyle(e).visibility !== 'hidden')
+        .filter(e => e.checkVisibility({visibilityProperty: true}))
         .map(e => e.getAttribute('aria-label') || e.textContent.trim())"""))
     visited = set()
     for _ in range(count + 2):
@@ -75,6 +75,30 @@ async def check_keyboard(page):
             visited.add(focus['name'])
     assert expected and expected <= visited, {'unreached': sorted(expected - visited)}
     return sorted(visited)
+
+
+async def check_public_fragment_offsets(browser, base):
+    # Test native fragment navigation, including without JavaScript.
+    for javascript in [True, False]:
+        context = await browser.new_context(java_script_enabled=javascript)
+        page = await context.new_page()
+        try:
+            for theme in ['light', 'dark']:
+                await page.emulate_media(color_scheme=theme)
+                for width in [1280, 640, 375, 320]:
+                    await page.set_viewport_size({'width': width, 'height': 900})
+                    for path in ['/help', '/en/help', '/id/help']:
+                        await page.goto(base + path + '#drive-access')
+                        heading = await page.locator('#drive-access h2').bounding_box()
+                        header = await page.locator('.mj-header').bounding_box()
+                        assert heading and header
+                        assert heading['y'] >= header['y'] + header['height'] + 8, {
+                            'path': path, 'width': width, 'theme': theme,
+                            'javascript': javascript, 'heading': heading, 'header': header,
+                        }
+                        assert heading['y'] + heading['height'] <= 900
+        finally:
+            await context.close()
 
 
 async def run_browser(base, axe_script):
@@ -97,6 +121,7 @@ async def run_browser(base, axe_script):
         else:
             raise RuntimeError('Owned test server did not become healthy')
 
+        await check_public_fragment_offsets(browser, base)
         await page.goto(base + '/api/v1/auth/local/login')
         await page.wait_for_function("!document.querySelector('[data-entry-text]').readOnly")
         for theme in ['light', 'dark']:
@@ -235,7 +260,7 @@ async def run_browser(base, axe_script):
                 scans.append(await audit(public_page, axe_script, label))
                 keyboard[label] = await check_keyboard(public_page)
                 if path == '/settings':
-                    await public_page.locator('[data-header-language] [data-language-trigger]').click()
+                    await public_page.locator('[data-header-language] [data-language-trigger], [data-public-language] summary').click()
                     scans.append(await audit(public_page, axe_script, label + '/language-open'))
                     await public_page.keyboard.press('Escape')
         # Explicit locale URLs stay discoverable without cookies or JavaScript,
@@ -263,11 +288,12 @@ async def run_browser(base, axe_script):
                 await public_page.screenshot(path='/tmp/myjournal-seo-' + theme + '-' + locale + '.png', full_page=True)
                 await public_page.set_viewport_size({'width': 1280, 'height': 720})
         await public_page.goto(base + '/en/help')
-        await public_page.locator('[data-header-language] [data-language-trigger]').click()
-        await public_page.locator('[data-header-language] [data-language-option="id"]').click()
+        await public_page.locator('[data-header-language] [data-language-trigger], [data-public-language] summary').click()
+        await public_page.locator('[data-public-language] a[lang="id"]').click()
         await public_page.wait_for_url(base + '/id/help')
         await expect(public_page.locator('html')).to_have_attribute('lang', 'id')
-        await public_page.locator('.mj-public-languages a[lang="en"]').click()
+        await public_page.locator('[data-public-language] summary').click()
+        await public_page.locator('[data-public-language] a[lang="en"]').click()
         await public_page.wait_for_url(base + '/en/help')
         await expect(public_page.locator('html')).to_have_attribute('lang', 'en')
         await public_page.goto(base + '/en/')
@@ -280,7 +306,9 @@ async def run_browser(base, axe_script):
             response = await readable.goto(base + '/' + locale + '/')
             assert response.status == 200
             await expect(readable.locator('h1')).to_be_visible()
-            await expect(readable.locator('.mj-public-languages a')).to_have_count(2)
+            await readable.locator('[data-public-language] summary').click()
+            await expect(readable.locator('[data-public-language] a')).to_have_count(2)
+            await expect(readable.locator('[data-public-language] a[lang="en"]')).to_be_visible()
         await no_js.close()
         await public_context.close()
 
