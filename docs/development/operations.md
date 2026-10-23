@@ -28,7 +28,7 @@ GitHub configuration:
 
 | Setting | Location |
 | --- | --- |
-| RAILWAY_RELEASE_READY=true, RAILWAY_PROJECT_ID | Repository variables |
+| RAILWAY_PROJECT_ID | Repository variables |
 | APP_BASE_URL, RAILWAY_SERVICE_ID, RAILWAY_ENVIRONMENT_ID | production environment variables |
 | RAILWAY_TOKEN | Secret, preferably production-environment scoped; repository secret supported |
 
