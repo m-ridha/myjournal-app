@@ -2,6 +2,7 @@ package web
 
 import (
 	"encoding/json"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -55,6 +56,7 @@ func TestPublicSEO(t *testing.T) {
 			body := res.Body.String()
 
 			// Verify the rendered HTML structure.
+			assertUniquePageAssets(t, body)
 			assert.Equal(t, 1, countHTMLTags(t, body, "html"))
 			assert.Equal(t, 1, countHTMLTags(t, body, "head"))
 			assert.Equal(t, 1, countHTMLTags(t, body, "title"))
@@ -69,7 +71,13 @@ func TestPublicSEO(t *testing.T) {
 			assert.Contains(t, body, `property="og:image" content="https://myjournal.ink/static/logo/myjournal-app-logo-120x120.png"`)
 			assert.Contains(t, body, `name="twitter:card" content="summary"`)
 
+			assert.Equal(t, 1, countHTMLAttributes(t, body, "link", "rel", "canonical"))
 			original := strings.TrimPrefix(tc.canonical, "/"+tc.locale)
+			assert.Contains(t, body, `hreflang="x-default" href="https://myjournal.ink`+original+`"`)
+			for _, path := range []string{"/help", "/privacy", "/terms"} {
+				assert.NotContains(t, body, `href="`+path+`"`)
+				assert.NotContains(t, body, `href="`+path+`#`)
+			}
 			for _, language := range supportedLocales {
 				assert.Contains(t, body, `hreflang="`+language+`" href="https://myjournal.ink/`+language+original+`"`)
 				assert.Contains(t, body, `href="/`+language+original+`" lang="`+language+`"`)
@@ -89,6 +97,7 @@ func TestPublicSEO(t *testing.T) {
 
 			// The WebSite structured data is only included on the landing page.
 			if original == "/" {
+				assert.Equal(t, 1, countMetaByName(t, body, "google-site-verification"))
 				assert.Contains(t, body, `itemtype="https://schema.org/WebSite"`)
 				assert.Contains(t, body, `itemprop="url" href="https://myjournal.ink/"`)
 			} else {
@@ -129,6 +138,9 @@ func TestPublicSEO(t *testing.T) {
 						linked := httptest.NewRecorder()
 						h.ServeHTTP(linked, httptest.NewRequest(http.MethodGet, target.Path, nil))
 						assert.Equal(t, http.StatusOK, linked.Code, "broken localized link %s", attr.Val)
+						if target.Fragment != "" {
+							assert.Equal(t, 1, countHTMLAttributes(t, linked.Body.String(), "", "id", target.Fragment), "missing or duplicate anchor: %s", attr.Val)
+						}
 					}
 				}
 				for child := n.FirstChild; child != nil; child = child.NextSibling {
@@ -140,52 +152,52 @@ func TestPublicSEO(t *testing.T) {
 	}
 }
 
+// Tokenize the response without the tree parser's automatic HTML repairs.
 func countHTMLTags(t *testing.T, body, tagName string) int {
 	t.Helper()
-
-	doc, err := html.Parse(strings.NewReader(body))
-	require.NoError(t, err)
-
-	count := 0
-	var visit func(*html.Node)
-	visit = func(n *html.Node) {
-		if n.Type == html.ElementNode && n.Data == tagName {
-			count++
-		}
-		for child := n.FirstChild; child != nil; child = child.NextSibling {
-			visit(child)
-		}
-	}
-	visit(doc)
-
-	return count
+	return countHTMLAttributes(t, body, tagName, "", "")
 }
 
 func countMetaByName(t *testing.T, body, name string) int {
 	t.Helper()
+	return countHTMLAttributes(t, body, "meta", "name", name)
+}
 
-	doc, err := html.Parse(strings.NewReader(body))
-	require.NoError(t, err)
-
+func countHTMLAttributes(t *testing.T, body, tag, attribute, value string) int {
+	t.Helper()
+	tokenizer := html.NewTokenizer(strings.NewReader(body))
 	count := 0
-	var visit func(*html.Node)
-	visit = func(n *html.Node) {
-		if n.Type == html.ElementNode && n.Data == "meta" {
-			for _, attr := range n.Attr {
-				if attr.Key == "name" &&
-					attr.Val == name {
+	for {
+		switch tokenizer.Next() {
+		case html.ErrorToken:
+			require.ErrorIs(t, tokenizer.Err(), io.EOF)
+			return count
+		case html.StartTagToken, html.SelfClosingTagToken:
+			token := tokenizer.Token()
+			if tag != "" && token.Data != tag {
+				continue
+			}
+			if attribute == "" {
+				count++
+				continue
+			}
+			for _, attr := range token.Attr {
+				if attr.Key == attribute && attr.Val == value {
 					count++
 					break
 				}
 			}
 		}
-		for child := n.FirstChild; child != nil; child = child.NextSibling {
-			visit(child)
-		}
 	}
-	visit(doc)
+}
 
-	return count
+func assertUniquePageAssets(t *testing.T, body string) {
+	t.Helper()
+	assert.Equal(t, 1, countHTMLAttributes(t, body, "a", "class", "mj-brand"))
+	for _, script := range []string{"theme-init", "theme", "language", "draft-cleanup", "timezone", "calendar-picker", "app"} {
+		count := countHTMLAttributes(t, body, "script", "src", "/static/js/"+script+".js")
+		assert.LessOrEqual(t, count, 1, "duplicate script: %s", script)
+	}
 }
 
 func TestPrivatePagesStayOutOfSearch(t *testing.T) {
@@ -197,6 +209,7 @@ func TestPrivatePagesStayOutOfSearch(t *testing.T) {
 			addLocalSessionCookie(t, req, cfg.SessionKey)
 			res := httptest.NewRecorder()
 			h.ServeHTTP(res, req)
+			assertUniquePageAssets(t, res.Body.String())
 			assert.Equal(t, "noindex", res.Header().Get("X-Robots-Tag"))
 			assert.Equal(t, "no-store", res.Header().Get("Cache-Control"))
 			assert.NotContains(t, res.Body.String(), `rel="canonical"`)

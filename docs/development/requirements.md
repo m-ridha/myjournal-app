@@ -30,6 +30,8 @@ Settings Disconnect revokes the provider connection before clearing the session 
 
 ## Interface and accessibility
 
+- Preserve the existing quiet, restrained visual style across new and updated features: consistent font family, type hierarchy, line height, spacing rhythm, rounded corners, borders, surfaces, icons and button states. Use the shared theme colors and established component patterns.
+- Cards at the same layout level must align with neighboring cards and use the same outer width and page gutters. If prose needs a narrower reading measure, constrain the text inside the card rather than narrowing the outer card. Preserve intentional existing layouts, such as feature-card grids and standalone reading pages; do not make every component the same width.
 - Header: brand, centered Write/Entries/Calendar, theme toggle, globe-and-EN/ID language picker, always-visible Settings gear and Help. Privacy is linked from Help. Settings/preferences are public; account data and sign-out/disconnect require a valid session.
 - English is default; English/Bahasa Indonesia selection persists after sign-out in a browser preference cookie. Locale JSON uses flat dotted keys; templates use t and scripts data-messages. Dates, account labels and user text are runtime data.
 - Theme follows device changes until the user explicitly chooses via the header. Respect saved choices. Do not restore Appearance controls in Settings.
