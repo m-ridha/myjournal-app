@@ -25,9 +25,9 @@ func TestPublicSEO(t *testing.T) {
 	h := newTestRouter(cfg, provider.NewRegistry(), clock.System{}, nil)
 	type testCase struct{ path, locale, canonical, title string }
 	cases := []testCase{
-		{"/", "en", "/en/", "Private Online Journal in Your Google Drive"},
-		{"/en/", "en", "/en/", "Private Online Journal in Your Google Drive"},
-		{"/id/", "id", "/id/", "Jurnal Online Pribadi di Google Drive Anda"},
+		{"/", "en", "/en/", "Private Online Journal &amp; Personal Diary"},
+		{"/en/", "en", "/en/", "Private Online Journal &amp; Personal Diary"},
+		{"/id/", "id", "/id/", "Jurnal Online &amp; Buku Harian Pribadi"},
 		{"/en/help", "en", "/en/help", "How to Use Your Google Drive Journal"},
 		{"/id/help", "id", "/id/help", "Panduan Jurnal Pribadi di Google Drive"},
 		{"/en/privacy", "en", "/en/privacy", "Privacy Policy"},
