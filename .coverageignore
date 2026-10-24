@@ -1,0 +1,9 @@
+# Exact Go package import paths or module-qualified file paths, one per line
+<!-- No wildcards or recursive matching. -->
+
+<!-- These packages provide shared test assertions and fixtures; their callers still run. -->
+myjournal-app/internal/core/journal/storetest
+myjournal-app/internal/testutil
+
+<!-- Generated API bindings; handwritten files in this package remain covered. -->
+myjournal-app/internal/driver/web/api/openapi.gen.go

@@ -1,8 +1,9 @@
 GOCMD ?= go
-GOTEST ?= $(GOCMD) test -coverprofile=coverage.out ./...
+GOTEST ?= $(GOCMD) test -coverprofile=coverage.out ./... && \
+	sh scripts/shell/filter-coverage.sh .coverageignore coverage.out
 GOLINT ?= golangci-lint
 
-.PHONY: run generate generate-openapi generate-wire generate-mocks fmt lint test test-js test-architecture
+.PHONY: run generate generate-openapi generate-wire generate-mocks fmt lint test test-js test-architecture show-go-coverage
 
 all: generate fmt lint test run
 
