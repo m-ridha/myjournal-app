@@ -8,10 +8,12 @@ import (
 )
 
 func TestSystemNow(t *testing.T) {
-	clock := System{}
+	systemClock := System{}
 
-	clockTimeTruncated := clock.Now().Truncate(5 * time.Second)
-	expectedTimeTruncated := time.Now().Truncate(5 * time.Second)
+	before := time.Now()
+	got := systemClock.Now()
+	after := time.Now()
 
-	assert.Equal(t, expectedTimeTruncated, clockTimeTruncated)
+	assert.False(t, got.Before(before))
+	assert.False(t, got.After(after))
 }
