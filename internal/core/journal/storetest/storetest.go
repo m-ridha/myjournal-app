@@ -113,6 +113,7 @@ func Run(t *testing.T, newStore Factory) {
 			}
 		}
 	})
+
 	t.Run("invalid UTF-8 preserves entry", func(t *testing.T) {
 		store := newStore(t)
 		original, err := store.Put(ctx, date, "valid", "")
