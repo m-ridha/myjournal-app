@@ -1362,7 +1362,7 @@ html[data-theme="dark"] .icon-moon {
 }
 
 /* Summary heading */
-.mj-landing-guide .mj-guide-summary h3 {
+.mj-landing-guide .mj-guide-summary h2 {
   flex: 1;
   margin: 0;
   font-size: 1rem;
@@ -1425,7 +1425,9 @@ html[data-theme="dark"] .icon-moon {
   padding: 0 0 0.75rem;
 }
 
-.mj-landing-guide .mj-guide-faq h4 {
+.mj-landing-guide .mj-guide-faq h3 {
+  font-size: 1rem;
+  line-height: inherit;
   margin-top: 1rem;
   margin-bottom: 0.35rem;
 }
