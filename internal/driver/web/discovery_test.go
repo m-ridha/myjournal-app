@@ -44,7 +44,12 @@ func TestPublicDiscoveryRoutes(t *testing.T) {
 				var sitemap struct {
 					XMLName xml.Name
 					URLs    []struct {
-						Locations []string `xml:"loc"`
+						Locations  []string `xml:"loc"`
+						Alternates []struct {
+							Rel      string `xml:"rel,attr"`
+							Hreflang string `xml:"hreflang,attr"`
+							Href     string `xml:"href,attr"`
+						} `xml:"http://www.w3.org/1999/xhtml link"`
 					} `xml:"url"`
 				}
 				err := xml.Unmarshal(res.Body.Bytes(), &sitemap)
@@ -57,6 +62,14 @@ func TestPublicDiscoveryRoutes(t *testing.T) {
 				for i, record := range sitemap.URLs {
 					if len(record.Locations) != 1 {
 						t.Fatalf("sitemap URL record %d locations = %v, want exactly one", i, record.Locations)
+					}
+					if len(record.Alternates) != 3 {
+						t.Fatalf("sitemap URL record %d alternates = %v, want 3 (en, id, x-default)", i, record.Alternates)
+					}
+					for _, alt := range record.Alternates {
+						if alt.Rel != "alternate" || alt.Hreflang == "" || alt.Href == "" {
+							t.Errorf("sitemap URL record %d invalid alternate = %+v", i, alt)
+						}
 					}
 					locations = append(locations, record.Locations[0])
 				}

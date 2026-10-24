@@ -1,8 +1,13 @@
 {{define "landing"}}
-<section class="mj-hero mj-landing-hero">
+<section class="mj-hero mj-landing-hero"{{if eq .Page "landing"}} itemscope itemtype="https://schema.org/WebApplication"{{end}}>
+  {{if eq .Page "landing"}}
+    <meta itemprop="name" content="{{t "app.name"}}">
+    <meta itemprop="applicationCategory" content="LifestyleApplication">
+    <meta itemprop="operatingSystem" content="All">
+  {{end}}
   <p class="mj-kicker">{{t "landing.kicker"}}</p>
   <h1>{{t "landing.title"}}</h1>
-  <p class="mj-lead">{{t "landing.description"}}</p>
+  <p class="mj-lead"{{if eq .Page "landing"}} itemprop="description"{{end}}>{{t "landing.description"}}</p>
   {{if eq .Page "signin"}}
     <p class="mj-signin-guidance">{{t "auth.instructions"}}<br>{{t "auth.unsavedReminder"}}</p>
   {{end}}
@@ -57,24 +62,48 @@
     <summary class="mj-guide-summary">
       <h2>{{t "landing.questions.title"}}</h2>
     </summary>
-    <div class="mj-guide-faq">
-      <h3>{{t "landing.questions.diary.title"}}</h3>
-      <p>{{t "landing.questions.diary.body"}}</p>
+    <div class="mj-guide-faq" itemscope itemtype="https://schema.org/FAQPage">
+      <div itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+        <h3 itemprop="name">{{t "landing.questions.diary.title"}}</h3>
+        <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+          <p itemprop="text">{{t "landing.questions.diary.body"}}</p>
+        </div>
+      </div>
 
-      <h3>{{t "landing.questions.safety.title"}}</h3>
-      <p>{{t "landing.questions.safety.body"}}</p>
+      <div itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+        <h3 itemprop="name">{{t "landing.questions.safety.title"}}</h3>
+        <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+          <p itemprop="text">{{t "landing.questions.safety.body"}}</p>
+        </div>
+      </div>
 
-      <h3>{{t "landing.questions.storage.title"}}</h3>
-      <p>{{t "landing.questions.storage.body"}}</p>
+      <div itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+        <h3 itemprop="name">{{t "landing.questions.storage.title"}}</h3>
+        <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+          <p itemprop="text">{{t "landing.questions.storage.body"}}</p>
+        </div>
+      </div>
 
-      <h3>{{t "landing.questions.access.title"}}</h3>
-      <p>{{t "landing.questions.access.body"}}</p>
+      <div itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+        <h3 itemprop="name">{{t "landing.questions.access.title"}}</h3>
+        <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+          <p itemprop="text">{{t "landing.questions.access.body"}}</p>
+        </div>
+      </div>
 
-      <h3>{{t "landing.questions.offline.title"}}</h3>
-      <p>{{t "landing.questions.offline.body"}}</p>
+      <div itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+        <h3 itemprop="name">{{t "landing.questions.offline.title"}}</h3>
+        <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+          <p itemprop="text">{{t "landing.questions.offline.body"}}</p>
+        </div>
+      </div>
 
-      <h3>{{t "landing.questions.portable.title"}}</h3>
-      <p>{{t "landing.questions.portable.body"}}</p>
+      <div itemscope itemprop="mainEntity" itemtype="https://schema.org/Question">
+        <h3 itemprop="name">{{t "landing.questions.portable.title"}}</h3>
+        <div itemscope itemprop="acceptedAnswer" itemtype="https://schema.org/Answer">
+          <p itemprop="text">{{t "landing.questions.portable.body"}}</p>
+        </div>
+      </div>
     </div>
   </details>
   <p class="mj-guide-link">

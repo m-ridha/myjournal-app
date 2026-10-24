@@ -44,6 +44,7 @@
     <h2>{{t "privacy.contact.title"}}</h2>
     <p>{{t "privacy.contact.body"}} <a href="mailto:support@myjournal.ink">{{t "privacy.contact.email"}}</a>.</p>
     <p>{{t "privacy.changes"}}</p>
+    <p><a href="{{if .Public}}{{.Public.Prefix}}{{end}}/terms">{{t "help.termsLink"}}</a> · <a href="{{if .Public}}{{.Public.Prefix}}{{end}}/help">{{t "nav.help"}}</a></p>
   </section>
 </article>
 {{end}}

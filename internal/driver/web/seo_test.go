@@ -64,12 +64,25 @@ func TestPublicSEO(t *testing.T) {
 			assert.Equal(t, 1, countMetaByName(t, body, "description"))
 
 			// Verify SEO metadata.
+			wantOGLocale, wantOGAlternate := "en_US", "id_ID"
+			if tc.locale == "id" {
+				wantOGLocale, wantOGAlternate = "id_ID", "en_US"
+			}
 			assert.Contains(t, body, `<html lang="`+tc.locale+`"`)
 			assert.Contains(t, body, `<title>`+tc.title+` · myjournal</title>`)
 			assert.Contains(t, body, `<link rel="canonical" href="https://myjournal.ink`+tc.canonical+`">`)
+			assert.Contains(t, body, `<meta property="og:locale" content="`+wantOGLocale+`">`)
+			assert.Contains(t, body, `<meta property="og:locale:alternate" content="`+wantOGAlternate+`">`)
 			assert.Contains(t, body, `<meta property="og:url" content="https://myjournal.ink`+tc.canonical+`">`)
-			assert.Contains(t, body, `property="og:image" content="https://myjournal.ink/static/logo/myjournal-app-logo-120x120.png"`)
-			assert.Contains(t, body, `name="twitter:card" content="summary"`)
+			assert.Contains(t, body, `property="og:image" content="https://myjournal.ink/static/banners/myjournal-og-`+tc.locale+`.png"`)
+			assert.Contains(t, body, `property="og:image:type" content="image/png"`)
+			assert.Contains(t, body, `property="og:image:width" content="1200"`)
+			assert.Contains(t, body, `property="og:image:height" content="630"`)
+			assert.Contains(t, body, `name="twitter:card" content="summary_large_image"`)
+
+			imageRes := httptest.NewRecorder()
+			h.ServeHTTP(imageRes, httptest.NewRequest(http.MethodGet, "/static/banners/myjournal-og-"+tc.locale+".png", nil))
+			assert.Equal(t, http.StatusOK, imageRes.Code)
 
 			assert.Equal(t, 1, countHTMLAttributes(t, body, "link", "rel", "canonical"))
 			original := strings.TrimPrefix(tc.canonical, "/"+tc.locale)
@@ -95,13 +108,19 @@ func TestPublicSEO(t *testing.T) {
 			assert.Contains(t, body, "/static/js/draft-cleanup.js")
 			assert.NotContains(t, body, "calendar.dayLabel")
 
-			// The WebSite structured data is only included on the landing page.
+			// The WebSite, WebApplication, and FAQPage structured data are only included on the landing page.
 			if original == "/" {
 				assert.Equal(t, 1, countMetaByName(t, body, "google-site-verification"))
 				assert.Contains(t, body, `itemtype="https://schema.org/WebSite"`)
 				assert.Contains(t, body, `itemprop="url" href="https://myjournal.ink/"`)
+				assert.Contains(t, body, `itemtype="https://schema.org/WebApplication"`)
+				assert.Contains(t, body, `itemtype="https://schema.org/FAQPage"`)
+				assert.Equal(t, 6, countHTMLAttributes(t, body, "div", "itemtype", "https://schema.org/Question"))
+				assert.Equal(t, 6, countHTMLAttributes(t, body, "div", "itemtype", "https://schema.org/Answer"))
 			} else {
 				assert.NotContains(t, body, `itemtype="https://schema.org/WebSite"`)
+				assert.NotContains(t, body, `itemtype="https://schema.org/WebApplication"`)
+				assert.NotContains(t, body, `itemtype="https://schema.org/FAQPage"`)
 			}
 
 			// A localized page stores the selected language preference securely.
