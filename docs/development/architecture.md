@@ -51,7 +51,7 @@ Successful PUT/DELETE may schedule backend read-through warming: four workers, a
 
 ## HTTP and generated contracts
 
-Browser pages and `/api/v1/...` JSON APIs are separate; `/healthz` is unversioned. The authoritative API schema is [OpenAPI](../api/openapi.yml). Preserve explicit save strings, JSON error envelopes and wrapped domain error mappings via errors.Is. Request limits include a 1 MiB save envelope. SameSite cookies do not replace net/http.CrossOriginProtection for unsafe browser requests or OAuth state/PKCE.
+Browser pages and `/api/v1/...` REST APIs are separate; `/healthz` is unversioned. The authoritative API schema is [OpenAPI](../api/openapi.yml). Preserve explicit save strings, JSON error envelopes and wrapped domain error mappings via errors.Is. Request limits include a 1 MiB save envelope. SameSite cookies do not replace net/http.CrossOriginProtection for unsafe browser requests or OAuth state/PKCE.
 
 Use same-origin CSP and local external scripts/assets; no inline script exceptions, trackers, fonts or CDNs. Escape text through templates and safe DOM APIs. HSTS is one year, host-only, for the configured HTTPS origin, without subdomains/preload; never infer it from untrusted forwarded headers. Logs contain method, query-free path, status, duration and request ID, without raw sensitive errors or callback queries.
 

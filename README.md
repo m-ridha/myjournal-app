@@ -4,7 +4,7 @@
   <img src="assets/static/logo/myjournal-app-logo-120x120.png" alt="myjournal-app Logo" width="120" height="120">
 </p>
 
-A Go app for one plain-text journal entry per day, stored in the user's Google Drive. The app uses a JSON API and vanilla JavaScript with server-rendered templates; production has no user database or persistent journal storage.
+A Go app for one plain-text journal entry per day, stored in the user's Google Drive. The app uses a REST API and vanilla JavaScript with server-rendered templates; production has no user database or persistent journal storage.
 
 Contributor instructions are in [AGENTS.md](AGENTS.md). See [requirements](docs/development/requirements.md), [architecture](docs/development/architecture.md), [testing](docs/development/testing.md), [operations](docs/development/operations.md) and [current status](docs/development/status.md).
 
@@ -94,7 +94,7 @@ The testing guide also covers editor recovery and manual UI checks. PR creation 
 
 ## Architecture
 
-`internal/core/journal` owns domain rules and storage/clock ports. Local and Google providers implement adapters; the web layer handles JSON APIs under `/api/v1` and browser pages. `cmd/app` composes dependencies with Wire. Embedded assets use `html/template`, local CSS, scripts and SVGs. See AGENTS.md for boundaries and durable conventions.
+`internal/core/journal` owns domain rules and storage/clock ports. Local and Google providers implement adapters; the web layer handles REST APIs under `/api/v1` and browser pages. `cmd/app` composes dependencies with Wire. Embedded assets use `html/template`, local CSS, scripts and SVGs. See AGENTS.md for boundaries and durable conventions.
 
 ## Google integration testing
 
