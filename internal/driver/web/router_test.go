@@ -193,6 +193,9 @@ func TestFutureDateEntryPageIsRejected(t *testing.T) {
 	if got := res.Body.String(); !strings.Contains(got, "Page not found") {
 		t.Fatalf("future date page body = %q, want branded 404 copy", got)
 	}
+	if got := res.Body.String(); !strings.Contains(got, `class="mj-nav"`) {
+		t.Fatal("signed-in 404 must retain navigation")
+	}
 }
 
 func TestNotFoundPageRendersTemplate(t *testing.T) {
@@ -208,6 +211,26 @@ func TestNotFoundPageRendersTemplate(t *testing.T) {
 	}
 	if got := res.Body.String(); !strings.Contains(got, "Page not found") {
 		t.Fatalf("not found page body = %q, want not found copy", got)
+	}
+	if got := res.Body.String(); strings.Contains(got, `class="mj-nav"`) {
+		t.Fatal("signed-out 404 must not render navigation")
+	}
+}
+
+func TestNotFoundPageRetainsNavigationWhenSignedIn(t *testing.T) {
+	cfg := config.Config{BaseURL: testutil.LocalBaseURL, SessionKey: "0123456789abcdef0123456789abcdef"}
+	h := newTestRouter(cfg, provider.NewRegistry(localProvider.New(testutil.LocalBaseURL, "")), clock.System{}, nil)
+
+	req := httptest.NewRequest(http.MethodGet, "/definitely-missing", nil)
+	addLocalSessionCookie(t, req, cfg.SessionKey)
+	res := httptest.NewRecorder()
+	h.ServeHTTP(res, req)
+
+	if res.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want %d", res.Code, http.StatusNotFound)
+	}
+	if got := res.Body.String(); !strings.Contains(got, `class="mj-nav"`) {
+		t.Fatal("signed-in 404 must retain navigation")
 	}
 }
 
