@@ -4,9 +4,8 @@
   <head{{if and .Public (eq .Page "landing")}} itemscope itemtype="https://schema.org/WebSite"{{end}}>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    {{if eq .Page "landing"}}
-      <meta name="google-site-verification" content="Y1nEpISYFro2F4U1Cn7uCKAddTlEXzDb6wYu4IiH-cA" />
-    {{end}}
+    <link rel="manifest" href="/static/manifest.webmanifest">
+    {{if eq .Page "landing"}}<meta name="google-site-verification" content="Y1nEpISYFro2F4U1Cn7uCKAddTlEXzDb6wYu4IiH-cA" />{{end}}
     <meta name="description" content="{{.Description}}">
     <title>{{if .Title}}{{.Title}} · {{end}}{{t "app.name"}}</title>
     {{with .Public}}
@@ -49,7 +48,7 @@
     <header class="mj-header">
       <div class="mj-container mj-header-inner">
         <a class="mj-brand" href="/">
-          <img class="mj-brand-logo" src="/static/logo/myjournal-app-logo-120x120.png" width="120" height="120" alt="">
+          <img class="mj-brand-logo" src="/static/icons/myjournal-icons-120.png" width="120" height="120" alt="">
           {{t "app.name"}}
         </a>
         <nav class="mj-nav" aria-label="{{t "nav.main"}}">

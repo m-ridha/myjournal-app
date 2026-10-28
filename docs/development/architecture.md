@@ -55,6 +55,8 @@ Browser pages and `/api/v1/...` REST APIs are separate; `/healthz` is unversione
 
 Use same-origin CSP and local external scripts/assets; no inline script exceptions, trackers, fonts or CDNs. Escape text through templates and safe DOM APIs. HSTS is one year, host-only, for the configured HTTPS origin, without subdomains/preload; never infer it from untrusted forwarded headers. Logs contain method, query-free path, status, duration and request ID, without raw sensitive errors or callback queries.
 
+The shared page head links the embedded `/static/manifest.webmanifest`, served publicly by the existing static handler. Its stable root ID, start URL and scope keep installation independent of locale, authentication and selected entry date. Installation uses the name myjournal, standalone display and bundled 192px/512px PNG icons. The app remains online-only: no service worker or offline cache is registered. Chrome's [current install criteria](https://web.dev/articles/install-criteria) require HTTPS and browser-controlled engagement conditions for install promotion; a manifest alone does not guarantee a prompt.
+
 HTTP lifecycle uses bounded header/read/write/idle and handler deadlines, graceful draining on shutdown, then cache cleanup. Preserve cancellation through external operations and lock waits. Generated API, Wire and Mockery output remains committed and generator-owned; edit the owning schema/input and regenerate.
 
 ## Visual provenance

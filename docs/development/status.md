@@ -20,6 +20,10 @@ The signed-out local English homepage HTML measured 10,772 bytes; the inspected 
 
 The changes remain local pending an authorized release. After deployment, follow the [Search Console checks](operations.md#search-visibility-after-an-authorized-release); no sitemap submission, indexing request, DNS change or deployment was performed here. URL and indexing contracts live in [architecture](architecture.md#public-search-discovery).
 
+## Installability validation
+
+Local manifest checks passed with `make fmt lint test`, separately `make test-architecture`, and `git diff --check`. Chrome on localhost loaded the manifest from both EN/ID public pages with `application/manifest+json` and decoded the supplied icons as 192x192 and 512x512. No OS installation, installed-window Google authentication, physical-device install or deployed HTTPS verification was performed. The changes remain local; follow the [installation checks](testing.md#browser-security-and-release-smoke) after an authorized release.
+
 ## Outstanding work
 
 - ~~Confirm deployment of the custom-domain Search Console tag, ownership verification and Google's branding decision.~~ Google branding verification is complete: the OAuth consent screen displays "myjournal" and the verification status reads "Your branding has been verified and is being shown to users."
