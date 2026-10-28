@@ -214,6 +214,8 @@ func newLocaleRouter(cfg Options, registry provider.Catalog, clk journal.Clock, 
 }
 
 func (renderer *Renderer) renderNotFoundPage(w http.ResponseWriter, signedIn bool) {
+	// The 404 page renders session-dependent navigation, so it must not be cached.
+	w.Header().Set("Cache-Control", "no-store")
 	renderer.renderPageStatus(w, http.StatusNotFound, pageData{TitleKey: "notFound.title", DescriptionKey: "notFound.description", Page: "notfound", SignedIn: signedIn})
 }
 

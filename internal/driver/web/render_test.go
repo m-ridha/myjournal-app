@@ -31,6 +31,9 @@ func TestStyledNotFoundContentType(t *testing.T) {
 			if w.Code != http.StatusNotFound || !strings.HasPrefix(w.Header().Get("Content-Type"), "text/html") {
 				t.Fatalf("code=%d content-type=%q", w.Code, w.Header().Get("Content-Type"))
 			}
+			if got := w.Header().Get("Cache-Control"); got != "no-store" {
+				t.Fatalf("cache-control = %q, want no-store", got)
+			}
 			if navigation := strings.Contains(w.Body.String(), `class="mj-nav"`); navigation != signedIn {
 				t.Fatalf("navigation shown = %t, want %t", navigation, signedIn)
 			}
