@@ -51,11 +51,13 @@
           <img class="mj-brand-logo" src="/static/icons/myjournal-icons-120.png" width="120" height="120" alt="">
           {{t "app.name"}}
         </a>
+        {{if .SignedIn}}
         <nav class="mj-nav" aria-label="{{t "nav.main"}}">
           <a href="/">{{t "nav.write"}}</a>
           <a href="/entries">{{t "nav.entries"}}</a>
           <a href="/calendar">{{t "nav.calendar"}}</a>
         </nav>
+        {{end}}
         <div class="mj-header-actions">
           <button class="mj-theme-toggle" type="button" data-theme-toggle aria-label="{{t "theme.switchToDark"}}" aria-pressed="false">
             <span class="mj-theme-toggle-icon" aria-hidden="true">
