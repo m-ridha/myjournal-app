@@ -1,7 +1,7 @@
 # myjournal-app
 
 <p align="center">
-  <img src="assets/static/logo/myjournal-app-logo-120x120.png" alt="myjournal-app Logo" width="120" height="120">
+  <img src="assets/static/icons/myjournal-icons-120.png" alt="myjournal logo" width="120" height="120">
 </p>
 
 A Go app for one plain-text journal entry per day, stored in the user's Google Drive. The app uses a REST API and vanilla JavaScript with server-rendered templates; production has no user database or persistent journal storage.

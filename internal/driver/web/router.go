@@ -74,7 +74,13 @@ func newLocaleRouter(cfg Options, registry provider.Catalog, clk journal.Clock, 
 	r.Use(canonicalGoogleLogin(cfg.BaseURL))
 
 	if staticFS, err := fs.Sub(assets.FS, "static"); err == nil {
-		r.Handle("/static/*", http.StripPrefix("/static/", http.FileServer(http.FS(staticFS))))
+		staticHandler := http.StripPrefix("/static/", http.FileServer(http.FS(staticFS)))
+		r.HandleFunc("/static/manifest.webmanifest", func(w http.ResponseWriter, r *http.Request) {
+			// Do not rely on the host OS MIME database for this extension.
+			w.Header().Set("Content-Type", "application/manifest+json")
+			staticHandler.ServeHTTP(w, r)
+		})
+		r.Handle("/static/*", staticHandler)
 	}
 
 	// API routes

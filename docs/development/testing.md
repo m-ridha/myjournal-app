@@ -52,6 +52,8 @@ Use the private localhost configuration in [operations](operations.md), an autho
 
 ## Browser security and release smoke
 
+For installation, use a fresh Chrome profile where myjournal is not already installed. On localhost (for development) or HTTPS, inspect Application > Manifest: verify myjournal, root start URL/scope, standalone display, and both decoded 192px/512px icons without manifest errors. Click the page and spend at least 30 seconds viewing it before checking browser install promotion; browser policy and prior installation can affect availability. Install through Chrome, launch from the OS and verify the standalone window, icon, EN/ID preference and signed-in/signed-out launch behavior. Check that authentication recovery still opens sign-in separately and preserves drafts. Installation does not add offline support. `TestInstallManifest` checks public manifest delivery, shared page links and actual PNG dimensions; it does not establish OS installation or Google sign-in behavior in an installed window.
+
 Inspect CSP/security headers and browser console/network under real navigation, save/conflict/recovery, language/theme, settings and calendar interactions. Confirm local external scripts load without CSP violations and no third-party page requests occur. Check HTTPS host-only HSTS, no caching of protected responses, unsafe cross-origin rejection, and callback errors without exposed query data. Distinguish console inspection from complete browser/security coverage.
 
 Use [operations](operations.md) for authorized release/rollback checks. Automated release script fixtures test target/plan restrictions and deployment polling; they do not deploy. Record actual deployment identity and health separately from mocked success.
