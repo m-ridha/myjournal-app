@@ -1,6 +1,7 @@
 package web
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"image/png"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"golang.org/x/net/html"
 
 	"myjournal-app/internal/config"
 	provider "myjournal-app/internal/core/connection"
@@ -25,7 +27,7 @@ func TestInstallManifest(t *testing.T) {
 			response := httptest.NewRecorder()
 			router.ServeHTTP(response, httptest.NewRequest(http.MethodGet, path, nil))
 			require.Equal(t, http.StatusOK, response.Code)
-			assert.Contains(t, response.Body.String(), `<link rel="manifest" href="/static/manifest.webmanifest">`)
+			assertManifestLink(t, response.Body.Bytes())
 		})
 	}
 
@@ -75,4 +77,39 @@ func TestInstallManifest(t *testing.T) {
 			assert.Equal(t, size, image.Height)
 		})
 	}
+}
+
+func assertManifestLink(t *testing.T, body []byte) {
+	t.Helper()
+
+	document, err := html.Parse(bytes.NewReader(body))
+	require.NoError(t, err)
+
+	var manifestLinkFound bool
+	var visit func(*html.Node, bool)
+	visit = func(node *html.Node, inHead bool) {
+		if node.Type == html.ElementNode && node.Data == "head" {
+			inHead = true
+		}
+		if inHead && node.Type == html.ElementNode && node.Data == "link" {
+			var relation, href string
+			for _, attribute := range node.Attr {
+				switch attribute.Key {
+				case "rel":
+					relation = attribute.Val
+				case "href":
+					href = attribute.Val
+				}
+			}
+			if relation == "manifest" && href == "/static/manifest.webmanifest" {
+				manifestLinkFound = true
+			}
+		}
+		for child := node.FirstChild; child != nil; child = child.NextSibling {
+			visit(child, inHead)
+		}
+	}
+	visit(document, false)
+
+	assert.True(t, manifestLinkFound, "head must include the web app manifest link")
 }
