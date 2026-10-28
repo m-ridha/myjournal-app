@@ -135,11 +135,11 @@ func newLocaleRouter(cfg Options, registry provider.Catalog, clk journal.Clock, 
 		dateStr := chi.URLParam(r, "date")
 		date, err := time.Parse(time.DateOnly, dateStr)
 		if err != nil {
-			renderer.renderNotFoundPage(w)
+			renderer.renderNotFoundPage(w, true)
 			return
 		}
 		if journal.ValidateEntryDate(civil.DateOf(date), civil.DateOf(clk.Now().In(journal.TimeZone(r.Context())))) != nil {
-			renderer.renderNotFoundPage(w)
+			renderer.renderNotFoundPage(w, true)
 			return
 		}
 		renderer.renderEntryPage(w, date, clk, current, journal.TimeZone(r.Context()))
@@ -206,14 +206,17 @@ func newLocaleRouter(cfg Options, registry provider.Catalog, clk journal.Clock, 
 			api.WriteError(w, http.StatusNotFound, renderer.catalog.Text("errors.invalidRequest"))
 			return
 		}
-		renderer.renderNotFoundPage(w)
+		_, err := currentSession(r, cfg.Session.Codec, registry, clk.Now())
+		renderer.renderNotFoundPage(w, err == nil)
 	})
 
 	return r
 }
 
-func (renderer *Renderer) renderNotFoundPage(w http.ResponseWriter) {
-	renderer.renderPageStatus(w, http.StatusNotFound, pageData{TitleKey: "notFound.title", DescriptionKey: "notFound.description", Page: "notfound"})
+func (renderer *Renderer) renderNotFoundPage(w http.ResponseWriter, signedIn bool) {
+	// The 404 page renders session-dependent navigation, so it must not be cached.
+	w.Header().Set("Cache-Control", "no-store")
+	renderer.renderPageStatus(w, http.StatusNotFound, pageData{TitleKey: "notFound.title", DescriptionKey: "notFound.description", Page: "notfound", SignedIn: signedIn})
 }
 
 func (renderer *Renderer) renderEntryPage(w http.ResponseWriter, date time.Time, clk journal.Clock, current provider.Session, location *time.Location) {

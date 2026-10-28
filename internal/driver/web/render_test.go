@@ -24,10 +24,20 @@ func TestRenderFailureDoesNotCommitPartialSuccess(t *testing.T) {
 }
 
 func TestStyledNotFoundContentType(t *testing.T) {
-	w := httptest.NewRecorder()
-	testRenderer(t).renderNotFoundPage(w)
-	if w.Code != 404 || !strings.HasPrefix(w.Header().Get("Content-Type"), "text/html") {
-		t.Fatalf("code=%d content-type=%q", w.Code, w.Header().Get("Content-Type"))
+	for _, signedIn := range []bool{false, true} {
+		t.Run(fmt.Sprintf("signedIn=%t", signedIn), func(t *testing.T) {
+			w := httptest.NewRecorder()
+			testRenderer(t).renderNotFoundPage(w, signedIn)
+			if w.Code != http.StatusNotFound || !strings.HasPrefix(w.Header().Get("Content-Type"), "text/html") {
+				t.Fatalf("code=%d content-type=%q", w.Code, w.Header().Get("Content-Type"))
+			}
+			if got := w.Header().Get("Cache-Control"); got != "no-store" {
+				t.Fatalf("cache-control = %q, want no-store", got)
+			}
+			if navigation := strings.Contains(w.Body.String(), `class="mj-nav"`); navigation != signedIn {
+				t.Fatalf("navigation shown = %t, want %t", navigation, signedIn)
+			}
+		})
 	}
 }
 
