@@ -177,6 +177,48 @@ async function run() {
     }
   }
 
+  for (const scenario of ['loaded', 'loading', 'cleanup failure']) {
+    const pendingLoad = deferred();
+    f = setup({
+      initial: scenario === 'loading' ? pendingLoad.promise : response('server'),
+      localValues: new Map([[scopedLegacyKey, legacyRecord]]),
+    });
+    await tick();
+    assert(!f.old.hidden, `${scenario}: scoped draft is offered before sign-out`);
+    // The signing-out tab removes the persisted legacy copy and notifies this editor.
+    f.localValues.delete(scopedLegacyKey);
+    if (scenario === 'cleanup failure') {
+      sessionStorage.removeItem = () => { throw new Error('cleanup denied'); };
+      f.values.set(key, 'retained backup');
+    }
+    f.winEvents.storage({ key: 'mj-signout:account-a' });
+    if (scenario === 'loading') {
+      pendingLoad.resolve(response('server'));
+      await tick();
+    }
+    let confirmations = 0;
+    window.confirm = () => {
+      confirmations += 1;
+      return true;
+    };
+    f.old.fire('click');
+    assert(confirmations === 0, `${scenario}: signed-out recovery cannot request confirmation`);
+    assert(f.old.hidden && f.old.disabled, `${scenario}: signed-out recovery is hidden and disabled`);
+    assert(f.text.value !== 'older private text', `${scenario}: retained legacy text cannot be revealed`);
+    f.text.fire('blur');
+    f.winEvents.pagehide();
+    await f.advance(10000);
+    assert(f.calls.length === 1, `${scenario}: signed-out recovery cannot save`);
+    assert(f.values.get(key) === (scenario === 'cleanup failure' ? 'retained backup' : undefined),
+      `${scenario}: signed-out recovery cannot recreate or replace backups`);
+  }
+
+  f = setup({ localValues: new Map([[scopedLegacyKey, legacyRecord]]) });
+  await tick();
+  f.winEvents.storage({ key: 'mj-signout:account-b' });
+  f.old.fire('click');
+  assert(f.text.value === 'older private text' && f.values.has(key), 'another account signing out preserves recovery');
+
   f = setup({ signOut: true }); f.values.set(key, 'draft'); f.localValues.set('mj-draft:v2:account-b:2020-01-01', 'other'); f.localValues.set(`mj-draft:${date}`, 'legacy'); f.localValues.set('mj-theme', 'dark');
   f.queue.shift(); f.queue.push({ ok: true }); f.button.fire('click'); await tick();
   assert(!f.values.has(key) && !f.localValues.has(`mj-draft:${date}`) && f.localValues.has('mj-draft:v2:account-b:2020-01-01') && f.localValues.has('mj-theme'), 'signout must clear current account and legacy drafts only');
