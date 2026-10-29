@@ -31,6 +31,7 @@ import (
 	"myjournal-app/internal/driver/web"
 	"myjournal-app/internal/driver/web/authsession"
 	webHandler "myjournal-app/internal/driver/web/handler"
+	webMiddleware "myjournal-app/internal/driver/web/middleware"
 )
 
 // App is the runtime composition built in the cmd/app layer.
@@ -165,7 +166,12 @@ func newProviderRegistry(cfg config.Config) (*provider.Registry, error) {
 
 func newHTTPServer(cfg config.Config, handler http.Handler) *http.Server {
 	addr := fmt.Sprintf(":%d", cfg.Port)
-	if cfg.GoogleTestMode || slices.Contains(cfg.ProviderIDs(), provider.LocalID) {
+	localEnabled := slices.Contains(cfg.ProviderIDs(), provider.LocalID)
+	if localEnabled {
+		// Loopback binding alone does not stop DNS rebinding to the local account.
+		handler = webMiddleware.RequestAuthority(cfg.BaseURL)(handler)
+	}
+	if cfg.GoogleTestMode || localEnabled {
 		host := "127.0.0.1"
 		origin, _ := url.Parse(cfg.BaseURL)
 		if origin != nil {

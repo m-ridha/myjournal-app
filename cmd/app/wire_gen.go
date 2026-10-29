@@ -24,6 +24,7 @@ import (
 	"myjournal-app/internal/driver/web"
 	"myjournal-app/internal/driver/web/authsession"
 	"myjournal-app/internal/driver/web/handler"
+	"myjournal-app/internal/driver/web/middleware"
 	"net"
 	"net/http"
 	"net/url"
@@ -182,7 +183,11 @@ func newProviderRegistry(cfg config.Config) (*connection.Registry, error) {
 
 func newHTTPServer(cfg config.Config, handler2 http.Handler) *http.Server {
 	addr := fmt.Sprintf(":%d", cfg.Port)
-	if cfg.GoogleTestMode || slices.Contains(cfg.ProviderIDs(), connection.LocalID) {
+	localEnabled := slices.Contains(cfg.ProviderIDs(), connection.LocalID)
+	if localEnabled {
+		handler2 = middleware.RequestAuthority(cfg.BaseURL)(handler2)
+	}
+	if cfg.GoogleTestMode || localEnabled {
 		host := "127.0.0.1"
 		origin, _ := url.Parse(cfg.BaseURL)
 		if origin != nil {
