@@ -41,6 +41,8 @@ A separate ten-minute pending-login cookie holds state, PKCE and nonce. Validate
 
 Only request `openid`, `email`, `profile` and `https://www.googleapis.com/auth/drive.file`. Local providers and GOOGLE_TEST_MODE require exact localhost/loopback origins; use a separate Desktop app OAuth client for this—Desktop app clients permit loopback redirects by design without triggering App Security warnings, and do not share credentials with the production Web application client (see [operations](../development/operations.md)). Ordinary Google startup requires HTTPS and Secure cookies. Configuration rejects invalid session keys and unknown/duplicate providers.
 
+When the local provider is enabled, the HTTP server rejects request authorities outside the configured APP_BASE_URL host and effective port before routing or issuing cookies. This supplements loopback binding and cross-origin protection against DNS rebinding; forwarded headers cannot expand the allowed authority.
+
 ## Bounded caching
 
 The journal decorator owns policy through ByteCache; storage adapters do not know journal semantics. Provider/account-isolated full-entry and confirmed-absence snapshots have a two-minute TTL, with existence, text and version retained together. Other errors are not cached. Previews derive from those snapshots. Unrelated snapshots retain their original expiry after mutations. Logical expiry/eviction does not promise immediate physical byte erasure; the BigCache byte-queue setting is not a total process-memory bound.
