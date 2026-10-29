@@ -57,6 +57,9 @@ func TestExchangeAndRefresh(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if creds.IssuedAt <= 0 {
+		t.Fatal("connection has no issuance bound for revocation")
+	}
 	p.dropToken(creds.Refresh)
 	for i := 0; i < 2; i++ {
 		if _, err := p.accessToken(context.Background(), creds.Refresh); err != nil {

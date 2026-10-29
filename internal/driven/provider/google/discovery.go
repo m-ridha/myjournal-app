@@ -26,7 +26,7 @@ type operationDiscovery struct {
 // ForOperation owns bounded metadata reuse for one service call, never a request
 // after it. Content downloads and pre-upload metadata checks are always fresh.
 func (s *Store) ForOperation() journal.Store {
-	return &Store{service: s.service, lock: s.lock, discovery: &operationDiscovery{queries: make(map[string][]*drive.File)}}
+	return &Store{service: s.service, lock: s.lock, authorization: s.authorization, discovery: &operationDiscovery{queries: make(map[string][]*drive.File)}}
 }
 
 func (s *Store) list(ctx context.Context, query string) ([]*drive.File, error) {

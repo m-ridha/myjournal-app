@@ -104,6 +104,7 @@ func newServiceFactory(registry *connection.Registry, cache *cachestore.Cache, c
 		if err != nil {
 			return nil, err
 		}
+
 		return journal.NewService(cache.WrapWithFactory(current.ProviderID+":"+current.AccountID, store, func(ctx context.Context) (journal.Store, error) {
 			return p.Store(ctx, current.Connection)
 		}), clk), nil

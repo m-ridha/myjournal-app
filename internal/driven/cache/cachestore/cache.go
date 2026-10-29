@@ -63,8 +63,25 @@ func New(storage ByteCache, ttl time.Duration) *Cache {
 	return &Cache{storage: storage, ttl: ttl, now: time.Now, gate: make(chan struct{}, 1)}
 }
 
-// Wrap shares snapshots and overlapping reads by provider/account. The caller
-// must validate the connection and include the provider in the account namespace.
+// readAuthorizer validates the requesting connection independently of the shared
+// loader. Implementations must also observe revocation on repeated checks.
+type readAuthorizer interface {
+	Authorize(context.Context) error
+}
+
+func (s *Store) authorize(ctx context.Context) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	if authorizer, ok := s.base.(readAuthorizer); ok {
+		return authorizer.Authorize(ctx)
+	}
+	return nil
+}
+
+// Wrap shares snapshots and overlapping reads by provider/account. Providers with
+// revocable grants must implement readAuthorizer; callers include the provider
+// in the account namespace.
 func (c *Cache) Wrap(account string, base journal.Store) journal.Store {
 	return &Store{cache: c, account: account, base: base}
 }
@@ -115,6 +132,9 @@ func (s *Store) GetFresh(ctx context.Context, d civil.Date) (journal.Entry, erro
 // Previews shares batch orchestration so identical lists use one operation view.
 // The only retained content and per-date download flight belong to Get.
 func (s *Store) Previews(ctx context.Context, dates []civil.Date, maxBytes int) (map[civil.Date]string, error) {
+	if err := s.authorize(ctx); err != nil {
+		return nil, err
+	}
 	if s.account == "" {
 		return s.previews(ctx, dates, maxBytes)
 	}
@@ -125,6 +145,9 @@ func (s *Store) Previews(ctx context.Context, dates []civil.Date, maxBytes int) 
 	key := fmt.Sprintf("%s:%x:%d:%d", namespace(s.account), digest, maxBytes, s.cache.readEpoch(s.account).Load())
 	value, err := s.cache.previewBatches.do(ctx, key, func(ctx context.Context) (any, error) { return s.previews(ctx, ordered, maxBytes) })
 	if err != nil {
+		return nil, err
+	}
+	if err := s.authorize(ctx); err != nil {
 		return nil, err
 	}
 	return maps.Clone(value.(map[civil.Date]string)), nil
@@ -163,8 +186,16 @@ func (s *Store) previews(ctx context.Context, dates []civil.Date, maxBytes int) 
 
 // cachedRead fills snapshots inside the flight, before its result is published.
 func cachedRead[T any](ctx context.Context, s *Store, key cacheKey, load func(context.Context) (T, error)) (T, error) {
+	if err := s.authorize(ctx); err != nil {
+		var zero T
+		return zero, err
+	}
 	value, _, ok := s.cache.get(ctx, key)
 	if ok {
+		if err := s.authorize(ctx); err != nil {
+			var zero T
+			return zero, err
+		}
 		return value.(T), nil
 	}
 	return sharedRead(ctx, s, key, func(ctx context.Context) (T, error) {
@@ -181,12 +212,20 @@ func cachedRead[T any](ctx context.Context, s *Store, key cacheKey, load func(co
 }
 
 func sharedRead[T any](ctx context.Context, s *Store, key cacheKey, load func(context.Context) (T, error)) (T, error) {
+	if err := s.authorize(ctx); err != nil {
+		var zero T
+		return zero, err
+	}
 	if s.account == "" {
 		return load(ctx)
 	}
 	flightKey := fmt.Sprintf("%s:%s:%d", key.kind, key.string(), s.cache.readEpoch(s.account).Load())
 	value, err := s.cache.reads.do(ctx, flightKey, func(ctx context.Context) (any, error) { return load(ctx) })
 	if err != nil {
+		var zero T
+		return zero, err
+	}
+	if err := s.authorize(ctx); err != nil {
 		var zero T
 		return zero, err
 	}

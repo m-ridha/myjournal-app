@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"golang.org/x/oauth2"
@@ -16,9 +17,10 @@ import (
 )
 
 const (
-	maxCachedTokens = 128
-	lockStripes     = 64
-	requestTimeout  = 20 * time.Second
+	maxCachedTokens   = 128
+	lockStripes       = 64
+	requestTimeout    = 20 * time.Second
+	revocationStripes = 4096
 )
 
 // Config carries the environment-derived Google OAuth configuration.
@@ -31,14 +33,15 @@ type Config struct {
 
 // Provider is the Google-backed provider used by the real application.
 type Provider struct {
-	cfg       Config
-	endpoint  oauth2.Endpoint
-	client    *http.Client
-	validate  func(context.Context, string, string) (*idtoken.Payload, error)
-	mu        sync.Mutex
-	tokens    map[[32]byte]*oauth2.Token
-	locks     [lockStripes]chan struct{}
-	mutations [lockStripes]chan struct{}
+	cfg           Config
+	endpoint      oauth2.Endpoint
+	client        *http.Client
+	validate      func(context.Context, string, string) (*idtoken.Payload, error)
+	mu            sync.Mutex
+	tokens        map[[32]byte]*oauth2.Token
+	locks         [lockStripes]chan struct{}
+	mutations     [lockStripes]chan struct{}
+	revokedBefore [revocationStripes]atomic.Int64
 }
 
 var _ provider.Provider = (*Provider)(nil)
