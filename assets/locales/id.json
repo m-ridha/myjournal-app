@@ -71,7 +71,7 @@
   "editor.conflict": "Entri ini berubah di tempat lain. Teks Anda yang belum disimpan masih ada.",
   "editor.retryLoad": "Coba muat entri lagi",
   "editor.reviewLegacyDraft": "Tinjau draf lama",
-  "editor.legacyDraftConfirm": "Draf lama ini tidak terkait dengan akun. Pulihkan hanya jika draf ini milik Anda. Ganti teks yang dimuat dengan draf ini?",
+  "editor.legacyDraftConfirm": "Ganti teks yang dimuat dengan draf lama dari akun Anda ini?",
   "editor.backupUnavailable": " Cadangan browser tidak tersedia. Biarkan halaman ini terbuka atau salin teks Anda.",
   "editor.loadFailedDraft": "Tidak dapat memuat entri. Draf Anda masih ada; coba muat lagi sebelum menyimpan.",
   "editor.sessionExpired": "Silakan masuk lagi untuk menyimpan. Teks Anda masih ada.",

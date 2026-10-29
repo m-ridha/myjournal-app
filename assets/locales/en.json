@@ -71,7 +71,7 @@
   "editor.conflict": "This entry changed elsewhere. Your unsaved text is still here.",
   "editor.retryLoad": "Retry loading entry",
   "editor.reviewLegacyDraft": "Review older draft",
-  "editor.legacyDraftConfirm": "This older draft is not linked to an account. Recover it only if it belongs to you. Replace the loaded text with this draft?",
+  "editor.legacyDraftConfirm": "Replace the loaded text with this older draft from your account?",
   "editor.backupUnavailable": " Browser backup unavailable. Keep this page open or copy your text.",
   "editor.loadFailedDraft": "Unable to load entry. Your draft is here; retry loading before saving.",
   "editor.sessionExpired": "Please sign in again to save. Your text is still here.",

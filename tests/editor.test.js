@@ -147,8 +147,35 @@ async function run() {
   f.queue.push(response('server', 'new')); f.retry.fire('click'); await tick();
   assert(f.text.value === '' && !f.save.disabled && f.values.has(key), 'retry must preserve recovered empty draft');
 
-  f = setup({ legacy: 'legacy' }); await tick(); assert(f.text.value === 'server' && !f.old.hidden, 'unscoped draft requires explicit recovery');
-  f.old.fire('click'); assert(f.text.value === 'legacy' && f.values.has(key) && !f.localValues.has(`mj-draft:${date}`), 'explicit recovery migrates only after backup succeeds');
+  const scopedLegacyKey = `mj-draft:v2:account-a:${date}`;
+  const legacyRecord = JSON.stringify({ text: 'older private text', baseVersion: 'old', versionKnown: true });
+  const ignoredLegacyCases = [
+    ['date-only backup', []],
+    ['another account', [[`mj-draft:v2:account-b:${date}`, legacyRecord]]],
+    ['another date', [['mj-draft:v2:account-a:2020-01-02', legacyRecord]]],
+    ['invalid scoped backup', [[scopedLegacyKey, JSON.stringify({ text: 'invalid backup' })]]],
+    ['malformed scoped backup', [[scopedLegacyKey, '{']]],
+  ];
+  for (const [name, entries] of ignoredLegacyCases) {
+    f = setup({ legacy: 'unbound private text', localValues: new Map(entries) });
+    await tick();
+    let confirmations = 0;
+    window.confirm = () => {
+      confirmations += 1;
+      return true;
+    };
+    assert(f.old.hidden && f.text.value === 'server', `${name}: no recovery is offered`);
+    f.old.fire('click');
+    f.text.fire('blur');
+    f.winEvents.pagehide();
+    await f.advance(10000);
+    assert(confirmations === 0 && f.text.value === 'server', `${name}: recovery cannot expose private text`);
+    assert(!f.values.has(key) && f.calls.length === 1, `${name}: ignored text is never migrated or saved`);
+    assert(f.localValues.get(`mj-draft:${date}`) === 'unbound private text', `${name}: unbound backup is left intact`);
+    for (const [backupKey, value] of entries) {
+      assert(f.localValues.get(backupKey) === value, `${name}: ignored scoped backup is left intact`);
+    }
+  }
 
   f = setup({ signOut: true }); f.values.set(key, 'draft'); f.localValues.set('mj-draft:v2:account-b:2020-01-01', 'other'); f.localValues.set(`mj-draft:${date}`, 'legacy'); f.localValues.set('mj-theme', 'dark');
   f.queue.shift(); f.queue.push({ ok: true }); f.button.fire('click'); await tick();
@@ -225,11 +252,33 @@ async function run() {
   f.queue.push(response('first tab', 'v2')); f.save.fire('click'); await tick();
   assert(!firstTab.has(key) && secondTab.has(key), 'saving one tab must not clear the other tab backup');
 
-  const oldScoped = new Map([[`mj-draft:v2:account-a:${date}`, JSON.stringify({ text: 'old scoped', baseVersion: 'old', versionKnown: true })]]);
-  f = setup({ localValues: oldScoped }); await tick(); f.old.fire('click');
-  assert(JSON.parse(f.values.get(key)).baseVersion === 'old' && !oldScoped.has(`mj-draft:v2:account-a:${date}`), 'migration must retain the old scoped version');
+  const oldScoped = new Map([[scopedLegacyKey, legacyRecord]]);
+  f = setup({ localValues: oldScoped, legacy: 'unbound private text' });
+  await tick();
+  assert(!f.old.hidden && f.text.value === 'server', 'account-scoped migration requires explicit review');
+  assert(f.calls[0].options.headers['Cache-Control'] === 'no-store', 'account-scoped recovery uses a fresh read');
+  window.confirm = () => false;
+  f.old.fire('click');
+  assert(f.text.value === 'server' && oldScoped.has(scopedLegacyKey) && !f.values.has(key), 'cancelled recovery preserves both copies');
+  window.confirm = () => true;
+  f.old.fire('click');
+  const migrated = JSON.parse(f.values.get(key));
+  assert(f.text.value === 'older private text' && migrated.text === 'older private text', 'only the current account draft is migrated');
+  assert(migrated.baseVersion === 'old' && migrated.versionKnown && !oldScoped.has(scopedLegacyKey), 'migration must retain the old scoped version');
+  assert(oldScoped.get(`mj-draft:${date}`) === 'unbound private text', 'account-scoped migration leaves the unbound backup intact');
+  f.text.fire('blur');
+  f.winEvents.pagehide();
+  await f.advance(10000);
+  assert(f.calls.length === 1, 'migrated draft waits for editing or Save before autosave');
   f.queue.push(response('', '', 409)); f.save.fire('click'); await tick();
   assert(!f.panel.hidden, 'migrated stale backup must still conflict');
+
+  f = setup({ localValues: new Map([[scopedLegacyKey, legacyRecord]]) });
+  await tick();
+  sessionStorage.setItem = () => { throw new Error('backup denied'); };
+  f.old.fire('click');
+  assert(f.text.value === 'older private text' && f.localValues.get(scopedLegacyKey) === legacyRecord, 'failed migration keeps visible text and the original scoped backup');
+  assert(!f.values.has(key) && f.status.textContent.includes('editor.backupUnavailable'), 'failed migration reports unavailable backup truthfully');
 
   // Manual retries verify uncertain saves before risking another upload.
   for (const failure of [() => response('', '', 503), () => Promise.reject(new Error('lost acknowledgement')),
