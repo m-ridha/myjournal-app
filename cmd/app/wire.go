@@ -87,6 +87,7 @@ func newServiceFactory(registry *provider.Registry, cache *cachestore.Cache, clk
 		if err != nil {
 			return nil, err
 		}
+		// The decorator checks the requesting store's authorization before sharing data.
 		return journal.NewService(cache.WrapWithFactory(current.ProviderID+":"+current.AccountID, store, func(ctx context.Context) (journal.Store, error) {
 			return p.Store(ctx, current.Connection)
 		}), clk), nil

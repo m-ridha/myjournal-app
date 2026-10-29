@@ -35,7 +35,14 @@ func collapseProvider(t *testing.T, block func(http.ResponseWriter, *http.Reques
 			t.Error("missing synthetic access token")
 		}
 		w := httptest.NewRecorder()
-		handler.ServeHTTP(w, r)
+		if r.URL.Host == "oauth2.googleapis.com" {
+			if block == nil || !block(w, r) {
+				w.Header().Set("Content-Type", "application/json")
+				_, _ = io.WriteString(w, `{"access_token":"synthetic-access","token_type":"Bearer","expires_in":3600}`)
+			}
+		} else {
+			handler.ServeHTTP(w, r)
+		}
 		if err := r.Context().Err(); err != nil {
 			return nil, err
 		}

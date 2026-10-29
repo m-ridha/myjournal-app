@@ -30,9 +30,10 @@ const (
 )
 
 type credentials struct {
-	Version int    `json:"v"`
-	Subject string `json:"s"`
-	Refresh string `json:"r"`
+	Version  int    `json:"v"`
+	Subject  string `json:"s"`
+	Refresh  string `json:"r"`
+	IssuedAt int64  `json:"i,omitempty"`
 }
 
 func decodeCredentials(c provider.Connection) (credentials, error) {
@@ -88,7 +89,7 @@ func (p *Provider) Complete(ctx context.Context, callback provider.LoginCallback
 	if token.RefreshToken == "" || len(token.RefreshToken) > maxRefreshTokenBytes {
 		return provider.Connection{}, loginRejected(provider.LoginRefresh)
 	}
-	stored := credentials{Version: credentialsVersion, Subject: claims.Subject, Refresh: token.RefreshToken}
+	stored := credentials{Version: credentialsVersion, Subject: claims.Subject, Refresh: token.RefreshToken, IssuedAt: now.UnixNano()}
 	encoded, err := json.Marshal(stored)
 	if err != nil {
 		return provider.Connection{}, journal.ErrAuthRequired
@@ -152,6 +153,11 @@ func (p *Provider) accessToken(ctx context.Context, refresh string) (*oauth2.Tok
 		copyToken := *cached
 		return &copyToken, nil
 	}
+	return p.refreshToken(ctx, refresh)
+}
+
+// refreshToken must run under the credential lock, including authorization checks.
+func (p *Provider) refreshToken(ctx context.Context, refresh string) (*oauth2.Token, error) {
 	ctx = context.WithValue(ctx, oauth2.HTTPClient, p.client)
 	token, err := p.oauthConfig().TokenSource(ctx, &oauth2.Token{RefreshToken: refresh}).Token()
 	if err != nil {
@@ -171,16 +177,24 @@ func (p *Provider) accessToken(ctx context.Context, refresh string) (*oauth2.Tok
 }
 
 type tokenSource struct {
-	p       *Provider
-	ctx     context.Context
-	refresh string
+	p      *Provider
+	ctx    context.Context
+	stored credentials
 }
 
-func (s tokenSource) Token() (*oauth2.Token, error) { return s.p.accessToken(s.ctx, s.refresh) }
+func (s tokenSource) Token() (*oauth2.Token, error) {
+	if err := s.p.checkConnection(s.ctx, s.stored); err != nil {
+		return nil, err
+	}
+	return s.p.accessToken(s.ctx, s.stored.Refresh)
+}
 
 func (p *Provider) Revoke(ctx context.Context, c provider.Connection) error {
 	stored, err := decodeCredentials(c)
 	if err != nil {
+		return err
+	}
+	if err := p.checkConnection(ctx, stored); err != nil {
 		return err
 	}
 	unlock, err := p.lock(ctx, "token:"+stored.Refresh)
@@ -188,6 +202,9 @@ func (p *Provider) Revoke(ctx context.Context, c provider.Connection) error {
 		return err
 	}
 	defer unlock()
+	if err := p.checkConnection(ctx, stored); err != nil {
+		return err
+	}
 	request, err := http.NewRequestWithContext(ctx, http.MethodPost, "https://oauth2.googleapis.com/revoke", strings.NewReader(url.Values{"token": {stored.Refresh}}.Encode()))
 	if err != nil {
 		return journal.ErrUnavailable
@@ -201,6 +218,14 @@ func (p *Provider) Revoke(ctx context.Context, c provider.Connection) error {
 	_, _ = io.Copy(io.Discard, io.LimitReader(response.Body, revocationResponseBytes))
 	if response.StatusCode != http.StatusOK {
 		return journal.ErrUnavailable
+	}
+	// Keep a monotonic cutoff even if concurrent revocations finish out of order.
+	cutoff := p.revocationCutoff(stored.Subject)
+	revokedAt := time.Now().UnixNano()
+	for previous := cutoff.Load(); previous < revokedAt; previous = cutoff.Load() {
+		if cutoff.CompareAndSwap(previous, revokedAt) {
+			break
+		}
 	}
 	p.dropToken(stored.Refresh)
 	return nil
