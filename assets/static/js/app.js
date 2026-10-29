@@ -94,7 +94,7 @@
       return;
     }
     const draftKey = `mj-draft:v3:${scope}:${date}`;
-    const legacyKey = `mj-draft:${date}`;
+    const legacyKey = `mj-draft:v2:${scope}:${date}`;
     const retryBtn = editor.querySelector('[data-entry-load-retry]');
     const legacyBtn = editor.querySelector('[data-entry-legacy-draft]');
     const conflictPanel = editor.querySelector('[data-entry-conflict]');
@@ -219,24 +219,20 @@
       baseVersion = draft.baseVersion;
       unverifiedDraft = true;
     }
-    // Old local backups remain available for explicit recovery. New drafts
-    // live in sessionStorage, isolated by browser tab and preserved on reload.
-    let legacySource = legacyKey;
+    // Only account-scoped v2 backups can be recovered. Date-only backups
+    // have no ownership information and must never enter the editor.
     let legacyVersion = '';
     let legacyVersionKnown = false;
     try {
-      const previousKey = `mj-draft:v2:${scope}:${date}`;
-      const previous = localStorage.getItem(previousKey);
+      const previous = localStorage.getItem(legacyKey);
       if (previous !== null) {
         const parsed = JSON.parse(previous);
         if (typeof parsed.text === 'string' && typeof parsed.baseVersion === 'string') {
           legacyDraft = parsed.text;
-          legacySource = previousKey;
           legacyVersion = parsed.baseVersion;
           legacyVersionKnown = parsed.versionKnown === true;
         }
       }
-      if (legacyDraft === null) legacyDraft = localStorage.getItem(legacyKey);
     } catch (error) { /* Leave old backups intact if unavailable or malformed. */ }
     if (legacyBtn) legacyBtn.hidden = legacyDraft === null || draft !== null;
     refreshControls();
@@ -483,7 +479,7 @@
       edited = true;
       if (legacyVersionKnown) { baseVersion = legacyVersion; draft = { versionKnown: true }; }
       if (persistDraft()) {
-        try { localStorage.removeItem(legacySource); } catch (error) { /* Safe to retain the old copy. */ }
+        try { localStorage.removeItem(legacyKey); } catch (error) { /* Safe to retain the old copy. */ }
       }
       legacyBtn.hidden = true;
       setSaveState('');
