@@ -106,7 +106,7 @@ func (c Config) Validate() error {
 			return fmt.Errorf("PROVIDERS contains duplicate provider %q", name)
 		}
 		seen[name] = true
-		switch strings.TrimSpace(name) {
+		switch name {
 		case provider.LocalID, provider.GoogleID:
 		default:
 			return fmt.Errorf("PROVIDERS contains an unsupported provider")
@@ -115,9 +115,15 @@ func (c Config) Validate() error {
 	return nil
 }
 
-// ProviderIDs parses the configured provider list consistently at startup.
+// ProviderIDs parses and normalizes the configured provider list at startup so
+// validation, registration and listener binding share the same canonical names.
 func (c Config) ProviderIDs() []string {
-	return strings.FieldsFunc(c.Providers, func(r rune) bool { return r == ',' || r == ' ' || r == ';' })
+	fields := strings.FieldsFunc(c.Providers, func(r rune) bool { return r == ',' || r == ' ' || r == ';' })
+	providers := make([]string, 0, len(fields))
+	for _, field := range fields {
+		providers = append(providers, strings.TrimSpace(field))
+	}
+	return providers
 }
 
 // ValidateLoopbackURL restricts development-only providers to exact loopback hosts.

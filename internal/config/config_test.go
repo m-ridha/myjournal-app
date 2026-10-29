@@ -5,6 +5,9 @@ import (
 	"os"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+
 	"myjournal-app/internal/testutil"
 )
 
@@ -52,6 +55,26 @@ func TestLoadDefaults(t *testing.T) {
 func TestValidateAcceptsValidConfiguration(t *testing.T) {
 	if err := validConfig().Validate(); err != nil {
 		t.Fatalf("Validate() error = %v", err)
+	}
+}
+
+func TestProviderIDsAreCanonical(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		providers string
+		want      []string
+	}{
+		{name: "plain", providers: "local", want: []string{"local"}},
+		{name: "leading tab", providers: "\tlocal", want: []string{"local"}},
+		{name: "trailing newline", providers: "local\n", want: []string{"local"}},
+		{name: "mixed separators", providers: "google;\tlocal\n", want: []string{"google", "local"}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := validConfig()
+			cfg.Providers = test.providers
+			assert.Equal(t, test.want, cfg.ProviderIDs())
+			require.NoError(t, cfg.Validate())
+		})
 	}
 }
 
