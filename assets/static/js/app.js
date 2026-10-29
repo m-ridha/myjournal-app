@@ -164,7 +164,7 @@
       }
       if (conflictPanel) conflictPanel.hidden = !conflicted || signedOut;
       [conflictMine, conflictOther, conflictBoth].forEach((button) => { if (button) button.disabled = saving || resolving || deleting || !loaded || signedOut; });
-      if (legacyBtn) legacyBtn.disabled = !loaded || saving || deleting || isDirty();
+      if (legacyBtn) legacyBtn.disabled = !loaded || saving || deleting || signedOut || isDirty();
     }
 
     function setSaveState(state) {
@@ -471,7 +471,7 @@
     });
     retryBtn?.addEventListener('click', loadEntry);
     legacyBtn?.addEventListener('click', () => {
-      if (!loaded || saving || isDirty() || legacyDraft === null) return;
+      if (!loaded || saving || signedOut || isDirty() || legacyDraft === null) return;
       if (!window.confirm(t('editor.legacyDraftConfirm'))) return;
       cancelAutosave();
       autosaveReady = false;
@@ -507,6 +507,10 @@
     window.addEventListener('storage', (event) => {
       if (event.key === `mj-signout:${scope}`) {
         signedOut = true;
+        legacyDraft = null;
+        legacyVersion = '';
+        legacyVersionKnown = false;
+        if (legacyBtn) legacyBtn.hidden = true;
         cancelAutosave();
         try {
           for (let i = sessionStorage.length - 1; i >= 0; i--) {
