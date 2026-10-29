@@ -121,6 +121,7 @@ func TestHTTPListenAddress(t *testing.T) {
 	}{
 		{name: "local", providers: "local", baseURL: "http://localhost:3030", want: "127.0.0.1:3030"},
 		{name: "IPv6 local", providers: "local", baseURL: "http://[::1]:3030", want: "[::1]:3030"},
+		{name: "padded local", providers: "\tlocal\n", baseURL: "http://localhost:3030", want: "127.0.0.1:3030"},
 		{name: "mixed test providers", providers: "google; local", baseURL: "http://localhost:3030", testMode: true, want: "127.0.0.1:3030"},
 		{name: "Google test", providers: "google", baseURL: "http://localhost:3030", testMode: true, want: "127.0.0.1:3030"},
 		{name: "production Google", providers: "google", baseURL: "https://journal.example.com", want: ":3030"},
@@ -132,4 +133,13 @@ func TestHTTPListenAddress(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestPaddedLocalProviderRegistersWithLoopbackBinding(t *testing.T) {
+	cfg := config.Config{BaseURL: testutil.LocalBaseURL, Port: 3030, Providers: "\tlocal\n", LocalDataDir: t.TempDir()}
+	registry, err := newProviderRegistry(cfg)
+	require.NoError(t, err)
+	_, registered := registry.Get("local")
+	require.True(t, registered, "whitespace-padded local provider must register")
+	assert.Equal(t, "127.0.0.1:3030", newHTTPServer(cfg, nil).Addr)
 }

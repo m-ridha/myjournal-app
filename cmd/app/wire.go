@@ -14,7 +14,6 @@ import (
 	"net/url"
 	"os"
 	"slices"
-	"strings"
 	"time"
 
 	"github.com/google/wire"
@@ -122,7 +121,7 @@ func newProviderRegistry(cfg config.Config) (*provider.Registry, error) {
 	providers := make([]provider.Provider, 0, len(selected))
 	seen := make(map[string]struct{}, len(selected))
 	for _, name := range selected {
-		switch name = strings.TrimSpace(name); name {
+		switch name {
 		case provider.LocalID:
 			if _, ok := seen[name]; ok {
 				return nil, fmt.Errorf("PROVIDERS contains duplicate provider %q", name)

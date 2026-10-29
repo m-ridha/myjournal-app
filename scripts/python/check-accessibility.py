@@ -101,9 +101,13 @@ async def check_public_fragment_offsets(browser, base):
             await context.close()
 
 
-async def run_browser(base, axe_script):
+async def run_browser(base, axe_script, screenshot_dir):
     scans, keyboard, errors = [], {}, []
     public_payloads = {}
+
+    def screenshot_path(name):
+        return str(screenshot_dir / (name + '.png'))
+
     async with async_playwright() as p:
         browser = await p.chromium.launch(channel='chrome', headless=True)
         context = await browser.new_context(timezone_id='Asia/Jakarta')
@@ -148,21 +152,21 @@ async def run_browser(base, axe_script):
                     await trigger.click()
                     await expect(picker).to_be_visible()
                     scans.append(await audit(page, axe_script, theme + '/month-picker'))
-                    await page.screenshot(path='/tmp/myjournal-month-picker-' + theme + '.png', full_page=True)
+                    await page.screenshot(path=screenshot_path('month-picker-' + theme), full_page=True)
                     await page.keyboard.press('ArrowLeft')
                     await page.keyboard.press('Escape')
                     await expect(trigger).to_be_focused()
                     await trigger.click()
                     await page.locator('[data-month-year]').click()
                     scans.append(await audit(page, axe_script, theme + '/year-picker'))
-                    await page.screenshot(path='/tmp/myjournal-year-picker-' + theme + '.png', full_page=True)
+                    await page.screenshot(path=screenshot_path('year-picker-' + theme), full_page=True)
                     year = int((await page.locator('body').get_attribute('data-today'))[:4])
                     await page.locator('[data-month-options] button').filter(has_text=str(year - 1)).click()
                     assert len(calendar_requests) == count, 'Browsing picker fetched calendar data'
                     await page.set_viewport_size({'width': 390, 'height': 844})
                     assert await page.evaluate('document.documentElement.scrollWidth <= innerWidth')
                     scans.append(await audit(page, axe_script, theme + '/month-picker-narrow'))
-                    await page.screenshot(path='/tmp/myjournal-month-picker-narrow-' + theme + '.png', full_page=True)
+                    await page.screenshot(path=screenshot_path('month-picker-narrow-' + theme), full_page=True)
                     await page.set_viewport_size({'width': 320, 'height': 720})
                     assert await page.evaluate('document.documentElement.scrollWidth <= innerWidth')
                     scans.append(await audit(page, axe_script, theme + '/month-picker-320'))
@@ -218,12 +222,12 @@ async def run_browser(base, axe_script):
             await page.locator('[data-entry-save]').click()
             await expect(page.locator('[data-auth-expired]')).to_be_visible()
             await expect(page.locator('[data-entry-text]')).to_have_value(reconnect_text)
-            await page.screenshot(path='/tmp/myjournal-auth-expired-' + theme + '.png', full_page=True)
+            await page.screenshot(path=screenshot_path('auth-expired-' + theme), full_page=True)
             scans.append(await audit(page, axe_script, theme + '/editor-auth-expired'))
             keyboard[theme + '/editor-auth-expired'] = await check_keyboard(page)
             await page.set_viewport_size({'width': 390, 'height': 844})
             assert await page.evaluate('document.documentElement.scrollWidth <= window.innerWidth'), 'Reconnect banner overflows narrow viewport'
-            await page.screenshot(path='/tmp/myjournal-auth-expired-narrow-' + theme + '.png', full_page=True)
+            await page.screenshot(path=screenshot_path('auth-expired-narrow-' + theme), full_page=True)
             scans.append(await audit(page, axe_script, theme + '/editor-auth-expired-narrow'))
             await page.set_viewport_size({'width': 1280, 'height': 720})
             async with page.expect_popup() as popup_info:
@@ -285,7 +289,7 @@ async def run_browser(base, axe_script):
                 await public_page.set_viewport_size({'width': 320, 'height': 720})
                 assert await public_page.evaluate('document.documentElement.scrollWidth <= innerWidth'), locale
                 scans.append(await audit(public_page, axe_script, 'public-seo/narrow/' + theme + '/' + locale))
-                await public_page.screenshot(path='/tmp/myjournal-seo-' + theme + '-' + locale + '.png', full_page=True)
+                await public_page.screenshot(path=screenshot_path('seo-' + theme + '-' + locale), full_page=True)
                 await public_page.set_viewport_size({'width': 1280, 'height': 720})
         await public_page.goto(base + '/en/help')
         await public_page.locator('[data-header-language] [data-language-trigger], [data-public-language] summary').click()
@@ -320,6 +324,8 @@ async def run_browser(base, axe_script):
 
 async def main(args):
     axe_script = args.axe_script.read_text()
+    screenshot_dir = Path(tempfile.mkdtemp(prefix='mj-a11y-screenshots-'))
+    print(f'Screenshots: {screenshot_dir}')
     with tempfile.TemporaryDirectory(prefix='mj-a11y-') as data:
         with socket.socket() as sock:
             sock.bind(('127.0.0.1', 0))
@@ -333,7 +339,7 @@ async def main(args):
             process = subprocess.Popen([str(args.app_binary.resolve())], env=env,
                                        stdout=log, stderr=log)
             try:
-                report = await run_browser(base, axe_script)
+                report = await run_browser(base, axe_script, screenshot_dir)
                 args.report.write_text(json.dumps(report, indent=2))
                 for scan in report['scans']:
                     print(scan['label'], 'violations:', [v['id'] for v in scan['violations']],
