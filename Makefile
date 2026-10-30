@@ -3,7 +3,7 @@ GOTEST ?= $(GOCMD) test -coverprofile=coverage.out ./... && \
 	sh scripts/shell/filter-coverage.sh .coverageignore coverage.out
 GOLINT ?= golangci-lint
 
-.PHONY: run generate generate-openapi generate-wire generate-mocks fmt lint test test-js test-architecture show-go-coverage
+.PHONY: run generate generate-openapi generate-wire generate-mocks fmt lint test test-js test-e2e test-architecture show-go-coverage
 
 all: generate fmt lint test run
 
@@ -46,6 +46,11 @@ test-js:
 
 test-release-script:
 	python3 -B -m unittest discover -s scripts/python -p test_deploy_railway.py
+
+# Playwright end-to-end checks; requires `npm ci` and `npx playwright install`.
+# The suite starts its own local-provider app on port 4173 with an isolated data directory.
+test-e2e:
+	npx playwright test
 
 # Run separately: this temporarily adds forbidden imports and invokes lint.
 test-architecture:

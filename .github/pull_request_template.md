@@ -23,7 +23,7 @@
 
 ## Validations
 
-<!-- Proof of tests or validations related to the changes. Confirming the changes are working as expected. -->
+<!-- Proof of tests or validations related to the changes. Confirming the changes are working as expected. Include `make test-e2e` when browser behaviour the end-to-end specs cover changes. -->
 
 -
 -

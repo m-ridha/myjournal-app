@@ -20,7 +20,7 @@ The app is online-only. Browser drafts provide recovery rather than offline sync
 
 ## Prerequisites
 
-Install Go **1.27.3** (the version declared in `go.mod`), Git, Make, and OpenSSL. Development checks also need **Node.js 24**; macOS JavaScriptCore is a supported alternative for the JavaScript tests. No npm install, database, or Google credentials are required for local-provider development.
+Install Go **1.27.3** (the version declared in `go.mod`), Git, Make, and OpenSSL. Development checks also need **Node.js 24**; macOS JavaScriptCore is a supported alternative for the dependency-free JavaScript suites. Only the optional Playwright suite needs npm packages, installed once with `npm ci` and `npx playwright install`. A database and Google credentials are never required for local-provider development.
 
 Install the Go development tools at the repository's pinned versions:
 
@@ -88,9 +88,11 @@ make test-architecture
 
 Run architecture probes separately from other lint/build processes because they temporarily add forbidden imports. Lint requires golangci-lint v2.14.0. `make test` runs seven JavaScript regression suites and `go test ./...`; JavaScript uses Node.js or macOS JavaScriptCore without npm packages. Run only browser interaction regressions with `make test-js`. Go unit tests use Testify assertions and Mockery-generated interface mocks. Prefer named table-driven subtests for cases sharing the same setup and assertions; keep stateful storage/HTTP fixtures and concurrency scenarios explicit. Generated mocks are test-only and checked for drift in PR CI.
 
-Optional tooling is separate from the local quick start: Python 3 runs the helper-script tests (`python3 -B -m unittest discover -s scripts/python -p 'test_*.py'`); Docker with a running daemon is needed for `docker build -t myjournal-local .`. The [testing guide](docs/development/testing.md) documents the additional browser/accessibility setup. None of these tools is needed by `make run`.
+`make test-e2e` runs the optional Playwright suite in [tests/e2e](tests/e2e), which follows [the e2e plan](specs/myjournal-e2e.md) on Chromium, Firefox and WebKit. Install it once with `npm ci` and `npx playwright install`. The suite starts its own local-provider app with an isolated data directory, so it ignores `.env` and needs no Google credentials; [testing](docs/development/testing.md) documents its server settings and port override. It does not replace the manual Google and accessibility checks.
 
-The testing guide also covers editor recovery and manual UI checks. PR creation and updates run formatting, lint, tests and architecture checks.
+Other optional tooling is separate from the local quick start: Python 3 runs the helper-script tests (`python3 -B -m unittest discover -s scripts/python -p 'test_*.py'`); Docker with a running daemon is needed for `docker build -t myjournal-local .`. The [testing guide](docs/development/testing.md) documents the additional browser/accessibility setup. None of these tools is needed by `make run`.
+
+The testing guide also covers editor recovery and manual UI checks. PR creation and updates run formatting, lint, tests and architecture checks, plus the Playwright browser suite when browser-facing files change.
 
 ## Architecture
 

@@ -24,6 +24,10 @@ The changes remain local pending an authorized release. After deployment, follow
 
 Local manifest checks passed with `make fmt lint test`, separately `make test-architecture`, and `git diff --check`. Chrome on localhost loaded the manifest from both EN/ID public pages with `application/manifest+json` and decoded the supplied icons as 192x192 and 512x512. No OS installation, installed-window Google authentication, physical-device install or deployed HTTPS verification was performed. The changes remain local; follow the [installation checks](testing.md#browser-security-and-release-smoke) after an authorized release.
 
+## End-to-end browser suite
+
+The Playwright suite in [tests/e2e](../../tests/e2e), generated from [the e2e plan](../../specs/myjournal-e2e.md), passed locally on Chromium, Firefox and WebKit (18 tests: five scenarios plus the seed) alongside `make fmt lint test` and, separately, `make test-architecture`. It drives the local provider only and starts its own app with an isolated data directory, so it establishes no Google/Drive, deployed-origin, cookie/HSTS or accessibility coverage. Writing it exposed a WebKit-only dismissal bug that is now covered in [testing](testing.md#browsing-language-and-accessibility). [The workflow](../../.github/workflows/playwright.yml) runs the same suite for pull requests that change browser-facing files, using the shared PR routing policy in [pr_checks.py](../../scripts/python/pr_checks.py); the suite and workflow remain local pending an authorized commit, and no GitHub Actions run has been observed.
+
 ## Outstanding work
 
 - ~~Confirm deployment of the custom-domain Search Console tag, ownership verification and Google's branding decision.~~ Google branding verification is complete: the OAuth consent screen displays "myjournal" and the verification status reads "Your branding has been verified and is being shown to users."
