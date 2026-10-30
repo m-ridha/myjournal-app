@@ -12,7 +12,9 @@
       if (!picker.contains(event.target)) picker.open = false;
     });
     picker.addEventListener('focusout', event => {
-      if (!picker.contains(event.relatedTarget)) picker.open = false;
+      // Safari does not focus links on click, so a null relatedTarget does not
+      // prove focus left the picker. Outside clicks still close it below.
+      if (event.relatedTarget && !picker.contains(event.relatedTarget)) picker.open = false;
     });
   });
 
@@ -73,7 +75,11 @@
       }
     });
     document.addEventListener('click', event => { if (!picker.contains(event.target)) close(); });
-    picker.addEventListener('focusout', event => { if (!picker.contains(event.relatedTarget)) close(); });
+    picker.addEventListener('focusout', event => {
+      // Safari does not focus options on click, so a null relatedTarget does not
+      // prove focus left the picker. Outside clicks still close it above.
+      if (event.relatedTarget && !picker.contains(event.relatedTarget)) close();
+    });
     const fallback = picker.querySelector('[data-language-fallback]');
     if (fallback) fallback.hidden = true;
     select.hidden = true;

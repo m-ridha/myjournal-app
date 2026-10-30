@@ -49,6 +49,8 @@ heading.fire('click'); assert(previous.disabled && items.children[0].textContent
 key('Escape'); picker.setMonth('2026-10'); trigger.fire('click');
 events.click({ target: element() }); assert(panel.hidden, 'outside click dismisses');
 trigger.fire('click'); panel.fire('focusout', { relatedTarget: element() }); assert(panel.hidden, 'Tab/focus leaving dismisses without trapping');
+trigger.fire('click'); panel.fire('focusout', { relatedTarget: null }); assert(!panel.hidden, 'pointer focus loss keeps the picker open for Safari-style clicks');
+events.click({ target: element() }); assert(panel.hidden, 'outside click dismisses after pointer focus loss');
 trigger.fire('click'); close.fire('click'); assert(panel.hidden && document.activeElement === trigger, 'close restores trigger focus');
 assert(selections.length === 1, 'browsing years and dismissal never select a month');
 document.documentElement.lang = 'id'; picker.setMonth('2026-10'); trigger.fire('click');
