@@ -1,8 +1,8 @@
 {
   "config": {
-    // Documentation uses semantic lines; allow long prose, tables and commands.
     "MD013": false,
-    "MD033": false
+    "MD033": false,
+    "MD041": false
   },
   "globs": [
     "**/*.md"
