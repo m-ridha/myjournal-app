@@ -30,7 +30,8 @@ key('Escape'); assert(menu.hidden && document.activeElement === trigger && selec
 trigger.events.click(); key('Tab'); assert(menu.hidden, 'Tab dismisses menu without trapping focus');
 trigger.events.click(); document.events.click({ target: {} }); assert(menu.hidden, 'outside click dismisses menu');
 trigger.events.click(); picker.events.focusout({ relatedTarget: options[0] }); assert(!menu.hidden, 'internal focus keeps menu open');
-picker.events.focusout({ relatedTarget: null }); assert(menu.hidden, 'focus leaving closes menu');
+picker.events.focusout({ relatedTarget: null }); assert(!menu.hidden, 'pointer focus loss keeps menu open for Safari-style clicks');
+document.events.click({ target: {} }); assert(menu.hidden, 'outside click dismisses after pointer focus loss');
 let submits = 0;
 const returnField = {};
 picker.hasAttribute = () => true;

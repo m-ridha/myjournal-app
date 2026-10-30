@@ -110,14 +110,9 @@
       if (target >= 0 && target < buttons.length && !buttons[target].disabled) focusItem(target);
     });
     panel.addEventListener('focusout', event => {
-      if (event.relatedTarget) {
-        if (!panel.contains(event.relatedTarget) && event.relatedTarget !== trigger) close();
-      } else {
-        // Rendering a new grid can briefly focus the document body.
-        Promise.resolve().then(() => {
-          if (!panel.contains(document.activeElement) && document.activeElement !== trigger) close();
-        });
-      }
+      // Safari does not focus buttons on click, so a null relatedTarget does not
+      // prove focus left the panel. Outside clicks still close it below.
+      if (event.relatedTarget && !panel.contains(event.relatedTarget) && event.relatedTarget !== trigger) close();
     });
     document.addEventListener('click', event => {
       // A year selection replaces its own button before this event bubbles.
