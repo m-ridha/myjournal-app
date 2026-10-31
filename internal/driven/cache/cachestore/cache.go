@@ -21,6 +21,8 @@ import (
 // concurrent preview reads reduce cold-page waves while keeping I/O bounded.
 const previewWorkers = 10
 
+const invalidationTimeout = time.Second
+
 type cacheKey struct {
 	account string
 	kind    string
@@ -35,8 +37,8 @@ type Cache struct {
 	storage        ByteCache
 	ttl            time.Duration
 	now            func() time.Time
-	generation     uint64
-	disabled       atomic.Bool
+	generation     atomic.Uint64
+	quarantine     [64]atomic.Int64
 	reads          readGroup
 	previewBatches readGroup
 	warmer         *cacheWarmer
@@ -282,7 +284,26 @@ func (c *Cache) lock(ctx context.Context) bool {
 func (c *Cache) unlock() { <-c.gate }
 
 func (c *Cache) active(account string) bool {
-	return c.storage != nil && c.ttl > 0 && account != "" && !c.disabled.Load()
+	return c.storage != nil && c.ttl > 0 && account != "" && c.now().UnixNano() >= c.quarantineStripe(account).Load()
+}
+
+// Fixed stripes bound memory; a collision conservatively bypasses another account.
+func (c *Cache) quarantineStripe(account string) *atomic.Int64 {
+	hash := sha256.Sum256([]byte(account))
+	return &c.quarantine[int(hash[0])%len(c.quarantine)]
+}
+
+func (c *Cache) quarantineAccount(account string) {
+	if c.storage == nil || c.ttl <= 0 || account == "" {
+		return
+	}
+	until := c.now().Add(c.ttl).UnixNano()
+	stripe := c.quarantineStripe(account)
+	for previous := stripe.Load(); until > previous; previous = stripe.Load() {
+		if stripe.CompareAndSwap(previous, until) {
+			break
+		}
+	}
 }
 
 func (c *Cache) get(ctx context.Context, key cacheKey) (any, uint64, bool) {
@@ -290,8 +311,11 @@ func (c *Cache) get(ctx context.Context, key cacheKey) (any, uint64, bool) {
 		return nil, 0, false
 	}
 	defer c.unlock()
-	generation := c.generation
+	generation := c.generation.Load()
 	value, ok := c.read(ctx, key)
+	if c.generation.Load() != generation || !c.active(key.account) {
+		return nil, generation, false
+	}
 	return value, generation, ok
 }
 
@@ -305,12 +329,15 @@ func (c *Cache) read(ctx context.Context, key cacheKey) (any, bool) {
 		return nil, false
 	}
 	if err != nil {
-		c.disabled.Store(true)
+		c.quarantineAccount(key.account)
 		return nil, false
 	}
 	value, err := decodeSnapshot(data, key.kind, c.now())
 	if err != nil {
-		c.disabled.Store(true)
+		// Corrupt bytes have no trustworthy expiry; discard them so a recovered
+		// storage adapter can eventually resume caching this key.
+		_ = c.storage.Delete(ctx, key.string())
+		c.quarantineAccount(key.account)
 		return nil, false
 	}
 	return value, value != nil
@@ -321,27 +348,34 @@ func (c *Cache) set(ctx context.Context, key cacheKey, value any, generation uin
 		return
 	}
 	defer c.unlock()
-	if !c.active(key.account) || c.generation != generation {
+	// Calculate expiry before checking quarantine: a concurrent failed lock wait
+	// must outlast any write already in progress under the coordinator lock.
+	expires := c.now().Add(c.ttl)
+	if !c.active(key.account) || c.generation.Load() != generation {
 		return
 	}
-	data, err := encodeSnapshot(key.kind, value, c.now().Add(c.ttl))
+	data, err := encodeSnapshot(key.kind, value, expires)
 	if err == nil {
 		err = c.storage.Set(ctx, key.string(), data)
 	}
 	if err != nil && !errors.Is(err, ErrCapacity) {
-		c.disabled.Store(true)
+		c.quarantineAccount(key.account)
 	}
 }
 
 // invalidateDate preserves unrelated snapshots without renewing their expiry.
-// Failed deletion disables reuse, but never changes a backing mutation's result.
-func (c *Cache) invalidateDate(ctx context.Context, account string, date civil.Date, membershipMayChange bool) {
+// Failed deletion quarantines the account stripe until old snapshots expire.
+// Invalidation never changes a backing mutation's result.
+func (c *Cache) invalidateDate(_ context.Context, account string, date civil.Date, membershipMayChange bool) {
+	ctx, cancel := context.WithTimeout(context.Background(), invalidationTimeout)
+	defer cancel()
+	// Advance even if the lock wait fails, so pre-mutation loads cannot fill later.
+	c.generation.Add(1)
 	if !c.lock(ctx) {
-		c.disabled.Store(true)
+		c.quarantineAccount(account)
 		return
 	}
 	defer c.unlock()
-	c.generation++
 	if !c.active(account) {
 		return
 	}
@@ -365,7 +399,7 @@ func (c *Cache) invalidateDate(ctx context.Context, account string, date civil.D
 		return
 	}
 	if err := c.storage.Delete(ctx, (cacheKey{account: account, kind: "entry", date: date}).string()); err != nil {
-		c.disabled.Store(true)
+		c.quarantineAccount(account)
 		return
 	}
 	for _, item := range []struct {
@@ -374,7 +408,7 @@ func (c *Cache) invalidateDate(ctx context.Context, account string, date civil.D
 	}{{yearsKey, retainYears}, {yearKey, retainYear}} {
 		if !item.retain {
 			if err := c.storage.Delete(ctx, item.key.string()); err != nil {
-				c.disabled.Store(true)
+				c.quarantineAccount(account)
 				return
 			}
 		}

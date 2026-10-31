@@ -98,6 +98,24 @@ func TestAdapterCancellation(t *testing.T) {
 	}
 }
 
+func TestAdapterClassifiesQueueCapacityFailure(t *testing.T) {
+	a, err := New(time.Minute)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = a.Close() })
+	key := "near-shard-limit"
+	value := make([]byte, maxShardBytes-entryOverhead-len(key))
+	// The adapter's size check permits this value, but BigCache's initial
+	// queue cannot grow by this amount under its hard maximum.
+	if err := a.Set(context.Background(), key, value); !errors.Is(err, cachestore.ErrCapacity) {
+		t.Fatalf("queue capacity: %v", err)
+	}
+	if err := a.Set(context.Background(), "small", []byte("ok")); err != nil {
+		t.Fatalf("subsequent write: %v", err)
+	}
+}
+
 func TestAdapterRejectsDisabledTTL(t *testing.T) {
 	if _, err := New(0); err == nil {
 		t.Fatal("accepted disabled TTL")

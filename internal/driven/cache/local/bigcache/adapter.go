@@ -92,7 +92,12 @@ func (a *Adapter) Set(ctx context.Context, key string, value []byte) error {
 	if len(key) > maxKeyBytes || len(key) > maxShardBytes-entryOverhead || len(value) > maxShardBytes-entryOverhead-len(key) {
 		return cachestore.ErrCapacity
 	}
-	return a.cache.Set(key, value)
+	err := a.cache.Set(key, value)
+	// BigCache v1.2.1 exposes this queue capacity failure only as a string.
+	if err != nil && err.Error() == "entry is bigger than max shard size" {
+		return cachestore.ErrCapacity
+	}
+	return err
 }
 
 // Delete removes a key, accepting absence.
