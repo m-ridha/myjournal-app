@@ -70,11 +70,16 @@ func TestSharedContentBigCacheCapacity(t *testing.T) {
 	base := &countedStore{Store: local.NewStore(t.TempDir())}
 	large := journal.Date{Year: 2020, Month: 1, Day: 1}
 	small := journal.Date{Year: 2020, Month: 1, Day: 2}
+	nearLimit := journal.Date{Year: 2020, Month: 1, Day: 3}
 	text := strings.Repeat("a", 1<<20)
 	if _, err := base.Put(ctx, large, text, ""); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := base.Put(ctx, small, "small", ""); err != nil {
+		t.Fatal(err)
+	}
+	nearLimitText := strings.Repeat("b", (1<<20)-(16<<10))
+	if _, err := base.Put(ctx, nearLimit, nearLimitText, ""); err != nil {
 		t.Fatal(err)
 	}
 	store := cachestore.New(storage, 2*time.Minute).Wrap("local:dev", base)
@@ -89,10 +94,21 @@ func TestSharedContentBigCacheCapacity(t *testing.T) {
 	if err != nil || entry.Text != text || base.gets != 3 {
 		t.Fatal("oversized cache item failed to bypass safely")
 	}
+	// The encoded value passes the adapter's size guard but BigCache's queue
+	// can still reject it while growing to its shard limit.
+	for range 2 {
+		entry, err := store.Get(ctx, nearLimit)
+		if err != nil || entry.Text != nearLimitText {
+			t.Fatalf("near-limit read: %v", err)
+		}
+	}
+	if base.gets != 5 {
+		t.Fatal("near-limit value did not exercise queue capacity")
+	}
 	if _, err := store.Previews(ctx, []journal.Date{small}, 4); err != nil {
 		t.Fatal(err)
 	}
-	if entry, err := store.Get(ctx, small); err != nil || entry.Text != "small" || base.gets != 4 {
+	if entry, err := store.Get(ctx, small); err != nil || entry.Text != "small" || base.gets != 6 {
 		t.Fatal("capacity bypass disabled ordinary sharing")
 	}
 }

@@ -215,21 +215,159 @@ func TestOperationViewRetainsSharedCache(t *testing.T) {
 	}
 }
 
-func TestCancelledInvalidationDisablesReuse(t *testing.T) {
+type cancelledMutationStore struct {
+	*fakeStore
+	cancel context.CancelFunc
+}
+
+func (s *cancelledMutationStore) Put(ctx context.Context, d journal.Date, text string, version journal.Version) (journal.Entry, error) {
+	_, _ = s.fakeStore.Put(ctx, d, text, version)
+	s.cancel()
+	return journal.Entry{}, ctx.Err()
+}
+
+func (s *cancelledMutationStore) Trash(ctx context.Context, d journal.Date) error {
+	_ = s.fakeStore.Trash(ctx, d)
+	s.cancel()
+	return ctx.Err()
+}
+
+func TestCancelledInvalidationPreservesOtherAccounts(t *testing.T) {
+	for _, mutation := range []string{"put", "trash"} {
+		t.Run(mutation, func(t *testing.T) {
+			testCancelledMutation(t, mutation)
+		})
+	}
+}
+
+func testCancelledMutation(t *testing.T, mutation string) {
+	t.Helper()
 	storage := newTestStorage()
 	c := New(storage, time.Minute)
 	base := newFakeStore()
 	base.years = []int{2026}
-	store := c.Wrap("a", base)
-	_, _ = store.ListYears(context.Background())
+	d := journal.Date{Year: 2026, Month: 1, Day: 1}
+	base.contents[d] = journal.Entry{Date: d, Text: "old", Exists: true}
 	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
-	// Simulate cancellation after the backing mutation completed, before invalidation.
-	c.invalidateDate(ctx, "a", journal.Date{Year: 2026, Month: 1, Day: 1}, true)
+	defer cancel()
+	store := c.Wrap("a", &cancelledMutationStore{fakeStore: base, cancel: cancel})
+	otherBase := newFakeStore()
+	otherBase.years = []int{2026}
+	other := c.Wrap("b", otherBase)
+	if c.quarantineStripe("a") == c.quarantineStripe("b") {
+		t.Fatal("test accounts share a quarantine stripe")
+	}
+	_, _ = store.ListYears(context.Background())
+	_, _ = store.Get(context.Background(), d)
+	_, _ = other.ListYears(context.Background())
+	var err error
+	if mutation == "put" {
+		_, err = store.Put(ctx, d, "new", "old")
+	} else {
+		err = store.Trash(ctx, d)
+	}
+	if !errors.Is(err, context.Canceled) {
+		t.Fatalf("mutation error: %v", err)
+	}
 	base.years = []int{2025}
 	got, err := store.ListYears(context.Background())
 	if err != nil || got[0] != 2025 {
 		t.Fatalf("cancelled invalidation reused old data: %v %v", got, err)
+	}
+	_, _ = other.ListYears(context.Background())
+	_, _ = store.ListYears(context.Background())
+	entry, entryErr := store.Get(context.Background(), d)
+	if mutation == "put" && (entryErr != nil || entry.Text != "new") {
+		t.Fatalf("put left stale entry: %v %v", entry, entryErr)
+	}
+	if mutation == "trash" && !errors.Is(entryErr, journal.ErrNotFound) {
+		t.Fatalf("trash left stale entry: %v %v", entry, entryErr)
+	}
+	if otherBase.calls != 1 || base.calls != 5 {
+		t.Fatalf("cache did not remain available: affected=%d other=%d", base.calls, otherBase.calls)
+	}
+}
+
+func TestInvalidationFailureQuarantinesAndRecovers(t *testing.T) {
+	ctx := context.Background()
+	storage := newTestStorage()
+	c := New(storage, time.Minute)
+	now := time.Date(2026, 10, 10, 0, 0, 0, 0, time.UTC)
+	c.now = func() time.Time { return now }
+	base, otherBase := newFakeStore(), newFakeStore()
+	d := journal.Date{Year: 2020, Month: 1, Day: 1}
+	base.contents[d] = journal.Entry{Date: d, Text: "old"}
+	otherBase.years = []int{2020}
+	store, other := c.Wrap("a", base), c.Wrap("b", otherBase)
+	if c.quarantineStripe("a") == c.quarantineStripe("b") {
+		t.Fatal("test accounts share a quarantine stripe")
+	}
+	_, _ = store.Get(ctx, d)
+	_, _ = other.ListYears(ctx)
+	storage.deleteErr = errors.New("delete failed")
+	if _, err := store.Put(ctx, d, "new", "old"); err != nil {
+		t.Fatal(err)
+	}
+	storage.deleteErr = nil
+	for range 2 {
+		entry, err := store.Get(ctx, d)
+		if err != nil || entry.Text != "new" {
+			t.Fatalf("quarantine returned stale entry: %v %v", entry, err)
+		}
+	}
+	_, _ = other.ListYears(ctx)
+	if otherBase.calls != 1 {
+		t.Fatal("unrelated account lost its snapshot")
+	}
+	now = now.Add(time.Minute)
+	entry, err := store.Get(ctx, d)
+	if err != nil || entry.Text != "new" {
+		t.Fatalf("recovery returned stale entry: %v %v", entry, err)
+	}
+	before := base.calls
+	_, _ = store.Get(ctx, d)
+	if base.calls != before {
+		t.Fatal("cache did not recover after snapshot expiry")
+	}
+}
+
+func TestInvalidationLockTimeoutRejectsOldFill(t *testing.T) {
+	ctx := context.Background()
+	storage := newTestStorage()
+	c := New(storage, time.Minute)
+	now := time.Date(2026, 10, 10, 0, 0, 0, 0, time.UTC)
+	c.now = func() time.Time { return now }
+	key := cacheKey{account: "a", kind: "years"}
+	_, generation, _ := c.get(ctx, key)
+	c.gate <- struct{}{}
+	c.invalidateDate(ctx, "a", journal.Date{Year: 2020, Month: 1, Day: 1}, true)
+	c.unlock()
+	if c.active("a") {
+		t.Fatal("failed lock wait did not quarantine account")
+	}
+	now = now.Add(time.Minute)
+	c.set(ctx, key, []int{2020}, generation)
+	if _, _, ok := c.get(ctx, key); ok {
+		t.Fatal("pre-invalidation load filled after quarantine")
+	}
+}
+
+func TestCorruptSnapshotCanRecover(t *testing.T) {
+	ctx := context.Background()
+	storage := newTestStorage()
+	c := New(storage, time.Minute)
+	now := time.Date(2026, 10, 10, 0, 0, 0, 0, time.UTC)
+	c.now = func() time.Time { return now }
+	base := newFakeStore()
+	base.years = []int{2026}
+	store := c.Wrap("a", base)
+	storage.items[(cacheKey{account: "a", kind: "years"}).string()] = []byte("corrupt")
+	_, _ = store.ListYears(ctx)
+	now = now.Add(time.Minute)
+	_, _ = store.ListYears(ctx)
+	_, _ = store.ListYears(ctx)
+	if base.calls != 2 {
+		t.Fatalf("corrupt snapshot prevented recovery: %d backing reads", base.calls)
 	}
 }
 
