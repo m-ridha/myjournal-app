@@ -167,6 +167,7 @@ func TestSignInRecoveryPageLocales(t *testing.T) {
 			response := httptest.NewRecorder()
 			renderer.languages[locale].renderPage(response, pageData{Page: "signinfailed", TitleKey: "signInFailed.title"})
 			body := response.Body.String()
+			assert.Contains(t, body, `href="/sign-in">`+renderer.languages[locale].catalog.Text("signInFailed.tryAgain"))
 			if response.Code != http.StatusOK || !strings.Contains(body, heading) || !strings.Contains(body, `href="/">`+renderer.languages[locale].catalog.Text("signInFailed.home")) {
 				t.Fatal("missing localized recovery heading or home action")
 			}

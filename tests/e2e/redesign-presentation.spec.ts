@@ -188,6 +188,22 @@ for (const locale of ["en", "id"]) {
         expect(
           Math.abs(writingEdges.right - writingEdges.expectedRight),
         ).toBeLessThanOrEqual(1);
+        await page.goto("/sign-in-failed");
+        await page
+          .getByRole("link", {
+            name: messages["signInFailed.tryAgain"],
+            exact: true,
+          })
+          .click();
+        await expect(page).toHaveURL(/\/sign-in$/);
+        await expect(
+          page.getByRole("link", {
+            name: messages["landing.connectLocal"],
+            exact: true,
+          }),
+        ).toBeVisible();
+        await page.goto("/");
+        await expect(editor).toBeEditable();
         await page.goto("/entries");
         await expect(
           page.getByRole("heading", {
@@ -198,6 +214,16 @@ for (const locale of ["en", "id"]) {
         await expect(
           page.getByText(messages["entries.loading"], { exact: true }),
         ).toBeHidden();
+        const entryList = page.locator("[data-entry-list]");
+        await expect(entryList).toHaveAttribute("aria-busy", "false");
+        const entryRows = entryList.getByRole("link");
+        const emptyEntries = entryList.getByText(messages["entries.empty"], {
+          exact: true,
+        });
+        await expect(entryRows.or(emptyEntries).first()).toBeVisible();
+        await expect(
+          page.getByText(messages["entries.unavailable"], { exact: true }),
+        ).toHaveCount(0);
         await fitsViewport(page);
         await page.goto("/calendar");
         await expect(
