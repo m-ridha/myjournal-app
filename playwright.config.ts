@@ -18,7 +18,8 @@ export default defineConfig({
   reporter: "html",
   use: {
     baseURL,
-    trace: "on-first-retry",
+    trace: "retain-on-failure",
+    screenshot: "only-on-failure",
   },
   webServer: {
     command: [
@@ -31,7 +32,7 @@ export default defineConfig({
       "go run ./cmd/app",
     ].join(" "),
     url: `${baseURL}/healthz`,
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
     timeout: 120_000,
   },
   projects: [

@@ -2,6 +2,7 @@
 
 **Seed:** `tests/e2e/seed.spec.ts`
 **Base URL:** `http://localhost:4173` (local provider, isolated data directory `.devdata/e2e`)
+**Execution:** Start and stop an owned local-provider server; an occupied port must fail startup without running tests against or stopping the existing listener. Run suites sequentially because fixture data is shared. Retain traces and screenshots for failures.
 **Specs:** one file per scenario in `tests/e2e/`; every test header names this plan and the seed.
 
 ## 0. Local fixture health
