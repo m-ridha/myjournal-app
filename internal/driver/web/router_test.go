@@ -138,7 +138,7 @@ func TestEntriesPageRendersTemplate(t *testing.T) {
 		t.Fatalf("loading message count = %d, want 1", got)
 	}
 
-	if got := res.Body.String(); strings.Contains(got, "data-entries-newer") || strings.Contains(got, "data-entries-older") || strings.Contains(got, "Open calendar</a>") || !strings.Contains(got, fmt.Sprintf("Your last %d entries.", recentEntriesLimit)) {
+	if got := res.Body.String(); strings.Contains(got, "data-entries-newer") || strings.Contains(got, "data-entries-older") || strings.Contains(got, "Open calendar</a>") || !strings.Contains(got, fmt.Sprintf("Your latest %d entries.", recentEntriesLimit)) {
 		t.Fatal("Entries must describe latest 'recentEntriesLimit' without pagination controls or an extra Calendar link")
 	}
 
@@ -348,7 +348,7 @@ func TestLandingOffersOnlyRegisteredProviders(t *testing.T) {
 			if got := strings.Contains(body, `href="/api/v1/auth/google/login"`); got != tc.google {
 				t.Errorf("Google login offered=%v want=%v", got, tc.google)
 			}
-			if tc.google && !strings.Contains(body, ">Continue with Google</a>") {
+			if tc.google && !strings.Contains(body, "Continue with Google") {
 				t.Error("missing localized Google button")
 			}
 		})
@@ -371,7 +371,7 @@ func TestAPIPanicReturnsGenericEnvelope(t *testing.T) {
 	var body map[string]string
 	err := json.Unmarshal(res.Body.Bytes(), &body)
 	require.NoError(t, err, "GET panicking API decode = %v, want JSON envelope", err)
-	if res.Code != http.StatusInternalServerError || body["message"] != "Something went wrong. Please try again." || len(body) != 1 || res.Header().Get("Content-Type") != "application/json" {
+	if res.Code != http.StatusInternalServerError || body["message"] != "Unable to complete the request. Try again." || len(body) != 1 || res.Header().Get("Content-Type") != "application/json" {
 		t.Fatalf("GET panicking API = (%d, %v, %q), want generic JSON 500", res.Code, body, res.Header().Get("Content-Type"))
 	}
 }

@@ -44,7 +44,7 @@
     <script src="/static/js/theme-init.js"></script>
     <link rel="stylesheet" href="/static/css/app.css">
   </head>
-  <body class="mj-shell" data-messages="{{.Messages}}" data-draft-scope="{{.DraftScope}}" data-today="{{.Today}}">
+  <body class="mj-shell mj-page-{{.Page}}" data-messages="{{.Messages}}" data-draft-scope="{{.DraftScope}}" data-today="{{.Today}}">
     <header class="mj-header">
       <div class="mj-container mj-header-inner">
         <a class="mj-brand" href="/">
@@ -53,9 +53,9 @@
         </a>
         {{if .SignedIn}}
         <nav class="mj-nav" aria-label="{{t "nav.main"}}">
-          <a href="/">{{t "nav.write"}}</a>
-          <a href="/entries">{{t "nav.entries"}}</a>
-          <a href="/calendar">{{t "nav.calendar"}}</a>
+          <a href="/"{{if eq .Page "editor"}} aria-current="page"{{end}}>{{t "nav.write"}}</a>
+          <a href="/entries"{{if eq .Page "entries"}} aria-current="page"{{end}}>{{t "nav.entries"}}</a>
+          <a href="/calendar"{{if eq .Page "calendar"}} aria-current="page"{{end}}>{{t "nav.calendar"}}</a>
         </nav>
         {{end}}
         <div class="mj-header-actions">
@@ -97,7 +97,7 @@
             </div>
           </form>
           {{end}}
-          <a class="mj-header-icon" href="/settings" aria-label="{{t "nav.settings"}}" title="{{t "nav.settings"}}">
+          <a class="mj-header-icon" href="/settings"{{if eq .Page "settings"}} aria-current="page"{{end}} aria-label="{{t "nav.settings"}}" title="{{t "nav.settings"}}">
             <span class="icon icon-gear" aria-hidden="true"></span>
           </a>
 

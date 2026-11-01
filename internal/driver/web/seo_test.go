@@ -27,13 +27,13 @@ func TestPublicSEO(t *testing.T) {
 	cases := []testCase{
 		{"/", "en", "/en/", "Private Online Journal &amp; Personal Diary"},
 		{"/en/", "en", "/en/", "Private Online Journal &amp; Personal Diary"},
-		{"/id/", "id", "/id/", "Jurnal Online &amp; Buku Harian Pribadi"},
+		{"/id/", "id", "/id/", "Jurnal daring dan buku harian pribadi"},
 		{"/en/help", "en", "/en/help", "How to Use Your Google Drive Journal"},
-		{"/id/help", "id", "/id/help", "Panduan Jurnal Pribadi di Google Drive"},
+		{"/id/help", "id", "/id/help", "Panduan jurnal pribadi di Google Drive"},
 		{"/en/privacy", "en", "/en/privacy", "Privacy Policy"},
-		{"/id/privacy", "id", "/id/privacy", "Kebijakan Privasi"},
+		{"/id/privacy", "id", "/id/privacy", "Kebijakan privasi"},
 		{"/en/terms", "en", "/en/terms", "Terms of Service"},
-		{"/id/terms", "id", "/id/terms", "Ketentuan Layanan"},
+		{"/id/terms", "id", "/id/terms", "Ketentuan layanan"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.path, func(t *testing.T) {
