@@ -85,16 +85,16 @@
 
 ## 6. Whole-app responsive presentation
 
-### 6.1 EN/ID and light/dark pages remain usable at 320px, 390px, 640px and 1440px
+### 6.1 EN/ID and light/dark pages remain usable at 320px, 390px, 480px, 640px, 800px and 1440px
 
-**Spec:** `tests/e2e/redesign-presentation.spec.ts` (16 combinations per browser: two locales × two themes × four viewport widths)
+**Spec:** `tests/e2e/redesign-presentation.spec.ts` (24 combinations per browser: two locales × two themes × six viewport widths)
 
 **Steps:**
 
 1. Open the localized landing page at the chosen viewport/theme and expand the journaling guide and questions. Verify localized content, theme and no horizontal overflow.
 2. Open the public language menu with the keyboard. Verify the popup stays within the viewport and Escape restores focus.
 3. Visit Help at its Drive-access anchor, Privacy, Terms, sign-in, sign-in failure, signed-out Settings and 404. Verify visible main headings and contained content; the Help target must remain below the sticky header.
-4. Sign in locally and inspect the editor, Entries, Calendar and Settings. Verify editable writing, disabled future navigation, completed loading and contained content. Entries must show loaded entry links or its localized empty message; unavailable feedback is a failure. With an existing local session, follow the sign-in-failure retry link to `/sign-in`, verify a login action is offered, then return home and verify the existing session still opens an editable entry. At mobile widths verify left-aligned brand, right-aligned action controls and centered page-navigation links. Verify the writing field aligns with the shared header content edges, including wide screens.
+4. Sign in locally and inspect the editor, Entries, Calendar and Settings. Verify editable writing, disabled future navigation, completed loading and contained content. Entries must show loaded entry links or its localized empty message; unavailable feedback is a failure. With an existing local session, follow the sign-in-failure retry link to `/sign-in`, verify a login action is offered, then return home and verify the existing session still opens an editable entry. Open the Help Drive-access anchor while signed in and verify its heading remains below the full sticky header, including the compact two-row breakpoint. At compact widths verify that the brand and first control share a row, trailing controls wrap only as space requires in their original order, control rows align right without overlap, and page-navigation links stay centered below. Verify the writing field aligns with the shared header content edges, including wide screens.
 5. Open the month picker with the keyboard. Verify popup bounds, the disabled future-year control, non-overlapping day cells and Escape focus return.
 6. Open protected header and Settings language menus, check their bounds and Escape focus return with a visible Settings focus outline. Choose another Settings language and verify the locale changes only after Save language. Collect screenshots, uncaught page errors and off-origin page requests.
 

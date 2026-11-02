@@ -3,7 +3,8 @@
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url("/static/fonts/google-sans/google-sans-medium.ttf") format("truetype");
+  src: url("/static/fonts/google-sans/google-sans-medium.ttf")
+    format("truetype");
 }
 
 :root {
@@ -668,7 +669,7 @@ html[data-theme="dark"] .icon-moon {
 .mj-editor-field {
   border: 1px solid var(--mj-border-strong);
   border-radius: 0.875rem;
-  background: var(--mj-bg);
+  background: var(--mj-surface);
 }
 
 .mj-editor {
@@ -981,54 +982,25 @@ html[data-theme="dark"] .icon-moon {
 
 @media (max-width: 800px) {
   .mj-header-inner {
-    grid-template-columns: auto minmax(0, 1fr);
-    grid-template-areas:
-      "brand actions"
-      "nav nav";
-    row-gap: 0.5rem;
-    padding-block: 0.75rem;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 0.5rem;
   }
 
   .mj-brand {
-    grid-area: brand;
+    margin-inline-end: auto;
   }
 
   .mj-header-actions {
-    grid-area: actions;
-    flex-wrap: wrap;
-    min-width: 0;
-    margin-left: auto;
+    display: contents;
   }
 
   .mj-nav {
-    grid-area: nav;
-    width: 100%;
+    order: 1;
+    flex-basis: 100%;
     justify-content: center;
     gap: 1rem;
-  }
-}
-
-@media (max-width: 640px) {
-  .mj-header-inner {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas:
-      "brand"
-      "actions"
-      "nav";
-  }
-
-  .mj-brand {
-    justify-self: start;
-  }
-
-  .mj-header-actions {
-    justify-self: end;
-    justify-content: flex-end;
-    margin-left: 0;
-  }
-
-  .mj-nav {
-    justify-content: center;
   }
 }
 
@@ -1113,7 +1085,7 @@ html[data-theme="dark"] .icon-moon {
   scroll-margin-top: 6rem;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 800px) {
   .mj-public-copy [id] {
     scroll-margin-top: 12rem;
   }
@@ -1361,13 +1333,6 @@ html[data-theme="dark"] .icon-moon {
   inset-inline-start: auto;
   inset-inline-end: 0;
   width: 12rem;
-}
-
-@media (max-width: 440px) {
-  .mj-header-language .mj-language-options {
-    inset-inline-start: 0;
-    inset-inline-end: auto;
-  }
 }
 
 .mj-header-language [hidden] {

@@ -25,7 +25,7 @@ async function fitsViewport(page: Page, element?: Locator) {
 }
 
 async function alignedMobileHeader(page: Page) {
-  if (page.viewportSize()!.width > 640) {
+  if (page.viewportSize()!.width > 800) {
     return;
   }
   const banner = page.getByRole("banner");
@@ -39,11 +39,35 @@ async function alignedMobileHeader(page: Page) {
     };
   });
   const brand = await banner.locator(".mj-brand").boundingBox();
-  const actions = await banner.locator(".mj-header-actions").boundingBox();
   expect(Math.abs(brand!.x - edges.left)).toBeLessThanOrEqual(1);
-  expect(
-    Math.abs(actions!.x + actions!.width - edges.right),
-  ).toBeLessThanOrEqual(1);
+  const controls = banner.locator(".mj-header-actions > *");
+  const rows = new Map<number, number>();
+  let previousBounds = brand!;
+  for (const control of await controls.all()) {
+    const bounds = await control.boundingBox();
+    expect(bounds).not.toBeNull();
+    const row = Math.round(bounds!.y);
+    rows.set(row, bounds!.x + bounds!.width);
+    const sameRow = Math.abs(bounds!.y - previousBounds.y) <= 1;
+    if (sameRow) {
+      expect(bounds!.x).toBeGreaterThanOrEqual(
+        previousBounds.x + previousBounds.width,
+      );
+    } else {
+      expect(bounds!.y).toBeGreaterThanOrEqual(
+        previousBounds.y + previousBounds.height,
+      );
+    }
+    previousBounds = bounds!;
+  }
+  const firstControl = await controls.first().boundingBox();
+  expect(Math.abs(firstControl!.y - brand!.y)).toBeLessThanOrEqual(1);
+  for (const right of rows.values()) {
+    expect(Math.abs(right - edges.right)).toBeLessThanOrEqual(1);
+  }
+  if (page.viewportSize()!.width >= 480) {
+    expect(rows.size).toBe(1);
+  }
   const links = banner.locator(".mj-nav a");
   if (await links.count()) {
     const first = await links.first().boundingBox();
@@ -55,7 +79,7 @@ async function alignedMobileHeader(page: Page) {
 
 for (const locale of ["en", "id"]) {
   for (const theme of ["light", "dark"]) {
-    for (const width of [320, 390, 640, 1440]) {
+    for (const width of [320, 390, 480, 640, 800, 1440]) {
       test(`${locale} ${theme} ${width}px whole-app presentation`, async ({
         page,
         context,
@@ -204,6 +228,19 @@ for (const locale of ["en", "id"]) {
         ).toBeVisible();
         await page.goto("/");
         await expect(editor).toBeEditable();
+        await page.goto(`/${locale}/help#drive-access`);
+        const signedInHelpHeading = page.getByRole("heading", {
+          name: messages["help.access.title"],
+        });
+        await expect(signedInHelpHeading).toBeVisible();
+        const helpBounds = await signedInHelpHeading.boundingBox();
+        const signedInHeaderBounds = await page.getByRole("banner").boundingBox();
+        expect(helpBounds!.y).toBeGreaterThanOrEqual(
+          signedInHeaderBounds!.y + signedInHeaderBounds!.height,
+        );
+        await page.screenshot({
+          path: testInfo.outputPath("signed-in-help-anchor.png"),
+        });
         await page.goto("/entries");
         await expect(
           page.getByRole("heading", {

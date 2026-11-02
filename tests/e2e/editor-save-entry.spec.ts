@@ -19,7 +19,7 @@ test.describe("Writing and browsing entries", () => {
     // 1. Sign in by navigating to `/api/v1/auth/local/login` and wait for the editor to load.
     // The app resolves `/entries/today` to the concrete date URL, e.g. `/entries/2026-10-30`.
     await page.goto("/api/v1/auth/local/login");
-    await expect(page).toHaveURL(/\/entries\/(today|\d{4}-\d{2}-\d{2})$/);
+    await expect(page).toHaveURL(/\/entries\/\d{4}-\d{2}-\d{2}$/);
     await expect(journalEntry).toBeEditable();
 
     // 2. Open `/entries/${entryDate}` and wait for the "Journal entry" textarea to become editable.

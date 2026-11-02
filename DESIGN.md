@@ -37,9 +37,9 @@ Retain the existing Segoe UI/system/-apple-system/BlinkMacSystemFont/Helvetica N
 
 The shared container is capped at 68rem (1088px), including 1rem (16px) side gutters. On wide screens, the editor and its recovery banner fill that container's content width, aligning with the header's content edges. Keep narrower standalone informational reading pages intentional.
 
-At widths up to 640px, the header has separate rows: left-aligned brand, right-aligned action controls and centered page navigation. Between 641px and 800px, retain the compact brand/actions row with centered page navigation below. Wider layouts retain centered application navigation between brand and actions.
+At widths up to 800px, use a wrapping header row with the brand at the left and controls at the right. Keep controls beside the brand whenever space permits. Wrap trailing controls onto right-aligned rows in their original order only when necessary; do not move the entire group below the brand at an arbitrary mobile breakpoint. Page navigation has its own centered row below the brand and controls. Wider layouts retain centered application navigation between brand and actions.
 
-No horizontal overflow or overlapping text. Retain the functional seven-column Monday-first calendar on mobile; do not apply a generic single-column rule to its date grid. Menus may float over the page when open, but must not hide their own trigger or extend off-screen. Check 320px, 390px, 640px and desktop layouts in both themes and languages.
+No horizontal overflow or overlapping text. Retain the functional seven-column Monday-first calendar on mobile; do not apply a generic single-column rule to its date grid. Menus may float over the page when open, but must not hide their own trigger or extend off-screen. Check 320px, 390px, 480px, 640px, 800px and desktop layouts in both themes and languages.
 
 ## 6. Motion & Interaction
 
