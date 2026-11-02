@@ -1,5 +1,5 @@
 {{define "entries"}}
-<section class="mj-page-card">
+<section class="mj-page-card mj-entries-page">
   <header class="mj-page-header">
     <div>
       <p class="mj-kicker">{{t "entries.kicker"}}</p>
@@ -9,9 +9,9 @@
   </header>
 
   <div class="mj-entry-list" data-entry-list data-list-limit="{{.EntriesLimit}}"></div>
-  <div class="mj-actions">
+  <div class="mj-list-feedback">
     <button class="mj-btn mj-btn-secondary" type="button" data-entries-retry hidden>{{t "entries.retry"}}</button>
+    <p role="status" aria-live="polite" data-entries-status>{{t "entries.loading"}}</p>
   </div>
-  <p role="status" aria-live="polite" data-entries-status>{{t "entries.loading"}}</p>
 </section>
 {{end}}

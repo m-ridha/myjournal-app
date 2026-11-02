@@ -3,6 +3,8 @@
 
 import { test, expect } from "@playwright/test";
 
+const messages = require("../../assets/locales/en.json");
+
 test.describe("Public entry and local sign in", () => {
   test("Landing offers local sign in and opens the editor", async ({
     page,
@@ -32,12 +34,14 @@ test.describe("Public entry and local sign in", () => {
       header.getByRole("link", { name: "Calendar", exact: true }),
     ).toHaveCount(0);
 
-    // 4. Click "Continue with Local Dev".
-    await page.getByRole("link", { name: "Continue with Local Dev" }).click();
+    // 4. Click the localized local-development sign-in action.
+    await page
+      .getByRole("link", { name: messages["landing.connectLocal"] })
+      .click();
 
-    // 5. Verify the URL is `/entries/today` and the "Journal entry" textarea becomes editable.
+    // 5. Verify a concrete `/entries/YYYY-MM-DD` URL and an editable journal textarea.
     // The app resolves `/entries/today` to the concrete date URL, e.g. `/entries/2026-10-30`.
-    await expect(page).toHaveURL(/\/entries\/(today|\d{4}-\d{2}-\d{2})$/);
+    await expect(page).toHaveURL(/\/entries\/\d{4}-\d{2}-\d{2}$/);
     await expect(
       page.getByRole("textbox", { name: "Journal entry" }),
     ).toBeEditable();

@@ -14,21 +14,26 @@
     <button class="mj-btn mj-btn-secondary mj-btn-small" type="button" data-entry-save disabled>{{t "editor.save"}}</button>
   </div>
 
-  <div>
+  <div class="mj-editor-recovery">
     <button class="mj-btn mj-btn-secondary mj-btn-small" type="button" data-entry-load-retry hidden>{{t "editor.retryLoad"}}</button>
     <button class="mj-btn mj-btn-secondary mj-btn-small" type="button" data-entry-legacy-draft hidden>{{t "editor.reviewLegacyDraft"}}</button>
   </div>
-  <section data-entry-conflict hidden aria-label="{{t "editor.conflictTitle"}}">
+  <section class="mj-conflict-panel" data-entry-conflict hidden aria-labelledby="entry-conflict-title">
+    <h2 id="entry-conflict-title">{{t "editor.conflictTitle"}}</h2>
     <p>{{t "editor.conflictHelp"}}</p>
-    <button class="mj-btn mj-btn-secondary" type="button" data-conflict-mine>{{t "editor.keepMine"}}</button>
-    <button class="mj-btn mj-btn-secondary" type="button" data-conflict-other>{{t "editor.loadOther"}}</button>
-    <button class="mj-btn mj-btn-secondary" type="button" data-conflict-both>{{t "editor.keepBoth"}}</button>
+    <div class="mj-conflict-actions">
+      <button class="mj-btn mj-btn-secondary" type="button" data-conflict-mine>{{t "editor.keepMine"}}</button>
+      <button class="mj-btn mj-btn-secondary" type="button" data-conflict-other>{{t "editor.loadOther"}}</button>
+      <button class="mj-btn mj-btn-secondary" type="button" data-conflict-both>{{t "editor.keepBoth"}}</button>
+    </div>
   </section>
   <div class="mj-editor-field">
     <textarea class="mj-editor" aria-label="{{t "editor.label"}}" rows="14" readonly aria-busy="true" data-entry-text></textarea>
-    <button class="mj-editor-trash" type="button" aria-label="{{t "editor.delete"}}" title="{{t "editor.delete"}}" data-entry-delete hidden disabled>
-      <span class="icon icon-trash" aria-hidden="true"></span>
-    </button>
+    <div class="mj-editor-actions">
+      <button class="mj-editor-trash" type="button" aria-label="{{t "editor.delete"}}" title="{{t "editor.delete"}}" data-entry-delete hidden disabled>
+        <span class="icon icon-trash" aria-hidden="true"></span>
+      </button>
+    </div>
   </div>
 </section>
 {{end}}

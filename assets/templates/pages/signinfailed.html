@@ -1,5 +1,5 @@
 {{define "signinfailed"}}
-<section class="mj-page-card mj-public-copy">
+<section class="mj-page-card mj-public-copy mj-reading-page">
   <header class="mj-page-header">
     <div>
       <p class="mj-kicker">{{t "app.name"}}</p>
@@ -11,7 +11,8 @@
   <p>{{t "signInFailed.retry"}}</p>
   <p>{{t "signInFailed.preserved"}}</p>
   <div class="mj-actions">
-    <a class="mj-btn mj-btn-primary" href="/">{{t "signInFailed.home"}}</a>
+    <a class="mj-btn mj-btn-primary" href="/sign-in">{{t "signInFailed.tryAgain"}}</a>
+    <a class="mj-btn mj-btn-secondary" href="/">{{t "signInFailed.home"}}</a>
   </div>
 </section>
 {{end}}
