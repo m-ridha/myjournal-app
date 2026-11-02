@@ -2,7 +2,7 @@
 
 **Seed:** `tests/e2e/seed.spec.ts`
 **Base URL:** `http://localhost:4173` (local provider, isolated data directory `.devdata/e2e`)
-**Execution:** Start and stop an owned local-provider server; an occupied port must fail startup without running tests against or stopping the existing listener. Run suites sequentially because fixture data is shared. Retain traces and screenshots for failures.
+**Execution:** Start and stop an owned local-provider server; an occupied port must fail startup without running tests against or stopping the existing listener. Do not overlap separate suite invocations, even on different ports, because they share `.devdata/e2e`. Within one invocation, tests may run in parallel using isolated browser contexts and engine/scenario-specific dates for mutable fixtures; CI uses one worker. Retain traces and screenshots for failures.
 **Specs:** one file per scenario in `tests/e2e/`; every test header names this plan and the seed.
 
 ## 0. Local fixture health
@@ -87,7 +87,7 @@
 
 ### 6.1 EN/ID and light/dark pages remain usable at 320px, 390px, 640px and 1440px
 
-**Spec:** `tests/e2e/redesign-presentation.spec.ts` (eight combinations per browser)
+**Spec:** `tests/e2e/redesign-presentation.spec.ts` (16 combinations per browser: two locales × two themes × four viewport widths)
 
 **Steps:**
 
