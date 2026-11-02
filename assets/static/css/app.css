@@ -681,7 +681,7 @@ html[data-theme="dark"] .icon-moon {
   border-radius: inherit;
   background: transparent;
   color: var(--mj-text);
-  resize: vertical;
+  resize: none;
   line-height: 1.8;
   font-size: 1.0625rem;
 }
