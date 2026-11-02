@@ -172,6 +172,8 @@ for (const locale of ["en", "id"]) {
             const heading = page.getByRole("heading", {
               name: messages["help.access.title"],
             });
+            await expect(heading).toBeVisible();
+            await expect(heading).toBeInViewport({ ratio: 1 });
             const anchorBounds = await heading.boundingBox();
             const headerBounds = await page.getByRole("banner").boundingBox();
             expect(anchorBounds!.y).toBeGreaterThanOrEqual(
@@ -233,6 +235,7 @@ for (const locale of ["en", "id"]) {
           name: messages["help.access.title"],
         });
         await expect(signedInHelpHeading).toBeVisible();
+        await expect(signedInHelpHeading).toBeInViewport({ ratio: 1 });
         const helpBounds = await signedInHelpHeading.boundingBox();
         const signedInHeaderBounds = await page.getByRole("banner").boundingBox();
         expect(helpBounds!.y).toBeGreaterThanOrEqual(
