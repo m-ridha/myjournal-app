@@ -44,6 +44,7 @@ async function run() {
   const calendarData = (year, month) => ({ ok: true, json: async () => ({ year, month, weeks: [[{ date: `${year}-${String(month).padStart(2, '0')}-01`, inMonth: true, isFuture: false, hasEntry: false, isToday: false }]] }) });
   const old = deferred(); f = setup('', old.promise, true); f.queue.push(calendarData(2026, 9)); f.prev.fire('click'); await tick();
   const latestLabel = f.label.textContent; assert(latestLabel.includes('September') && f.grid.children.length === 8, 'latest calendar response renders one grid');
+  assert(f.grid.children[0].textContent === 'Sun' && f.grid.children[6].textContent === 'Sat', 'calendar weekday headings run Sunday through Saturday');
   old.resolve(calendarData(2026, 10)); await tick(); assert(f.label.textContent === latestLabel && f.grid.children.length === 8, 'older successful calendar response must not replace or append to latest grid');
   const obsolete = deferred(); f = setup('', obsolete.promise, true); f.queue.push(calendarData(2026, 9)); f.prev.fire('click'); await tick(); obsolete.reject(new Error('old failure')); await tick();
   assert(f.label.textContent.includes('September') && f.grid.children.length === 8, 'obsolete calendar failure must not overwrite current success');

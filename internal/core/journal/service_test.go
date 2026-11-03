@@ -151,6 +151,9 @@ func TestServiceMonthUsesYearIndexInsteadOfPerDayReads(t *testing.T) {
 	if store.listYearCalls != 1 || store.getCalls != 0 {
 		t.Fatalf("ListYear()/Get() calls = %d/%d, want 1/0", store.listYearCalls, store.getCalls)
 	}
+	if got := month.Weeks[0][0].Date; got != (Date{Year: 2026, Month: 8, Day: 30}) {
+		t.Fatalf("first calendar day = %#v, want Sunday 2026-08-30", got)
+	}
 	for _, week := range month.Weeks {
 		for _, day := range week {
 			if day.Date == entryDate && (!day.HasEntry || !day.IsToday) {

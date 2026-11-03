@@ -48,6 +48,6 @@ Target at least 85% coverage for each maintained production function; generated 
 
 ## Scope and accepted constraints
 
-No offline synchronization, extra storage providers, attachments, Markdown, client-side encryption, search, tags, sharing, reminders, AI summaries, native apps or journal-content analytics. Redis remains deferred. Monday is the fixed calendar week start; configurability is shelved. Closed-tab draft expiry and device-toolbar coverage instead of physical-phone testing are accepted for this stage.
+No offline synchronization, extra storage providers, attachments, Markdown, client-side encryption, search, tags, sharing, reminders, AI summaries, native apps or journal-content analytics. Redis remains deferred. Sunday is the fixed calendar week start; configurability is shelved. Closed-tab draft expiry and device-toolbar coverage instead of physical-phone testing are accepted for this stage.
 
 Google Console publication is In Production (public) with verified branding. Preserve one production replica and avoid simultaneous external editing; process/deployment overlap, non-atomic writes, token expiry and latency/revision limitations are detailed in [status](status.md).

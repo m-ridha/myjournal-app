@@ -794,7 +794,7 @@
         if (calendarStatus) calendarStatus.textContent = '';
 
         Array.from({ length: 7 }, (_, offset) => {
-          const weekday = new Date(Date.UTC(2024, 0, 1 + offset));
+          const weekday = new Date(Date.UTC(2024, 0, 7 + offset));
           return weekday.toLocaleDateString(document.documentElement.lang, { weekday: 'short', timeZone: 'UTC' });
         }).forEach((name) => {
           const heading = document.createElement('span');

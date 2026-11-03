@@ -161,7 +161,7 @@ func (s *Service) Month(ctx context.Context, year int, month time.Month) (MonthV
 	}
 	first := time.Date(year, month, 1, 0, 0, 0, 0, time.UTC)
 	last := time.Date(year, month+1, 0, 0, 0, 0, 0, time.UTC)
-	start := first.AddDate(0, 0, -((int(first.Weekday()) + 6) % 7))
+	start := first.AddDate(0, 0, -int(first.Weekday()))
 	today := s.Today(TimeZone(ctx))
 	meta, err := s.operationStore().ListYear(ctx, year)
 	if err != nil {
@@ -185,7 +185,7 @@ func (s *Service) Month(ctx context.Context, year int, month time.Month) (MonthV
 			start = start.AddDate(0, 0, 1)
 		}
 		weeks = append(weeks, week)
-		if start.After(last) && start.Weekday() == time.Monday {
+		if start.After(last) && start.Weekday() == time.Sunday {
 			break
 		}
 	}
