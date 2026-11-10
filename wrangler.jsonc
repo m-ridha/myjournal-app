@@ -2,10 +2,16 @@
 	"$schema": "node_modules/wrangler/config-schema.json",
 	"name": "myjournal-app",
 	"compatibility_date": "2026-11-01",
+	"routes": [
+		{
+			"pattern": "myjournal.ink/*",
+			"custom_domain": true
+		}
+	],
 	"vars": {
 		"DEPLOY_TARGET": "cloudflare",
 		"CACHE_STORAGE": "lru",
-		"APP_BASE_URL": "https://myjournal-app.ridho2210.workers.dev",
+		"APP_BASE_URL": "https://myjournal.ink",
 		"COOKIE_SECURE": "true",
 		"PROVIDERS": "google"
 	}
