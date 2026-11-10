@@ -24,7 +24,7 @@ func (failingStoreProvider) Store(context.Context, provider.Connection) (journal
 }
 
 func TestServiceFactoryBuildsAndRejectsConnections(t *testing.T) {
-	cache, cleanup, err := newJournalCache()
+	cache, cleanup, err := newJournalCache(config.Config{})
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -13,7 +13,7 @@ Use Go, chi, `html/template`, embedded assets, Google Wire and oapi-codegen. The
 | `internal/core/connection/` | Connection models, lifecycle, ports, registry and application service |
 | `internal/driven/provider/{local,google}/` | Development filesystem and Google OAuth/Drive adapters |
 | `internal/driven/cache/cachestore/` | Journal caching policy and consumer-owned ByteCache port |
-| `internal/driven/cache/local/` | Interchangeable BigCache and LRU byte storage; BigCache is wired |
+| `internal/driven/cache/local/` | Interchangeable BigCache and LRU byte storage; selected by DEPLOY_TARGET/CACHE_STORAGE (LRU default for Cloudflare, BigCache for Railway) |
 | `internal/driven/clock/`, `internal/driven/session/` | System clock and authenticated cookie encryption |
 | `internal/config/` | Environment parsing and validation |
 | `internal/driver/web/` | Pages, thin API handlers, middleware, locale catalog and generated API |
@@ -51,7 +51,7 @@ Operation-scoped discovery starts fresh for each service call; decorators forwar
 
 OpenFresh, selected by HTTP `Cache-Control: no-store`, bypasses retained snapshots for recovery, failed-save reconciliation and conflict actions. Fresh reads use separate flights. Ordinary opens can see content up to two minutes old, including changes from another process. Mutation attempts invalidate affected snapshots with generation guards, even after ambiguous failures; never seed content from save acknowledgements.
 
-Successful PUT/DELETE may schedule backend read-through warming: four workers, at most 64 active/queued dates, ten-second deadlines, fresh provider clients and operation scopes. Repeated dates coalesce. Overload skips optional warming; failures do not undo successful writes. Creation and trash warm ListYears and the affected ListYear before the entry snapshot; existing-entry updates warm only the entry. Warming never changes editor/draft state or retries writes. Shutdown cancels and joins workers before closing byte storage.
+Successful PUT/DELETE may schedule backend read-through warming: four workers, at most 64 active/queued dates, ten-second deadlines, fresh provider clients and operation scopes. Repeated dates coalesce. Overload skips optional warming; failures do not undo successful writes. Creation and trash warm ListYears and the affected ListYear before the entry snapshot; existing-entry updates warm only the entry. Warming never changes editor/draft state or retries writes. Shutdown cancels and joins workers before closing byte storage. Under `DEPLOY_TARGET=cloudflare` (default) or `CACHE_STORAGE=lru`, warming goroutines are disabled to fit serverless isolate execution bounds.
 
 ## HTTP and generated contracts
 

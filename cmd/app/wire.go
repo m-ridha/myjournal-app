@@ -23,6 +23,7 @@ import (
 	"myjournal-app/internal/core/journal"
 	"myjournal-app/internal/driven/cache/cachestore"
 	cacheAdapter "myjournal-app/internal/driven/cache/local/bigcache"
+	lruAdapter "myjournal-app/internal/driven/cache/local/lru"
 	"myjournal-app/internal/driven/clock"
 	googleProvider "myjournal-app/internal/driven/provider/google"
 	localProvider "myjournal-app/internal/driven/provider/local"
@@ -67,8 +68,16 @@ func newClock() journal.Clock {
 	return clock.System{}
 }
 
-func newJournalCache() (*cachestore.Cache, func(), error) {
+func newJournalCache(cfg config.Config) (*cachestore.Cache, func(), error) {
 	const ttl = 2 * time.Minute
+	if cfg.EffectiveCacheStorage() == config.CacheStorageLRU {
+		storage, err := lruAdapter.New(ttl)
+		if err != nil {
+			return nil, nil, fmt.Errorf("initialize journal cache: %w", err)
+		}
+		cache := cachestore.New(storage, ttl)
+		return cache, func() { _ = storage.Close() }, nil
+	}
 	storage, err := cacheAdapter.New(ttl)
 	if err != nil {
 		return nil, nil, fmt.Errorf("initialize journal cache: %w", err)

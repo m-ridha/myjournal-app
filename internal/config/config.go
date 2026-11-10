@@ -11,6 +11,14 @@ import (
 	provider "myjournal-app/internal/core/connection"
 )
 
+const (
+	DeployTargetCloudflare = "cloudflare"
+	DeployTargetRailway    = "railway"
+
+	CacheStorageLRU      = "lru"
+	CacheStorageBigCache = "bigcache"
+)
+
 // Config contains the application-level settings used by the server at startup.
 type Config struct {
 	BaseURL            string
@@ -23,6 +31,8 @@ type Config struct {
 	GoogleTestMode     bool
 	GoogleClientID     string
 	GoogleClientSecret string
+	DeployTarget       string
+	CacheStorage       string
 }
 
 func Load() (Config, error) {
@@ -35,6 +45,8 @@ func Load() (Config, error) {
 		CookieSecure:       false,
 		Providers:          provider.LocalID,
 		LocalDataDir:       "./.devdata",
+		DeployTarget:       DeployTargetCloudflare,
+		CacheStorage:       CacheStorageLRU,
 	}
 
 	if v, ok := os.LookupEnv("APP_BASE_URL"); ok {
@@ -73,6 +85,14 @@ func Load() (Config, error) {
 		}
 		cfg.GoogleTestMode = enabled
 	}
+	if v, ok := os.LookupEnv("DEPLOY_TARGET"); ok {
+		cfg.DeployTarget = v
+	}
+	if v, ok := os.LookupEnv("CACHE_STORAGE"); ok {
+		cfg.CacheStorage = v
+	} else if cfg.DeployTarget == DeployTargetRailway {
+		cfg.CacheStorage = CacheStorageBigCache
+	}
 	return cfg, nil
 }
 
@@ -91,6 +111,16 @@ func (c Config) Validate() error {
 	case "debug", "info", "warn", "error":
 	default:
 		return fmt.Errorf("LOG_LEVEL must be debug, info, warn, or error")
+	}
+	switch c.DeployTarget {
+	case "", DeployTargetCloudflare, DeployTargetRailway:
+	default:
+		return fmt.Errorf("DEPLOY_TARGET must be cloudflare or railway")
+	}
+	switch c.CacheStorage {
+	case "", CacheStorageLRU, CacheStorageBigCache:
+	default:
+		return fmt.Errorf("CACHE_STORAGE must be lru or bigcache")
 	}
 	key, err := base64.StdEncoding.DecodeString(c.SessionKey)
 	if err != nil || len(key) != 32 {
@@ -124,6 +154,25 @@ func (c Config) ProviderIDs() []string {
 		providers = append(providers, strings.TrimSpace(field))
 	}
 	return providers
+}
+
+// EffectiveDeployTarget returns the configured target or defaults to cloudflare.
+func (c Config) EffectiveDeployTarget() string {
+	if c.DeployTarget == "" {
+		return DeployTargetCloudflare
+	}
+	return c.DeployTarget
+}
+
+// EffectiveCacheStorage returns the configured cache storage or target-derived default.
+func (c Config) EffectiveCacheStorage() string {
+	if c.CacheStorage != "" {
+		return c.CacheStorage
+	}
+	if c.EffectiveDeployTarget() == DeployTargetRailway {
+		return CacheStorageBigCache
+	}
+	return CacheStorageLRU
 }
 
 // ValidateLoopbackURL restricts development-only providers to exact loopback hosts.

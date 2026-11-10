@@ -1,0 +1,12 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "myjournal-app",
+	"compatibility_date": "2026-11-01",
+	"vars": {
+		"DEPLOY_TARGET": "cloudflare",
+		"CACHE_STORAGE": "lru",
+		"APP_BASE_URL": "https://myjournal-app.ridho2210.workers.dev",
+		"COOKIE_SECURE": "true",
+		"PROVIDERS": "google"
+	}
+}

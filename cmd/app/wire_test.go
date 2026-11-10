@@ -102,15 +102,27 @@ func TestGoogleHTTPSRegistration(t *testing.T) {
 }
 
 func TestJournalCacheLifecycle(t *testing.T) {
-	cache, cleanup, err := newJournalCache()
-	if err != nil {
-		t.Fatal(err)
+	for _, tc := range []struct {
+		name string
+		cfg  config.Config
+	}{
+		{name: "cloudflare lru default", cfg: config.Config{}},
+		{name: "railway bigcache", cfg: config.Config{DeployTarget: config.DeployTargetRailway}},
+		{name: "explicit bigcache", cfg: config.Config{CacheStorage: config.CacheStorageBigCache}},
+		{name: "explicit lru", cfg: config.Config{CacheStorage: config.CacheStorageLRU}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			cache, cleanup, err := newJournalCache(tc.cfg)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if cache == nil || cleanup == nil {
+				t.Fatal("missing shared cache or cleanup")
+			}
+			cleanup()
+			cleanup()
+		})
 	}
-	if cache == nil || cleanup == nil {
-		t.Fatal("missing shared cache or cleanup")
-	}
-	cleanup()
-	cleanup()
 }
 
 func TestHTTPListenAddress(t *testing.T) {

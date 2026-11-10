@@ -13,7 +13,7 @@ import (
 
 func setConfigEnvironment(t *testing.T) {
 	t.Helper()
-	for _, key := range []string{"APP_BASE_URL", "PORT", "LOG_LEVEL", "SESSION_KEY", "COOKIE_SECURE", "PROVIDERS", "LOCAL_DATA_DIR", "GOOGLE_TEST_MODE"} {
+	for _, key := range []string{"APP_BASE_URL", "PORT", "LOG_LEVEL", "SESSION_KEY", "COOKIE_SECURE", "PROVIDERS", "LOCAL_DATA_DIR", "GOOGLE_TEST_MODE", "DEPLOY_TARGET", "CACHE_STORAGE"} {
 		previous, existed := os.LookupEnv(key)
 		if err := os.Unsetenv(key); err != nil {
 			t.Fatalf("Unsetenv(%s) error = %v", key, err)
@@ -44,7 +44,7 @@ func TestLoadDefaults(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Load() error = %v", err)
 	}
-	if cfg.Port != 3030 || cfg.BaseURL != "http://localhost:3030" || cfg.LogLevel != "info" || cfg.Providers != "local" {
+	if cfg.Port != 3030 || cfg.BaseURL != "http://localhost:3030" || cfg.LogLevel != "info" || cfg.Providers != "local" || cfg.DeployTarget != DeployTargetCloudflare || cfg.CacheStorage != CacheStorageLRU {
 		t.Fatalf("Load() defaults = %#v", cfg)
 	}
 	if err := cfg.Validate(); err == nil {
@@ -88,6 +88,8 @@ func TestValidateRejectsInvalidConfiguration(t *testing.T) {
 		{name: "unknown provider", change: func(cfg *Config) { cfg.Providers = "gogle" }},
 		{name: "invalid base URL", change: func(cfg *Config) { cfg.BaseURL = "localhost:3030" }},
 		{name: "invalid log level", change: func(cfg *Config) { cfg.LogLevel = "verbose" }},
+		{name: "invalid deploy target", change: func(cfg *Config) { cfg.DeployTarget = "aws" }},
+		{name: "invalid cache storage", change: func(cfg *Config) { cfg.CacheStorage = "redis" }},
 	}
 	for _, test := range cases {
 		t.Run(test.name, func(t *testing.T) {
@@ -136,4 +138,78 @@ func TestGoogleTestModeConfiguration(t *testing.T) {
 	if _, err := Load(); err == nil {
 		t.Fatal("invalid test mode accepted")
 	}
+}
+
+func TestDeployTargetAndCacheStorage(t *testing.T) {
+	cases := []struct {
+		name           string
+		deployTarget   string
+		cacheStorage   string
+		wantTarget     string
+		wantStorage    string
+		wantEffTarget  string
+		wantEffStorage string
+	}{
+		{
+			name:           "default",
+			wantTarget:     DeployTargetCloudflare,
+			wantStorage:    CacheStorageLRU,
+			wantEffTarget:  DeployTargetCloudflare,
+			wantEffStorage: CacheStorageLRU,
+		},
+		{
+			name:           "railway environment",
+			deployTarget:   "railway",
+			wantTarget:     DeployTargetRailway,
+			wantStorage:    CacheStorageBigCache,
+			wantEffTarget:  DeployTargetRailway,
+			wantEffStorage: CacheStorageBigCache,
+		},
+		{
+			name:           "railway with explicit lru override",
+			deployTarget:   "railway",
+			cacheStorage:   "lru",
+			wantTarget:     DeployTargetRailway,
+			wantStorage:    CacheStorageLRU,
+			wantEffTarget:  DeployTargetRailway,
+			wantEffStorage: CacheStorageLRU,
+		},
+		{
+			name:           "cloudflare with explicit bigcache override",
+			deployTarget:   "cloudflare",
+			cacheStorage:   "bigcache",
+			wantTarget:     DeployTargetCloudflare,
+			wantStorage:    CacheStorageBigCache,
+			wantEffTarget:  DeployTargetCloudflare,
+			wantEffStorage: CacheStorageBigCache,
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			setConfigEnvironment(t)
+			if tc.deployTarget != "" {
+				t.Setenv("DEPLOY_TARGET", tc.deployTarget)
+			}
+			if tc.cacheStorage != "" {
+				t.Setenv("CACHE_STORAGE", tc.cacheStorage)
+			}
+			cfg, err := Load()
+			require.NoError(t, err)
+			assert.Equal(t, tc.wantTarget, cfg.DeployTarget)
+			assert.Equal(t, tc.wantStorage, cfg.CacheStorage)
+			assert.Equal(t, tc.wantEffTarget, cfg.EffectiveDeployTarget())
+			assert.Equal(t, tc.wantEffStorage, cfg.EffectiveCacheStorage())
+			require.NoError(t, validConfig().Validate())
+		})
+	}
+}
+
+func TestEffectiveDefaultsOnEmptyFields(t *testing.T) {
+	cfg := Config{}
+	assert.Equal(t, DeployTargetCloudflare, cfg.EffectiveDeployTarget())
+	assert.Equal(t, CacheStorageLRU, cfg.EffectiveCacheStorage())
+
+	cfgRailway := Config{DeployTarget: DeployTargetRailway}
+	assert.Equal(t, DeployTargetRailway, cfgRailway.EffectiveDeployTarget())
+	assert.Equal(t, CacheStorageBigCache, cfgRailway.EffectiveCacheStorage())
 }

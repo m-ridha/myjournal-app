@@ -17,6 +17,7 @@ import (
 	"myjournal-app/internal/core/journal"
 	"myjournal-app/internal/driven/cache/cachestore"
 	"myjournal-app/internal/driven/cache/local/bigcache"
+	"myjournal-app/internal/driven/cache/local/lru"
 	"myjournal-app/internal/driven/clock"
 	"myjournal-app/internal/driven/provider/google"
 	"myjournal-app/internal/driven/provider/local"
@@ -48,7 +49,7 @@ func BuildApp(cfg config.Config) (*App, func(), error) {
 	codec := newSessionCodec(cfg)
 	options := newWebOptions(cfg, codec)
 	clock := newClock()
-	cache, cleanup, err := newJournalCache()
+	cache, cleanup, err := newJournalCache(cfg)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -84,8 +85,16 @@ func newClock() journal.Clock {
 	return clock.System{}
 }
 
-func newJournalCache() (*cachestore.Cache, func(), error) {
+func newJournalCache(cfg config.Config) (*cachestore.Cache, func(), error) {
 	const ttl = 2 * time.Minute
+	if cfg.EffectiveCacheStorage() == config.CacheStorageLRU {
+		storage, err := lru.New(ttl)
+		if err != nil {
+			return nil, nil, fmt.Errorf("initialize journal cache: %w", err)
+		}
+		cache := cachestore.New(storage, ttl)
+		return cache, func() { _ = storage.Close() }, nil
+	}
 	storage, err := bigcache.New(ttl)
 	if err != nil {
 		return nil, nil, fmt.Errorf("initialize journal cache: %w", err)

@@ -4,7 +4,9 @@ Use synthetic data for operational checks. Never record credentials, account cla
 
 ## Configuration
 
-[.env.example](../../.env.example) lists runtime settings. Local defaults: port 3030, APP_BASE_URL=http://localhost:3030, PROVIDERS=local, LOCAL_DATA_DIR=./.devdata, info logging and non-Secure HTTP cookies. Listener port and base URL are separate settings; keep them aligned. `make run` loads `.env`; direct go run does not.
+[.env.example](../../.env.example) lists runtime settings. Local defaults: port 3030, APP_BASE_URL=http://localhost:3030, PROVIDERS=local, LOCAL_DATA_DIR=./.devdata, info logging, non-Secure HTTP cookies, DEPLOY_TARGET=cloudflare and CACHE_STORAGE=lru. Listener port and base URL are separate settings; keep them aligned. `make run` loads `.env`; direct go run does not.
+
+DEPLOY_TARGET selects the platform profile: `cloudflare` (default, in-memory LRU cache without background warming) or `railway` (BigCache with background read-through warming). CACHE_STORAGE (`lru` or `bigcache`) allows explicit override. Deploying to Cloudflare Workers Free Tier uses `wrangler.jsonc` with environment variables configured under `vars` or secrets via `wrangler secret`.
 
 SESSION_KEY must encode 32 random bytes in base64. Keep it private and stable across restarts/rollback; rotating it invalidates existing encrypted sessions. Startup validates configuration before composing adapters. Never print `.env` or request decrypted Railway variables.
 
