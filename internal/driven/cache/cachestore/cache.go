@@ -65,6 +65,12 @@ func New(storage ByteCache, ttl time.Duration) *Cache {
 	return &Cache{storage: storage, ttl: ttl, now: time.Now, gate: make(chan struct{}, 1)}
 }
 
+// Storage returns the underlying byte storage adapter.
+func (c *Cache) Storage() ByteCache { return c.storage }
+
+// IsWarmed reports whether read-through cache warming workers are active.
+func (c *Cache) IsWarmed() bool { return c.warmer != nil }
+
 // readAuthorizer validates the requesting connection independently of the shared
 // loader. Implementations must also observe revocation on repeated checks.
 type readAuthorizer interface {

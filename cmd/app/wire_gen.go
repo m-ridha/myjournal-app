@@ -85,6 +85,8 @@ func newClock() journal.Clock {
 	return clock.System{}
 }
 
+// newJournalCache selects the byte storage adapter and warming lifecycle
+// matching the configured deployment target and cache storage options.
 func newJournalCache(cfg config.Config) (*cachestore.Cache, func(), error) {
 	const ttl = 2 * time.Minute
 	if cfg.EffectiveCacheStorage() == config.CacheStorageLRU {

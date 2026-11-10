@@ -8,6 +8,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"myjournal-app/internal/config"
+	"myjournal-app/internal/driven/cache/local/bigcache"
+	"myjournal-app/internal/driven/cache/local/lru"
 	"myjournal-app/internal/testutil"
 )
 
@@ -103,13 +105,17 @@ func TestGoogleHTTPSRegistration(t *testing.T) {
 
 func TestJournalCacheLifecycle(t *testing.T) {
 	for _, tc := range []struct {
-		name string
-		cfg  config.Config
+		name       string
+		cfg        config.Config
+		wantLRU    bool
+		wantWarmed bool
 	}{
-		{name: "cloudflare lru default", cfg: config.Config{}},
-		{name: "railway bigcache", cfg: config.Config{DeployTarget: config.DeployTargetRailway}},
-		{name: "explicit bigcache", cfg: config.Config{CacheStorage: config.CacheStorageBigCache}},
-		{name: "explicit lru", cfg: config.Config{CacheStorage: config.CacheStorageLRU}},
+		{name: "cloudflare lru default", cfg: config.Config{}, wantLRU: true, wantWarmed: false},
+		{name: "railway bigcache default", cfg: config.Config{DeployTarget: config.DeployTargetRailway}, wantLRU: false, wantWarmed: true},
+		{name: "railway explicit lru override", cfg: config.Config{DeployTarget: config.DeployTargetRailway, CacheStorage: config.CacheStorageLRU}, wantLRU: true, wantWarmed: false},
+		{name: "cloudflare explicit bigcache override", cfg: config.Config{DeployTarget: config.DeployTargetCloudflare, CacheStorage: config.CacheStorageBigCache}, wantLRU: false, wantWarmed: true},
+		{name: "explicit bigcache", cfg: config.Config{CacheStorage: config.CacheStorageBigCache}, wantLRU: false, wantWarmed: true},
+		{name: "explicit lru", cfg: config.Config{CacheStorage: config.CacheStorageLRU}, wantLRU: true, wantWarmed: false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			cache, cleanup, err := newJournalCache(tc.cfg)
@@ -119,8 +125,18 @@ func TestJournalCacheLifecycle(t *testing.T) {
 			if cache == nil || cleanup == nil {
 				t.Fatal("missing shared cache or cleanup")
 			}
-			cleanup()
-			cleanup()
+			defer func() {
+				cleanup()
+				cleanup()
+			}()
+			assert.Equal(t, tc.wantWarmed, cache.IsWarmed())
+			if tc.wantLRU {
+				_, isLRU := cache.Storage().(*lru.Adapter)
+				assert.True(t, isLRU, "expected LRU storage adapter")
+			} else {
+				_, isBigCache := cache.Storage().(*bigcache.Adapter)
+				assert.True(t, isBigCache, "expected BigCache storage adapter")
+			}
 		})
 	}
 }
