@@ -45,8 +45,17 @@ export default {
 
 		// Forward client host and protocol information while preserving
 		// the canonical host expected by RequestAuthority and canonicalGoogleLogin.
+		let canonicalHost = url.host;
+		if (env.APP_BASE_URL) {
+			try {
+				canonicalHost = new URL(env.APP_BASE_URL).host;
+			} catch (_) {
+				canonicalHost = url.host;
+			}
+		}
+
 		const headers = new Headers(request.headers);
-		headers.set("Host", url.host);
+		headers.set("Host", canonicalHost);
 		headers.set("X-Forwarded-Host", url.host);
 		headers.set("X-Forwarded-Proto", url.protocol.replace(":", ""));
 
