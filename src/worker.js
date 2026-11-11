@@ -1,7 +1,7 @@
 /**
  * Cloudflare Workers entrypoint for myjournal-app.
- * Routes edge health checks directly and proxies application traffic
- * to the upstream application service.
+ * Proxies application and health check traffic to the upstream
+ * application service, attaching edge deployment diagnostic headers.
  *
  * @module worker
  */
@@ -18,21 +18,8 @@ export default {
 	async fetch(request, env, ctx) {
 		const url = new URL(request.url);
 
-		// Handle health checks directly at the edge.
-		if (url.pathname === "/healthz") {
-			return new Response("OK", {
-				status: 200,
-				headers: {
-					"Content-Type": "text/plain; charset=utf-8",
-					"X-Deploy-Target": env.DEPLOY_TARGET || "cloudflare",
-					"X-Cache-Storage": env.CACHE_STORAGE || "lru",
-					"X-Base-URL": env.APP_BASE_URL || "https://myjournal.ink"
-				}
-			});
-		}
-
 		// Resolve upstream application target.
-		const upstreamRaw = env.UPSTREAM_URL || "https://myjournal-app-production.up.railway.app";
+		const upstreamRaw = env.UPSTREAM_URL;
 		if (!upstreamRaw) {
 			return new Response("Upstream application not configured", {
 				status: 502,
@@ -56,11 +43,12 @@ export default {
 		targetUrl.hostname = upstreamUrl.hostname;
 		targetUrl.port = upstreamUrl.port;
 
-		// Forward client host and protocol information.
+		// Forward client host and protocol information while preserving
+		// the canonical host expected by RequestAuthority and canonicalGoogleLogin.
 		const headers = new Headers(request.headers);
+		headers.set("Host", url.host);
 		headers.set("X-Forwarded-Host", url.host);
 		headers.set("X-Forwarded-Proto", url.protocol.replace(":", ""));
-		headers.delete("host");
 
 		const init = {
 			method: request.method,
@@ -73,7 +61,22 @@ export default {
 		}
 
 		try {
-			return await fetch(targetUrl.toString(), init);
+			const response = await fetch(targetUrl.toString(), init);
+
+			// For /healthz, preserve the upstream JSON response contract while attaching edge deployment headers.
+			if (url.pathname === "/healthz") {
+				const healthHeaders = new Headers(response.headers);
+				healthHeaders.set("X-Deploy-Target", env.DEPLOY_TARGET || "cloudflare");
+				healthHeaders.set("X-Cache-Storage", env.CACHE_STORAGE || "lru");
+				healthHeaders.set("X-Base-URL", env.APP_BASE_URL || "https://myjournal.ink");
+				return new Response(response.body, {
+					status: response.status,
+					statusText: response.statusText,
+					headers: healthHeaders
+				});
+			}
+
+			return response;
 		} catch (err) {
 			return new Response(`Upstream connection failed: ${err.message}`, {
 				status: 502,
