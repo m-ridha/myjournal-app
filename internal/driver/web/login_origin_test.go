@@ -16,31 +16,46 @@ import (
 func TestCanonicalGoogleLogin(t *testing.T) {
 	t.Parallel()
 	type testCase struct {
-		name     string
-		base     string
-		method   string
-		target   string
-		redirect bool
+		name          string
+		base          string
+		method        string
+		target        string
+		forwardedHost string
+		canonicalHost string
+		redirect      bool
+		wantHost      string
 	}
 	for _, tc := range []testCase{
 		{name: "previous host", base: "https://journal.example", method: http.MethodGet, target: "https://previous.example/api/v1/auth/google/login", redirect: true},
 		{name: "discard query", base: "https://journal.example/", method: http.MethodGet, target: "https://previous.example/api/v1/auth/google/login?return_to=https://untrusted.example", redirect: true},
-		{name: "canonical host", base: "https://journal.example", method: http.MethodGet, target: "https://journal.example/api/v1/auth/google/login"},
-		{name: "case insensitive host", base: "https://journal.example", method: http.MethodGet, target: "https://JOURNAL.EXAMPLE/api/v1/auth/google/login"},
+		{name: "canonical host", base: "https://journal.example", method: http.MethodGet, target: "https://journal.example/api/v1/auth/google/login", wantHost: "journal.example"},
+		{name: "case insensitive host", base: "https://journal.example", method: http.MethodGet, target: "https://JOURNAL.EXAMPLE/api/v1/auth/google/login", wantHost: "journal.example"},
+		{name: "edge forwarded host matches canonical", base: "https://journal.example", method: http.MethodGet, target: "https://previous.example/api/v1/auth/google/login", forwardedHost: "journal.example", wantHost: "journal.example"},
+		{name: "edge canonical host matches canonical", base: "https://journal.example", method: http.MethodGet, target: "https://previous.example/api/v1/auth/google/login", canonicalHost: "journal.example", wantHost: "journal.example"},
+		{name: "edge canonical host case insensitive", base: "https://journal.example", method: http.MethodGet, target: "https://previous.example/api/v1/auth/google/login", canonicalHost: "JOURNAL.EXAMPLE", wantHost: "journal.example"},
 		{name: "callback stays on original host", base: "https://journal.example", method: http.MethodGet, target: "https://previous.example/api/v1/auth/google/callback?code=synthetic"},
 		{name: "editor retains recovery access", base: "https://journal.example", method: http.MethodGet, target: "https://previous.example/entries/2020-01-01"},
 		{name: "unsafe methods unchanged", base: "https://journal.example", method: http.MethodPost, target: "https://previous.example/api/v1/auth/google/login"},
-		{name: "local development unchanged", base: "http://localhost:3030", method: http.MethodGet, target: "http://127.0.0.1:3030/api/v1/auth/google/login"},
+		{name: "local development unchanged", base: "http://localhost:3030", method: http.MethodGet, target: "http://127.0.0.1:3030/api/v1/auth/google/login", wantHost: "127.0.0.1:3030"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			called := false
-			h := canonicalGoogleLogin(tc.base)(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+			calledHost := ""
+			h := canonicalGoogleLogin(tc.base)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				called = true
+				calledHost = r.Host
 				w.WriteHeader(http.StatusNoContent)
 			}))
 			req := httptest.NewRequest(tc.method, tc.target, nil)
-			req.Header.Set("X-Forwarded-Host", "untrusted.example")
+			if tc.forwardedHost != "" {
+				req.Header.Set("X-Forwarded-Host", tc.forwardedHost)
+			} else {
+				req.Header.Set("X-Forwarded-Host", "untrusted.example")
+			}
+			if tc.canonicalHost != "" {
+				req.Header.Set("X-Canonical-Host", tc.canonicalHost)
+			}
 			res := httptest.NewRecorder()
 			h.ServeHTTP(res, req)
 			assert.Equal(t, !tc.redirect, called)
@@ -51,6 +66,9 @@ func TestCanonicalGoogleLogin(t *testing.T) {
 			} else {
 				assert.Equal(t, http.StatusNoContent, res.Code)
 				assert.Empty(t, res.Header().Get("Location"))
+				if tc.wantHost != "" {
+					assert.Equal(t, tc.wantHost, calledHost)
+				}
 			}
 		})
 	}

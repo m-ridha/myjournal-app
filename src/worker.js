@@ -56,8 +56,9 @@ export default {
 
 		const headers = new Headers(request.headers);
 		headers.set("Host", canonicalHost);
-		headers.set("X-Forwarded-Host", url.host);
+		headers.set("X-Forwarded-Host", canonicalHost);
 		headers.set("X-Forwarded-Proto", url.protocol.replace(":", ""));
+		headers.set("X-Canonical-Host", canonicalHost);
 
 		const init = {
 			method: request.method,
