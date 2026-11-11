@@ -35,6 +35,7 @@ type Config struct {
 	CacheStorage       string
 }
 
+// Load reads application configuration from environment variables and sets defaults.
 func Load() (Config, error) {
 	cfg := Config{
 		GoogleClientID:     os.Getenv("GOOGLE_CLIENT_ID"),
@@ -96,6 +97,7 @@ func Load() (Config, error) {
 	return cfg, nil
 }
 
+// Validate verifies that the configuration fields satisfy application constraints.
 func (c Config) Validate() error {
 	if c.BaseURL == "" {
 		return fmt.Errorf("APP_BASE_URL is required")
