@@ -11,6 +11,7 @@ import (
 	"myjournal-app/internal/testutil"
 )
 
+// setConfigEnvironment clears all configuration environment variables for isolated test runs.
 func setConfigEnvironment(t *testing.T) {
 	t.Helper()
 	for _, key := range []string{"APP_BASE_URL", "PORT", "LOG_LEVEL", "SESSION_KEY", "COOKIE_SECURE", "PROVIDERS", "LOCAL_DATA_DIR", "GOOGLE_TEST_MODE", "DEPLOY_TARGET", "CACHE_STORAGE"} {

@@ -77,10 +77,12 @@ type App struct {
 	Registry *connection.Registry
 }
 
+// newRenderer initializes the HTML and asset template renderer.
 func newRenderer() (*web.Renderer, error) {
 	return web.NewRendererWithVersion(version)
 }
 
+// newClock constructs the system wall clock implementation.
 func newClock() journal.Clock {
 	return clock.System{}
 }
@@ -105,6 +107,7 @@ func newJournalCache(cfg config.Config) (*cachestore.Cache, func(), error) {
 	return cache, func() { stopWarming(); _ = storage.Close() }, nil
 }
 
+// newServiceFactory creates the journal service factory for active sessions.
 func newServiceFactory(registry *connection.Registry, cache *cachestore.Cache, clk journal.Clock) handler.ServiceFactory {
 	return func(ctx context.Context, current connection.Session) (handler.JournalService, error) {
 		p, ok := registry.Get(current.ProviderID)
@@ -122,6 +125,7 @@ func newServiceFactory(registry *connection.Registry, cache *cachestore.Cache, c
 	}
 }
 
+// newLogger constructs the structured logger configured for the chosen log level.
 func newLogger(cfg config.Config) *slog.Logger {
 	level := slog.LevelInfo
 	switch cfg.LogLevel {
@@ -140,6 +144,7 @@ func newLogger(cfg config.Config) *slog.Logger {
 	return logger
 }
 
+// newProviderRegistry constructs and registers the configured authentication providers.
 func newProviderRegistry(cfg config.Config) (*connection.Registry, error) {
 	selected := cfg.ProviderIDs()
 	if len(selected) == 0 {
@@ -191,6 +196,7 @@ func newProviderRegistry(cfg config.Config) (*connection.Registry, error) {
 	return connection.NewRegistry(providers...), nil
 }
 
+// newHTTPServer configures the primary HTTP server listener and router.
 func newHTTPServer(cfg config.Config, handler2 http.Handler) *http.Server {
 	addr := fmt.Sprintf(":%d", cfg.Port)
 	localEnabled := slices.Contains(cfg.ProviderIDs(), connection.LocalID)
@@ -218,6 +224,7 @@ func newHTTPServer(cfg config.Config, handler2 http.Handler) *http.Server {
 	}
 }
 
+// newApp creates the top-level application container.
 func newApp(logger *slog.Logger, registry *connection.Registry, server *http.Server) *App {
 	return &App{
 		Server:   server,
@@ -226,10 +233,12 @@ func newApp(logger *slog.Logger, registry *connection.Registry, server *http.Ser
 	}
 }
 
+// newConnectionService constructs the session and provider connection service.
 func newConnectionService(registry *connection.Registry, clk journal.Clock) *connection.Service {
 	return connection.NewService(registry, clk, rand.Reader)
 }
 
+// newWebOptions configures HTTP middleware, session, and locale options.
 func newWebOptions(cfg config.Config, codec *session.Codec) web.Options {
 	origin, _ := url.Parse(cfg.BaseURL)
 	return web.Options{BaseURL: cfg.BaseURL, Session: handler.Options{Codec: codec, CookieSecure: cfg.CookieSecure}, HTTPS: origin != nil && origin.Scheme == "https"}
@@ -240,4 +249,5 @@ var (
 	_ handler.ConnectionService = (*connection.Service)(nil)
 )
 
+// newSessionCodec initializes the authenticated cookie session codec.
 func newSessionCodec(cfg config.Config) *session.Codec { return session.NewCodec(cfg.SessionKey) }

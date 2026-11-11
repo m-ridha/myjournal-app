@@ -18,7 +18,10 @@ import (
 
 type failingStoreProvider struct{ provider.Provider }
 
+// ID returns the test provider identifier.
 func (failingStoreProvider) ID() string { return "unavailable" }
+
+// Store simulates an unavailable store failure for test cases.
 func (failingStoreProvider) Store(context.Context, provider.Connection) (journal.Store, error) {
 	return nil, journal.ErrUnavailable
 }
