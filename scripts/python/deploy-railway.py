@@ -130,9 +130,13 @@ def main():
     deployment_id = deploy["deploymentId"]
     wait_for_success(lambda: cli("deployment", "list", "--service", service, "--environment", environment,
                                  "--json", "--limit", "100"), deployment_id, time.monotonic() + 1200)
+    health_request = urllib.request.Request(
+        origin + "/healthz",
+        headers={"User-Agent": "myjournal-release-healthcheck/1.0"},
+    )
     for attempt in range(12):
         try:
-            with urllib.request.urlopen(origin + "/healthz", timeout=15) as response:
+            with urllib.request.urlopen(health_request, timeout=15) as response:
                 if response.status == 200 and response.url == origin + "/healthz":
                     print(f"Railway deployment {deployment_id} succeeded for uploaded release {os.environ['RELEASE_TAG']} ({commit}); health passed")
                     return

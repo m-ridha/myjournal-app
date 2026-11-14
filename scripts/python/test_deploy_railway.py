@@ -168,7 +168,12 @@ class DeploymentTests(unittest.TestCase):
         self.assertEqual(calls[1], ("up", "--project", PROJECT_ID, "--service", SERVICE_ID,
                                   "--environment", ENVIRONMENT_ID, "--detach", "--json", "--message", "Release v0.2.0-beta.1"))
         self.assertEqual(calls[2][0:2], ("deployment", "list"))
-        health.assert_called_once_with(ORIGIN + "/healthz", timeout=15)
+        health.assert_called_once()
+        health_request = health.call_args.args[0]
+        self.assertIsInstance(health_request, module.urllib.request.Request)
+        self.assertEqual(health_request.full_url, ORIGIN + "/healthz")
+        self.assertEqual(health_request.get_header("User-agent"), "myjournal-release-healthcheck/1.0")
+        self.assertEqual(health.call_args.kwargs, {"timeout": 15})
         self.assertIn("release-deployment", output.call_args.args[0])
         self.assertIn("v0.2.0-beta.1", output.call_args.args[0])
         self.assertIn("a" * 40, output.call_args.args[0])
