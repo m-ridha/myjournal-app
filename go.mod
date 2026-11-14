@@ -1,6 +1,6 @@
 module myjournal-app
 
-go 1.27.3
+go 1.27.4
 
 require (
 	cloud.google.com/go v0.123.0
@@ -10,7 +10,7 @@ require (
 	github.com/oapi-codegen/runtime v1.8.0
 	github.com/stretchr/testify v1.12.1
 	golang.org/x/net v0.62.0
-	golang.org/x/oauth2 v0.37.0
+	golang.org/x/oauth2 v0.38.0
 	golang.org/x/sync v0.24.0
 	google.golang.org/api v0.310.0
 )
